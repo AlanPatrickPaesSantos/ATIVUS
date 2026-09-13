@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["node", "vitest/globals"]
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }
