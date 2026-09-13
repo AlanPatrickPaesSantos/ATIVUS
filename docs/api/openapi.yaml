@@ -1,0 +1,1620 @@
+openapi: 3.1.0
+info:
+  title: SIGAT API
+  version: 1.0.0
+  description: Contrato inicial da API do SIGAT, alinhado aos fluxos consumidos pelo frontend.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /api/v1
+    description: API versionada atrás do Nginx
+tags:
+  - name: Auth
+    description: Operações de autenticação e sessão.
+  - name: Platform
+    description: Operações operacionais da própria API.
+  - name: Dashboard
+    description: Consultas de indicadores consolidados por escopo.
+  - name: Inventory
+    description: Consultas de inventário e detalhes de equipamentos.
+  - name: Reports
+    description: Relatórios autenticados e exportações sem credenciais ou tokens.
+  - name: Calls
+    description: Operações de abertura e consulta de chamados.
+  - name: Maintenance
+    description: Consulta autenticada de registros de manutenção.
+  - name: Units
+    description: Catálogo de unidades disponíveis para operações autorizadas.
+  - name: Administration
+    description: Consultas administrativas protegidas.
+  - name: Audit
+    description: Consulta protegida da trilha de auditoria operacional.
+paths:
+  /health:
+    get:
+      tags: [Platform]
+      summary: Verifica se a API está operacional
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: API operacional
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+        '4XX': { $ref: '#/components/responses/BadRequest' }
+  /readiness:
+    get:
+      tags: [Platform]
+      summary: Verifica se a API e o MongoDB estão prontos para atender tráfego
+      operationId: getReadiness
+      security: []
+      responses:
+        '200':
+          description: API pronta com MongoDB acessível
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessStatus'
+        '503':
+          description: API no ar, mas dependência crítica indisponível
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessStatus'
+        '4XX': { $ref: '#/components/responses/BadRequest' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Cria uma sessão autenticada
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Contexto da sessão criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionContext'
+        '400':
+          $ref: '#/components/responses/InvalidJson'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Invalida a sessão atual
+      operationId: logout
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Sessão invalidada }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /auth/password-change:
+    post:
+      tags: [Auth]
+      summary: Troca a senha do próprio usuário quando há troca obrigatória pendente
+      operationId: changeOwnPassword
+      description: Usado após login com `mustChangePassword=true`. Aceita somente a nova senha, grava apenas hash bcrypt e retorna o contexto de sessão já liberado.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordChangeRequest' }
+      responses:
+        '200':
+          description: Senha alterada e sessão liberada
+          content: { application/json: { schema: { $ref: '#/components/schemas/SessionContext' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /session:
+    get:
+      tags: [Auth]
+      summary: Consulta a sessão atual
+      operationId: getSession
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Contexto autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionContext'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Consulta indicadores do escopo autenticado
+      operationId: getDashboard
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Dashboard da unidade ou escopo estadual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /units:
+    get:
+      tags: [Units]
+      summary: Lista unidades ativas disponíveis como destino
+      operationId: listUnits
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Unidades ativas dentro do escopo permitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /equipment-types:
+    get:
+      tags: [Inventory]
+      summary: Lista tipos de equipamento do catálogo padronizado
+      operationId: listEquipmentTypes
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: includeInactive
+          in: query
+          required: false
+          description: Incluir tipos inativos (somente DITEL).
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Tipos de equipamento dentro do escopo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentTypeListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Inventory]
+      summary: Cadastra um tipo de equipamento no catálogo padronizado
+      operationId: createEquipmentType
+      description: Exclusivo para administrador DITEL.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentTypeInput'
+      responses:
+        '201':
+          description: Tipo criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentType'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /equipment-types/{typeId}:
+    patch:
+      tags: [Inventory]
+      summary: Atualiza um tipo de equipamento
+      operationId: updateEquipmentType
+      description: Exclusivo para administrador DITEL.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: typeId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentTypeInput'
+      responses:
+        '200':
+          description: Tipo atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentType'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+    delete:
+      tags: [Inventory]
+      summary: Desativa um tipo de equipamento
+      operationId: deactivateEquipmentType
+      description: Exclusivo para administrador DITEL. Desativa o tipo (não remove), preservando referências históricas de equipamentos.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: typeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Tipo desativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentType'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /missions:
+    get:
+      tags: [Operations]
+      summary: Lista missões técnicas
+      operationId: listMissions
+      description: DITEL vê todas as missões; unidade vê apenas as atribuídas à sua unidade.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: unitId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [assigned, in_progress, completed, cancelled] }
+      responses:
+        '200':
+          description: Lista de missões
+          content: { application/json: { schema: { $ref: '#/components/schemas/MissionListResponse' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Operations]
+      summary: Cria missão técnica
+      operationId: createMission
+      description: Exclusivo para administrador DITEL.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MissionCreateRequest' }
+      responses:
+        '201':
+          description: Missão criada
+          content: { application/json: { schema: { $ref: '#/components/schemas/Mission' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /missions/{missionId}:
+    patch:
+      tags: [Operations]
+      summary: Atualiza missão técnica
+      operationId: updateMission
+      description: Unidade pode iniciar e concluir; DITEL pode cancelar.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: missionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MissionUpdateRequest' }
+      responses:
+        '200':
+          description: Missão atualizada
+          content: { application/json: { schema: { $ref: '#/components/schemas/Mission' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/users:
+    post:
+      tags: [Administration]
+      summary: Cadastra usuário administrativo
+      operationId: createAdminUser
+      description: Exclusivo para administrador DITEL. Usuários de unidade exigem uma referência de unidade ativa; administradores DITEL não são vinculados a unidade operacional.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserCreateRequest'
+      responses:
+        '201':
+          description: Usuário criado como ativo, sem credenciais ou tokens
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserListItem' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+    get:
+      tags: [Administration]
+      summary: Lista usuários administrativos
+      operationId: listAdminUsers
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: role, in: query, schema: { $ref: '#/components/schemas/UserRole' } }
+        - { name: unitId, in: query, schema: { type: string } }
+        - { name: situation, in: query, schema: { type: string, enum: [Ativo, Bloqueado, Inativo] } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Página de usuários sem credenciais ou tokens
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserListResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/users/{userId}:
+    patch:
+      tags: [Administration]
+      summary: Atualiza dados cadastrais de um usuário
+      operationId: updateAdminUser
+      description: Exclusivo para administrador DITEL. Atualiza nome, matrícula, perfil e unidade; a situação continua restrita ao fluxo dedicado de bloqueio/desbloqueio. Não aceita nem retorna senha, hash, tokens ou identificadores de sessão.
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AdminUserId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserUpdateRequest'
+      responses:
+        '200':
+          description: Usuário atualizado sem credenciais ou tokens
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserListItem' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /admin/users/{userId}/situation:
+    patch:
+      tags: [Administration]
+      summary: Bloqueia ou desbloqueia um usuário
+      operationId: updateAdminUserSituation
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AdminUserId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserSituationUpdateRequest' } } }
+      responses:
+        '200':
+          description: Situação administrativa atualizada
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserSituationUpdateResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /admin/users/{userId}/password-reset:
+    post:
+      tags: [Administration]
+      summary: Gera senha temporária para um usuário ativo
+      operationId: resetAdminUserPassword
+      description: Exclusivo para administrador DITEL. A senha temporária é gerada criptograficamente no backend, armazenada apenas como hash bcrypt, invalida sessões ativas do usuário e é retornada somente nesta resposta.
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AdminUserId' }]
+      responses:
+        '200':
+          description: Senha temporária retornada uma única vez para comunicação segura ao usuário
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserPasswordResetResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /audit-events:
+    get:
+      tags: [Audit]
+      summary: Lista eventos de auditoria
+      operationId: listAuditEvents
+      description: Exclusivo para administrador DITEL. Retorna eventos do mais recente para o mais antigo, sem credenciais, tokens ou identificadores de sessão.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: module, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: userId, in: query, schema: { type: string } }
+        - { name: unitId, in: query, schema: { type: string } }
+        - { name: entityType, in: query, schema: { type: string } }
+        - { name: entityId, in: query, schema: { type: string } }
+        - { name: result, in: query, schema: { type: string, enum: [success, failure] } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Página de eventos de auditoria
+          content: { application/json: { schema: { $ref: '#/components/schemas/AuditEventListResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /inventory:
+    post:
+      tags: [Inventory]
+      summary: Cadastra equipamento na unidade autenticada
+      operationId: createInventoryEquipment
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/EquipmentCreateRequest' }
+      responses:
+        '201':
+          description: Equipamento criado
+          content: { application/json: { schema: { $ref: '#/components/schemas/EquipmentDetails' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+    get:
+      tags: [Inventory]
+      summary: Lista equipamentos dentro do escopo autorizado
+      operationId: listInventory
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Search' }
+        - { $ref: '#/components/parameters/Type' }
+        - { $ref: '#/components/parameters/Model' }
+        - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Página de equipamentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /inventory/{equipmentId}:
+    get:
+      tags: [Inventory]
+      summary: Consulta os detalhes de um equipamento autorizado
+      operationId: getInventoryEquipment
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhes do equipamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentDetails'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Inventory]
+      summary: Atualiza a situação de um equipamento autorizado com controle de concorrência
+      operationId: updateInventoryEquipmentSituation
+      description: Usuários de unidade atualizam equipamentos da própria unidade. O campo updatedAt é usado como token de concorrência; conflitos retornam 409.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [situation, updatedAt]
+              properties:
+                situation: { $ref: '#/components/schemas/EquipmentSituation' }
+                updatedAt: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Situação atualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  patrimony: { type: string }
+                  situation: { $ref: '#/components/schemas/EquipmentSituation' }
+                  unitName: { type: string }
+                  updatedBy: { type: string }
+                  updatedAt: { type: string, format: date-time }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Conflito de concorrência (equipamento alterado por outra operação)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: string, enum: [EQUIPMENT_CONFLICT] }
+                  message: { type: string }
+  /reports/inventory-summary:
+    get:
+      tags: [Reports]
+      summary: Gera a prévia autenticada do relatório de inventário consolidado
+      operationId: getInventorySummaryReport
+      description: Usuários de Unidade recebem somente sua unidade autenticada. Administradores DITEL podem consultar o consolidado estadual ou filtrar por unidade ativa.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportPeriod' }
+      responses:
+        '200':
+          description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InventoryReportResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/inventory-summary/export:
+    get:
+      tags: [Reports]
+      summary: Exporta o relatório de inventário consolidado como CSV ou PDF
+      operationId: exportInventorySummaryReport
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportPeriod' }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [csv, pdf] }
+      responses:
+        '200':
+          description: Arquivo exportado dentro do escopo autenticado
+          content:
+            text/csv:
+              schema: { type: string }
+            application/pdf:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /maintenance:
+    get:
+      tags: [Maintenance]
+      summary: Lista registros de manutenção dentro do escopo autorizado
+      operationId: listMaintenance
+      description: Administradores DITEL consultam registros estaduais; usuários de unidade recebem somente registros da própria unidade. A resposta é pública e não inclui storageKey, senhas, hashes, tokens, tokenDigest ou sessionId.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/MaintenanceStatus' }
+        - name: equipmentType
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Registros de manutenção sem segredos ou metadados internos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceListResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Maintenance]
+      summary: Abre um registro de manutenção para equipamento da própria unidade
+      operationId: createMaintenance
+      description: Exclusivo para usuário de unidade. O backend valida escopo de unidade, situação do equipamento e vínculo opcional com chamado antes de persistir e auditar a criação.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MaintenanceCreateRequest' }
+      responses:
+        '201':
+          description: Registro de manutenção criado sem campos sensíveis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /maintenance/{maintenanceId}:
+    patch:
+      tags: [Maintenance]
+      summary: Atualiza o progresso de uma manutenção
+      operationId: updateMaintenance
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: maintenanceId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MaintenanceUpdateRequest' }
+      responses:
+        '200': { description: Registro atualizado, content: { application/json: { schema: { $ref: '#/components/schemas/MaintenanceItem' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /calls/{callId}:
+    get:
+      tags: [Calls]
+      summary: Consulta detalhes públicos de um chamado
+      operationId: getCallDetails
+      description: Retorna dados operacionais públicos do chamado e histórico derivado de dados persistidos e auditoria. Administradores DITEL podem consultar chamados estaduais; usuários de unidade recebem apenas chamados da própria unidade.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: callId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhes públicos do chamado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallDetails' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /calls/{callId}/triage:
+    patch:
+      tags: [Calls]
+      summary: Persiste a triagem operacional de um chamado
+      operationId: triageCall
+      description: Exclusivo para administrador DITEL. Atualiza somente seção responsável, prioridade e situação permitidas, usando updatedAt como token de concorrência; versões antigas retornam 409 e a auditoria obrigatória pode reverter a mutação.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: callId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TriageRequest' }
+      responses:
+        '200':
+          description: Chamado atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallQueueItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /attachments/{attachmentId}/download:
+    get:
+      tags: [Attachments]
+      summary: Baixa um anexo dentro do escopo autenticado
+      operationId: downloadAttachment
+      description: Usuários de Unidade só baixam anexos de equipamentos e chamados da própria unidade. Administradores DITEL podem baixar anexos estaduais. A resposta nunca expõe storageKey, caminho local ou metadados internos.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: attachmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Conteúdo binário do anexo autorizado
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+            Content-Length:
+              schema: { type: integer, minimum: 0 }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+            application/msword:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+            image/gif:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /calls:
+    get:
+      tags: [Calls]
+      summary: Lista chamados dentro do escopo autorizado
+      operationId: listCalls
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Fila de chamados
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CallQueueItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Calls]
+      summary: Abre um chamado
+      operationId: createCall
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CallRequest'
+      responses:
+        '201':
+          description: Chamado criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedCall'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /movements:
+    get:
+      summary: Listar movimentações autorizadas
+      operationId: listMovements
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Movement list, content: { application/json: { schema: { $ref: '#/components/schemas/MovementListResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      summary: Solicitar transferência patrimonial
+      operationId: createMovement
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateMovementRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Movement' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /movements/{id}/decision:
+    patch:
+      summary: Decidir transferência patrimonial
+      operationId: decideMovement
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/MovementId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MovementDecisionRequest' } } }
+      responses:
+        '200': { description: Updated movement, content: { application/json: { schema: { $ref: '#/components/schemas/Movement' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sigat_session
+  parameters:
+    MovementId: { name: id, in: path, required: true, schema: { type: string } }
+    AdminUserId: { name: userId, in: path, required: true, schema: { type: string } }
+    Search: { name: search, in: query, schema: { type: string } }
+    Type: { name: type, in: query, schema: { type: string } }
+    Model: { name: model, in: query, schema: { type: string } }
+    Situation:
+      name: situation
+      in: query
+      schema:
+        $ref: '#/components/schemas/EquipmentSituation'
+    UnitId: { name: unitId, in: query, description: Aplicável somente ao administrador DITEL., schema: { type: string } }
+    ReportPeriod:
+      name: period
+      in: query
+      description: Período de referência para o relatório, baseado na data de cadastro do equipamento.
+      schema:
+        type: string
+        enum: [july_2026, q2_2026]
+    Page: { name: page, in: query, required: true, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+  responses:
+    BadRequest:
+      description: Dados inválidos
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    InvalidJson:
+      description: Corpo JSON malformado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            malformedJson:
+              value:
+                code: INVALID_JSON
+                message: Corpo JSON inválido.
+    Unauthorized:
+      description: Sessão ausente ou inválida
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    Forbidden:
+      description: Usuário autenticado sem uma unidade válida para acessar o dashboard da unidade
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            invalidUnitScope:
+              value:
+                code: FORBIDDEN
+                message: Escopo de unidade obrigatório.
+    NotFound:
+      description: Recurso não encontrado no escopo autorizado
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    Conflict:
+      description: Conflito de unicidade ou concorrência
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    AuditUnavailable:
+      description: A mutação foi revertida porque a auditoria obrigatória não pôde ser registrada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            auditUnavailable:
+              value:
+                code: AUDIT_UNAVAILABLE
+                message: Não foi possível registrar auditoria.
+  schemas:
+    UnitListItem:
+      type: object
+      required: [id, name, acronym]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        acronym: { type: string }
+    UnitListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/UnitListItem' }
+    EquipmentType:
+      type: object
+      required: [id, name, description, active, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EquipmentTypeListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EquipmentType' }
+    EquipmentTypeInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 80 }
+        description: { type: string }
+        active: { type: boolean }
+    Mission:
+      type: object
+      required: [id, title, description, type, status, unit, assignedBy, assignedTo, priority, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [maintenance, installation, inspection, training, other] }
+        status: { type: string, enum: [assigned, in_progress, completed, cancelled] }
+        unit:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            acronym: { type: string }
+        equipment:
+          type: array
+          items:
+            type: object
+            required: [id, patrimony, type, model, brand]
+            properties:
+              id: { type: string }
+              patrimony: { type: string }
+              type: { type: string }
+              model: { type: string }
+              brand: { type: string }
+        assignedBy:
+          type: object
+          required: [id, name, registration]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            registration: { type: string }
+        assignedTo:
+          type: object
+          required: [id, name, registration]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            registration: { type: string }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        startedAt: { type: [string, 'null'], format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        notes:
+          type: array
+          items:
+            type: object
+            properties:
+              author: { type: string }
+              text: { type: string }
+              createdAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MissionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Mission' }
+    MissionCreateRequest:
+      type: object
+      required: [title, description, unit]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [maintenance, installation, inspection, training, other] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        unit:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            acronym: { type: string }
+        equipment:
+          type: array
+          items:
+            type: object
+            required: [id, patrimony, type, model, brand]
+            properties:
+              id: { type: string }
+              patrimony: { type: string }
+              type: { type: string }
+              model: { type: string }
+              brand: { type: string }
+    MissionUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [assigned, in_progress, completed, cancelled] }
+        note: { type: string }
+    AdminUserListItem:
+      type: object
+      required: [id, name, registration, role, situation, unit, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        registration: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+        situation: { $ref: '#/components/schemas/UserSituation' }
+        unit: { oneOf: [{ $ref: '#/components/schemas/UnitContext' }, { type: 'null' }] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminUserListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AdminUserListItem' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+    AdminUserCreateRequest:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, password]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: ditel_admin }
+            password: { type: string, minLength: 1, writeOnly: true }
+            unit: { type: 'null' }
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, password, unit]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: unit_user }
+            password: { type: string, minLength: 1, writeOnly: true }
+            unit: { $ref: '#/components/schemas/UnitContext' }
+    AdminUserUpdateRequest:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, unit, updatedAt]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: ditel_admin }
+            unit: { type: 'null' }
+            updatedAt: { type: string, format: date-time }
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, unit, updatedAt]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: unit_user }
+            unit: { $ref: '#/components/schemas/UnitContext' }
+            updatedAt: { type: string, format: date-time }
+    AdminUserSituationUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [situation]
+      properties:
+        situation: { type: string, enum: [active, blocked] }
+    AdminUserSituationUpdateResponse:
+      type: object
+      required: [id, situation]
+      properties:
+        id: { type: string }
+        situation: { type: string, enum: [active, blocked] }
+    AdminUserPasswordResetResponse:
+      type: object
+      required: [userId, temporaryPassword, mustChangePassword]
+      properties:
+        userId: { type: string }
+        temporaryPassword: { type: string, minLength: 20, writeOnly: true }
+        mustChangePassword: { type: boolean, const: true }
+    AuditActor:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        registration: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+    AuditEntity:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string }
+        id: { type: string }
+        label: { type: string }
+    AuditSnapshot:
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: 'null'
+    AuditEvent:
+      type: object
+      required: [id, action, module, userId, actor, entity, unit, result, reason, before, after, retentionExpiresAt, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        module: { type: string }
+        userId:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        actor:
+          oneOf:
+            - { $ref: '#/components/schemas/AuditActor' }
+            - { type: 'null' }
+        entity:
+          oneOf:
+            - { $ref: '#/components/schemas/AuditEntity' }
+            - { type: 'null' }
+        unit:
+          oneOf:
+            - { $ref: '#/components/schemas/UnitContext' }
+            - { type: 'null' }
+        result: { type: string, enum: [success, failure] }
+        reason:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        before: { $ref: '#/components/schemas/AuditSnapshot' }
+        after: { $ref: '#/components/schemas/AuditSnapshot' }
+        retentionExpiresAt:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: 'null' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AuditEventListResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditEvent' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+    Movement:
+      type: object
+      required: [id, type, equipmentId, origin, destination, requestedBy, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [Transferência definitiva] }
+        equipmentId: { type: string }
+        origin: { $ref: '#/components/schemas/UnitContext' }
+        destination: { $ref: '#/components/schemas/UnitContext' }
+        requestedBy: { type: string }
+        status: { type: string, enum: [Pendente, Aprovada, Rejeitada] }
+        decisionReason: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MovementListResponse:
+      type: object
+      required: [items]
+      properties: { items: { type: array, items: { $ref: '#/components/schemas/Movement' } } }
+    CreateMovementRequest:
+      type: object
+      required: [equipmentId, destination]
+      properties: { equipmentId: { type: string }, destination: { $ref: '#/components/schemas/UnitContext' } }
+    MovementDecisionRequest:
+      type: object
+      required: [status, updatedAt]
+      properties:
+        status: { type: string, enum: [Aprovada, Rejeitada] }
+        updatedAt: { type: string, format: date-time }
+        reason: { type: string }
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: EQUIPMENT_NOT_FOUND }
+        message: { type: string }
+        details: {}
+    ReadinessStatus:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [ok, not_ready] }
+        checks:
+          type: object
+          required: [mongo]
+          properties:
+            mongo: { type: string, enum: [up, down] }
+    LoginRequest:
+      type: object
+      required: [registration, password]
+      properties:
+        registration: { type: string }
+        password: { type: string, format: password }
+    PasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [newPassword]
+      properties:
+        newPassword: { type: string, minLength: 8, format: password, writeOnly: true }
+    UserRole:
+      type: string
+      enum: [ditel_admin, unit_user]
+    UserSituation:
+      type: string
+      enum: [active, blocked, inactive]
+    UnitContext:
+      type: object
+      required: [id, name, acronym]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        acronym: { type: string }
+    SessionContext:
+      type: object
+      required: [userId, name, registration, role, unit]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        registration: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+        mustChangePassword:
+          type: boolean
+          default: false
+          description: Quando verdadeiro, o frontend deve direcionar o usuário para troca obrigatória de senha antes de continuar.
+        unit:
+          oneOf:
+            - { $ref: '#/components/schemas/UnitContext' }
+            - { type: 'null' }
+    EquipmentSituation:
+      type: string
+      enum: [active, maintenance, inactive, lost, written_off]
+    EquipmentSummary:
+      type: object
+      required: [id, patrimony, type, model, brand, situation, location, unitName]
+      properties:
+        id: { type: string }
+        patrimony: { type: string }
+        type: { type: string }
+        model: { type: string }
+        brand: { type: string }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        location: { type: string }
+        unitName: { type: string }
+    InventoryResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/EquipmentSummary' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+    InventoryReportCounters:
+      type: object
+      required: [total, active, maintenance, inactive, lost, writtenOff, attention]
+      properties:
+        total: { type: integer, minimum: 0 }
+        active: { type: integer, minimum: 0 }
+        maintenance: { type: integer, minimum: 0 }
+        inactive: { type: integer, minimum: 0 }
+        lost: { type: integer, minimum: 0 }
+        writtenOff: { type: integer, minimum: 0 }
+        attention: { type: integer, minimum: 0 }
+    InventoryReportUnitSummary:
+      allOf:
+        - { $ref: '#/components/schemas/InventoryReportCounters' }
+        - type: object
+          required: [unit]
+          properties:
+            unit: { $ref: '#/components/schemas/UnitContext' }
+    InventoryReportResponse:
+      type: object
+      required: [report, totals, units, generatedBy]
+      properties:
+        report:
+          type: object
+          required: [id, title, generatedAt, scope, filters]
+          properties:
+            id: { type: string, enum: [inventory-summary] }
+            title: { type: string }
+            generatedAt: { type: string, format: date-time }
+            scope: { $ref: '#/components/schemas/UnitContext' }
+            filters:
+              type: object
+              required: [situation]
+              properties:
+                situation:
+                  oneOf:
+                    - { $ref: '#/components/schemas/EquipmentSituation' }
+                    - { type: 'null' }
+        totals: { $ref: '#/components/schemas/InventoryReportCounters' }
+        units:
+          type: array
+          items: { $ref: '#/components/schemas/InventoryReportUnitSummary' }
+        generatedBy:
+          type: object
+          required: [name, role]
+          properties:
+            name: { type: string }
+            role: { $ref: '#/components/schemas/UserRole' }
+    MaintenanceStatus:
+      type: string
+      enum: [open, in_progress, completed, cancelled]
+    MaintenanceEquipment:
+      type: object
+      required: [id, patrimony, type, model, brand]
+      properties:
+        id: { type: string }
+        patrimony: { type: string }
+        type: { type: string }
+        model: { type: string }
+        brand: { type: string }
+    MaintenanceCall:
+      type: object
+      required: [id, protocol, subject]
+      properties:
+        id: { type: string }
+        protocol: { type: string }
+        subject: { type: string }
+    MaintenanceCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [equipmentId, description, status, type]
+      properties:
+        equipmentId: { type: string }
+        description: { type: string, minLength: 1 }
+        status: { $ref: '#/components/schemas/MaintenanceStatus' }
+        type: { type: string, minLength: 1 }
+        callId: { type: string }
+    MaintenanceItem:
+      type: object
+      required: [id, equipment, unit, status, type, description, openedAt, updatedAt]
+      properties:
+        id: { type: string }
+        equipment: { $ref: '#/components/schemas/MaintenanceEquipment' }
+        unit: { $ref: '#/components/schemas/UnitContext' }
+        status: { $ref: '#/components/schemas/MaintenanceStatus' }
+        type: { type: string }
+        description: { type: string }
+        diagnosis: { type: string }
+        service: { type: string }
+        technicalResponsible: { type: string }
+        completedAt: { type: string, format: date-time }
+        observations: { type: string }
+        call: { $ref: '#/components/schemas/MaintenanceCall' }
+        openedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MaintenanceListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MaintenanceItem' }
+    MaintenanceUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [status, updatedAt]
+      properties:
+        status: { $ref: '#/components/schemas/MaintenanceStatus' }
+        diagnosis: { type: string }
+        service: { type: string }
+        technicalResponsible: { type: string }
+        completedAt: { type: string, format: date-time }
+        observations: { type: string }
+        updatedAt: { type: string, format: date-time }
+    EquipmentDetails:
+      allOf:
+        - { $ref: '#/components/schemas/EquipmentSummary' }
+        - type: object
+          required: [category, allocation, history, linkedCalls, documents]
+          properties:
+            serialNumber: { type: string }
+            category: { type: string }
+            warranty: { type: string }
+            observations: { type: string }
+            createdAt: { type: string, format: date-time }
+            createdBy: { type: string }
+            updatedAt: { type: string, format: date-time }
+            updatedBy: { type: string }
+            responsibleUser: { type: string }
+            allocation: { $ref: '#/components/schemas/EquipmentAllocation' }
+            history: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }
+            linkedCalls: { type: array, items: { $ref: '#/components/schemas/LinkedCall' } }
+            documents: { type: array, items: { $ref: '#/components/schemas/LinkedDocument' } }
+    EquipmentCreateRequest:
+      type: object
+      required: [patrimony, type, model, brand, situation, location]
+      additionalProperties: false
+      properties:
+        patrimony: { type: string }
+        section: { type: string, enum: [support, telecom] }
+        type: { type: string }
+        model: { type: string }
+        serialNumber: { type: string }
+        brand: { type: string }
+        category: { type: string }
+        hasWarranty: { type: string, enum: [yes, no] }
+        warrantyDate: { type: string, format: date }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        location: { type: string }
+        observations: { type: string }
+        attachments:
+          description: Até 5 arquivos, validados por MIME e extensão. Aceita PDF, JPG/JPEG e PNG, com limite de 15 MiB por arquivo. O backend armazena fora de public com nome aleatório e retorna apenas metadados públicos.
+          type: array
+          maxItems: 5
+          items: { type: string, format: binary }
+    EquipmentAllocation:
+      type: object
+      required: [location]
+      properties:
+        location: { type: string }
+        responsibleUser: { type: string }
+        allocatedAt: { type: string, format: date }
+    HistoryEntry:
+      type: object
+      required: [id, description, occurredAt]
+      properties:
+        id: { type: string }
+        description: { type: string }
+        occurredAt: { type: string }
+    LinkedCall:
+      type: object
+      required: [id, subject, status, openedAt]
+      properties:
+        id: { type: string }
+        subject: { type: string }
+        status: { type: string }
+        openedAt: { type: string }
+    LinkedDocument:
+      type: object
+      required: [id, name, type, size, uploadedAt, status, downloadUrl]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        size: { type: integer, minimum: 0 }
+        uploadedAt: { type: string, format: date-time }
+        status: { type: string, enum: [active] }
+        downloadUrl: { type: string, format: uri-reference }
+    AttachmentMetadata:
+      type: object
+      required: [id, name, type, size, uploadedAt, status, downloadUrl]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        size: { type: integer, minimum: 0 }
+        uploadedAt: { type: string, format: date-time }
+        status: { type: string, enum: [active] }
+        downloadUrl: { type: string, format: uri-reference }
+    DashboardResponse:
+      type: object
+      required: [unit, metrics, situations, recentActivity]
+      properties:
+        unit: { $ref: '#/components/schemas/UnitContext' }
+        metrics:
+          type: object
+          required: [total, active, maintenance, attention]
+          properties:
+            total: { type: integer, minimum: 0 }
+            active: { type: integer, minimum: 0 }
+            maintenance: { type: integer, minimum: 0 }
+            attention: { type: integer, minimum: 0 }
+        situations:
+          type: array
+          items:
+            type: object
+            required: [situation, label, count]
+            properties:
+              situation: { type: string }
+              label: { type: string }
+              count: { type: integer, minimum: 0 }
+        recentActivity: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }
+    CallQueueItem:
+      type: object
+      required: [id, subject, unitId, unitName, priority, status, updatedAt]
+      properties:
+        id: { type: string }
+        subject: { type: string }
+        unitId: { type: string }
+        unitName: { type: string }
+        priority: { type: string, enum: [Baixa, Média, Alta, Crítica], description: Prioridade exibida retornada pela API. }
+        status: { type: string, enum: [Aberto, Em análise, Em atendimento, Aguardando informação, Resolvido, Encerrado] }
+        section: { type: string, enum: [Suporte, Telecom] }
+        updatedAt: { type: string, format: date-time }
+    CallDetailEquipment:
+      oneOf:
+        - type: object
+          required: [id, patrimony, type, model, brand]
+          properties:
+            id: { type: string }
+            patrimony: { type: string }
+            type: { type: string }
+            model: { type: string }
+            brand: { type: string }
+        - { type: 'null' }
+    CallDetails:
+      type: object
+      required: [id, protocol, problem, subject, description, unit, requestedBy, priority, status, section, equipment, openedAt, updatedAt, attachments, history]
+      properties:
+        id: { type: string }
+        protocol: { type: string }
+        problem: { type: string, enum: [software, hardware, printer, network, radio] }
+        subject: { type: string }
+        description: { type: string }
+        unit: { $ref: '#/components/schemas/UnitContext' }
+        requestedBy: { type: string }
+        priority: { type: string, enum: [Baixa, Média, Alta, Crítica] }
+        status: { type: string, enum: [Aberto, Em análise, Em atendimento, Aguardando informação, Resolvido, Encerrado] }
+        section: { type: string, enum: [Suporte, Telecom] }
+        equipment: { $ref: '#/components/schemas/CallDetailEquipment' }
+        openedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        attachments:
+          description: Metadados públicos de anexos persistidos; não inclui storageKey, caminho local ou segredos.
+          type: array
+          items: { $ref: '#/components/schemas/AttachmentMetadata' }
+        history: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }
+    TriageRequest:
+      type: object
+      required: [status, priority, section, updatedAt]
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [Em análise, Em atendimento, Aguardando informação, Resolvido, Encerrado] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        section: { type: string, enum: [Suporte, Telecom] }
+        updatedAt: { type: string, format: date-time }
+    CallRequest:
+      type: object
+      required: [problem, priority, subject, description]
+      properties:
+        problem: { type: string, enum: [software, hardware, printer, network, radio] }
+        priority: { type: string, enum: [low, medium, high, critical], description: Prioridade técnica enviada pelo frontend. }
+        subject: { type: string, maxLength: 120 }
+        description: { type: string }
+        equipmentId: { type: string }
+        attachments:
+          description: Até 5 arquivos, validados por MIME e extensão. Aceita PDF/DOC/DOCX e imagens JPG/PNG/WEBP/GIF, com limite de 10 MiB por arquivo.
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            format: binary
+    CreatedCall:
+      type: object
+      required: [id, protocol]
+      properties:
+        id: { type: string }
+        protocol: { type: string }

@@ -1,0 +1,50 @@
+name: SIGAT quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Install frontend
+        run: npm ci
+        working-directory: frontend
+      - name: Install backend
+        run: npm ci
+        working-directory: backend
+      - name: Backend tests
+        run: npm test
+        working-directory: backend
+      - name: Backend real integration tests
+        run: npm run test:integration
+        working-directory: backend
+      - name: Backend typecheck
+        run: npm run typecheck
+        working-directory: backend
+      - name: Backend build
+        run: npm run build
+        working-directory: backend
+      - name: Frontend tests
+        run: npm test -- --run
+        working-directory: frontend
+      - name: Frontend typecheck
+        run: npm run typecheck
+        working-directory: frontend
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+      - name: Frontend E2E
+        run: npx playwright install --with-deps chromium && npm run test:e2e
+        working-directory: frontend
+      - name: OpenAPI validation
+        run: npx --yes @redocly/cli@1.34.0 lint docs/api/openapi.yaml

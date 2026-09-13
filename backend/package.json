@@ -1,0 +1,37 @@
+{
+  "name": "sigat-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "test": "vitest run --no-file-parallelism",
+    "test:integration": "vitest run --no-file-parallelism src/integration",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "migrate:user-situation": "tsx src/database/migrations/backfillUserSituation.ts",
+    "ops:homolog:verify": "tsx src/operations/homologation.ts verify",
+    "ops:homolog:bootstrap": "tsx src/operations/homologation.ts bootstrap"
+  },
+  "dependencies": {
+    "@types/multer": "^2.0.0",
+    "bcryptjs": "^3.0.2",
+    "express": "^4.22.2",
+    "mongoose": "^8.24.4",
+    "multer": "^2.3.0"
+  },
+  "overrides": {
+    "path-to-regexp": "0.1.13",
+    "qs": "6.16.0"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.25",
+    "@types/node": "26.4.0",
+    "@types/supertest": "6.0.3",
+    "mongodb-memory-server": "^10.2.0",
+    "supertest": "7.1.4",
+    "tsx": "4.20.5",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

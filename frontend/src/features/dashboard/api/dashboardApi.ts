@@ -1,0 +1,90 @@
+import { httpClient } from '../../../shared/api/httpClient'
+import { getSession } from '../../../shared/auth/session'
+import type { SessionContext } from '../../../shared/auth/types'
+
+export type UnitContext = NonNullable<SessionContext['unit']>
+
+export type SituationCount = {
+  situation: 'active' | 'maintenance' | 'attention' | 'inactive' | 'lost' | 'written_off'
+  label: string
+  count: number
+}
+
+export type Activity = {
+  id: string
+  description: string
+  occurredAt: string
+}
+
+export type UnitDashboard = {
+  unit: UnitContext
+  metrics: {
+    total: number
+    active: number
+    maintenance: number
+    attention: number
+  }
+  situations: SituationCount[]
+  unitSummaries?: Array<{
+    unit: UnitContext
+    coverage: string
+    equipment: number
+    attention: number
+  }>
+  recentActivity: Activity[]
+}
+
+type LegacyDashboardResponse = {
+  equipmentTotal: number
+  activeEquipmentTotal: number
+  maintenanceEquipmentTotal: number
+}
+
+function isUnitDashboard(response: UnitDashboard | LegacyDashboardResponse): response is UnitDashboard {
+  return 'metrics' in response
+}
+
+export function getUnitDashboard(): Promise<UnitDashboard> {
+  const unit = getSession()?.unit
+  if (!unit) {
+    return Promise.reject(new Error('Uma sessão autenticada de Unidade é obrigatória.'))
+  }
+
+  return httpClient<UnitDashboard | LegacyDashboardResponse>('/dashboard').then((response) => {
+    if (isUnitDashboard(response)) return response
+
+    return {
+      unit,
+      metrics: {
+        total: response.equipmentTotal,
+        active: response.activeEquipmentTotal,
+        maintenance: response.maintenanceEquipmentTotal,
+        attention: 0,
+      },
+      situations: [
+        { situation: 'active', label: 'Em operação', count: response.activeEquipmentTotal },
+        { situation: 'maintenance', label: 'Em manutenção', count: response.maintenanceEquipmentTotal },
+      ],
+      recentActivity: [],
+    }
+  })
+}
+
+export function getDashboard(): Promise<UnitDashboard> {
+  const session = getSession()
+  if (!session) {
+    return Promise.reject(new Error('Uma sessão autenticada é obrigatória.'))
+  }
+
+  if (session.role === 'ditel_admin') {
+    return httpClient<UnitDashboard>('/dashboard').then((response) => ({
+      unit: response.unit,
+      metrics: response.metrics,
+      situations: response.situations ?? [],
+      ...(response.unitSummaries ? { unitSummaries: response.unitSummaries } : {}),
+      recentActivity: response.recentActivity ?? [],
+    }))
+  }
+
+  return getUnitDashboard()
+}

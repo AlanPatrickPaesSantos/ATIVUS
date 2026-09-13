@@ -1,0 +1,12 @@
+import { httpClient } from '../../../shared/api/httpClient'
+export type AdminUserApi = { id: string; name: string; registration: string; role: 'ditel_admin' | 'unit_user'; situation: 'active' | 'blocked' | 'inactive'; unit: { id: string; name: string; acronym: string } | null; createdAt: string; updatedAt: string }
+export type AdminUsersResponse = { items: AdminUserApi[]; total: number; page: number; pageSize: number }
+export type AdminUsersQuery = { page: number; pageSize: number; search?: string; role?: AdminUserApi['role']; unitId?: string; situation?: 'Ativo' | 'Bloqueado' | 'Inativo' }
+export function getAdminUsers(query: AdminUsersQuery) { const params = new URLSearchParams({ page: String(query.page), pageSize: String(query.pageSize) }); if (query.search) params.set('search', query.search); if (query.role) params.set('role', query.role); if (query.unitId) params.set('unitId', query.unitId); if (query.situation) params.set('situation', query.situation); return httpClient<AdminUsersResponse>(`/admin/users?${params.toString()}`) }
+export type AdminUserCreateRequest = { name: string; registration: string; role: 'ditel_admin'; password: string; unit?: null } | { name: string; registration: string; role: 'unit_user'; password: string; unit: { id: string; name: string; acronym: string } }
+export function createAdminUser(input: AdminUserCreateRequest) { return httpClient<AdminUserApi>('/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }) }
+export type AdminUserUpdateRequest = { name: string; registration: string; role: 'ditel_admin'; unit: null; updatedAt: string } | { name: string; registration: string; role: 'unit_user'; unit: { id: string; name: string; acronym: string }; updatedAt: string }
+export function updateAdminUser(userId: string, input: AdminUserUpdateRequest) { return httpClient<AdminUserApi>(`/admin/users/${encodeURIComponent(userId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }) }
+export type AdminUserMutableSituation = 'active' | 'blocked'
+export type AdminUserSituationUpdateResponse = { id: string; situation: AdminUserMutableSituation }
+export function updateAdminUserSituation(userId: string, situation: AdminUserMutableSituation) { return httpClient<AdminUserSituationUpdateResponse>(`/admin/users/${encodeURIComponent(userId)}/situation`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ situation }) }) }
