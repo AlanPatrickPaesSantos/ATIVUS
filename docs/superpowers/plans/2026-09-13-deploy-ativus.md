@@ -32,8 +32,8 @@
 - ops:homolog:bootstrap → índices criados (AuditEvent 7, Mission 2, Unit 1) ✅
 - **Migration user-situation**: rodado 2x → idempotente confirmada (0 modificações na 2ª) ✅
 - **Primeiro admin DITEL**: ADMIN / matrícula ADMIN / bcrypt hash / mustChangePassword=true ✅
-- **Usuário unit**: UNIT001 / SENHA ROTACIONADA — removida do histórico / unidade-teste ✅
-- **2ª unidade + user**: unidade-2 / UNIT002 / SENHA ROTACIONADA2 — removida do histórico ✅
+- **Usuário unit**: UNIT001 / senha omitida / unidade-teste ✅
+- **2ª unidade + user**: unidade-2 / UNIT002 / senha omitida / unidade-2 ✅
 - **Equipamentos**: PAT-001 (unidade-teste), PAT-002 (unidade-2) ✅
 
 ### Fase 6 — Smoke Test Final Hosted ✅
