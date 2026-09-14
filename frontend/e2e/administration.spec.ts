@@ -18,9 +18,9 @@ test('DITEL opens unit details and sees real inventory, calls, users', async ({ 
   await dialog.getByRole('tab', { name: 'Inventário' }).click()
   await expect(dialog.getByText(/Patrimônio|PAT-|Carregando inventário/)).toBeVisible()
 
-  // Chamados — chamado real aberto pela unidade
+  // Chamados — chamado real aberto pela unidade (unit-centro tem 3 no seed)
   await dialog.getByRole('tab', { name: 'Chamados' }).click()
-  await expect(dialog.getByText(/Carregando chamados|Nenhum chamado|Ver chamado|protocolo|PROT-/)).toBeVisible()
+  await expect(dialog.getByText(/Carregando chamados|Nenhum chamado|Rádio operacional indisponível|Enlace de dados instável|Impressora do arquivo sem resposta/)).toBeVisible()
 
   // Usuários — usuário real da unidade
   await dialog.getByRole('tab', { name: 'Usuários' }).click()

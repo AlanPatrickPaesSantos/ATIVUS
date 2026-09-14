@@ -36,6 +36,14 @@ export default defineConfig(({ command }) => {
       environment: 'jsdom',
       globals: true,
       testTimeout: 15000,
+      setupFiles: ['src/test/setup.ts'],
+      environmentOptions: {
+        jsdom: {
+          // Habilita o virtualConsole do jsdom conectado ao console do worker,
+          // permitindo ao setup silenciar "Not implemented: navigation..." (downloads blob).
+          console: true,
+        },
+      },
     },
   }
 })
