@@ -7,8 +7,6 @@ export type NavigationItem = {
   href: string
   icon?: ReactNode
   requires?: string
-  /** Itens secundários: movem para "Mais ações" em desktop compacto/tablet. */
-  secondary?: boolean
 }
 
 export type AppContext = {
@@ -86,15 +84,14 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
   const shouldHideSearch = layout !== 'desktop-wide'
   const activeItem = items.find((item) => item.href === activePath)
 
-  // Desktop/tablet overflow: modules flagged as `secondary` (Missões técnicas,
-  // Tipos, Auditoria, Administração) move to "Mais ações" on compact widths;
-  // core modules (Painel… Manutenção) always stay visible. On tablet, cap the
-  // bar to 4 visible items to avoid crowding.
-  const showOverflow = (layout === 'desktop' || layout === 'tablet') && items.some((item) => item.secondary)
-  const overflowItems = showOverflow ? items.filter((item) => item.secondary) : []
-  const visibleItems = showOverflow
-    ? (layout === 'tablet' ? items.filter((item) => !item.secondary).slice(0, 4) : items.filter((item) => !item.secondary))
-    : items
+  // Desktop/tablet overflow: desktop-wide keeps ALL official modules visible.
+  // Compact desktop keeps the 6 core modules (Painel… Manutenção) and moves
+  // the trailing module (Administração) to "Mais ações"; tablet shows 4.
+  const showOverflow = layout === 'desktop' || layout === 'tablet'
+  const barSize = layout === 'desktop' ? 6 : 4
+  // desktop-wide (largest) shows every module; only compact/tablet overflow.
+  const visibleItems = (layout === 'desktop-wide') ? items : (showOverflow ? items.slice(0, barSize) : items)
+  const overflowItems = (layout === 'desktop-wide') ? [] : (showOverflow ? items.slice(barSize) : [])
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {

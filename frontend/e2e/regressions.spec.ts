@@ -14,26 +14,32 @@ test.describe('regressões visuais das páginas de governança', () => {
     await signInDitel(page)
     await page.setViewportSize({ width: 1280, height: 800 })
 
-    // Layout desktop compacto: secundários atrás de "Mais ações"
+    // Layout desktop compacto: módulo excedente atrás de "Mais ações"
     const nav = page.locator('.top-nav')
     await expect(nav).toHaveAttribute('data-layout', 'desktop')
     const moreButton = page.getByRole('button', { name: 'Mais ações' })
     await expect(moreButton).toBeVisible()
 
-    // Nenhum overlap: o end (contexto + perfil) começa depois do último módulo visível
+    // Sem overlap: o end (contexto + perfil) começa depois do último módulo visível
     const endBox = await page.locator('.top-nav__end').boundingBox()
     const lastLinkBox = await page.locator('.top-nav__modules li:not([hidden]) .top-nav__link').last().boundingBox()
     expect(endBox!.x).toBeGreaterThan(lastLinkBox!.x + lastLinkBox!.width)
 
-    // Abre o menu Mais sem sobrepor o contexto
+    // Menu oficial na barra; só Administração (excedente) fica atrás de "Mais"
+    for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Manutenção']) {
+      await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible()
+    }
+    // Módulos não oficiais NÃO aparecem nem na barra nem no menu Mais
     await moreButton.click()
     const menu = page.getByRole('menu', { name: 'Mais ações' })
     await expect(menu).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: /Missões técnicas/i })).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: /Auditoria/i })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Administração', exact: true })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: /Missões técnicas/i })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: /Tipos de equipamento/i })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: /Auditoria/i })).toHaveCount(0)
   })
 
-  test('TopNav tablet usa Mais ações para os itens secundários', async ({ page }) => {
+  test('TopNav tablet usa Mais ações para os módulos excedentes', async ({ page }) => {
     await signInDitel(page)
     await page.setViewportSize({ width: 850, height: 800 })
 
@@ -41,7 +47,12 @@ test.describe('regressões visuais das páginas de governança', () => {
     const moreButton = page.getByRole('button', { name: 'Mais ações' })
     await expect(moreButton).toBeVisible()
     await moreButton.click()
-    await expect(page.getByRole('menu', { name: 'Mais ações' })).toBeVisible()
+    const menu = page.getByRole('menu', { name: 'Mais ações' })
+    await expect(menu).toBeVisible()
+    // Módulos não oficiais nunca aparecem no menu
+    await expect(page.getByRole('menuitem', { name: /Missões técnicas/i })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: /Tipos de equipamento/i })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: /Auditoria/i })).toHaveCount(0)
   })
 
   test('/manutencao renderiza layout estilizado, filtros e empty state/card', async ({ page }) => {

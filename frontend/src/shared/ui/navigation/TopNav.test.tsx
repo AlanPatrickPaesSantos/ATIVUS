@@ -5,13 +5,15 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach } from 'vitest'
 import { TopNav, type AppContext, type NavigationItem } from './TopNav'
 
+// Menu oficial: 7 módulos (admin DITEL). Sem Missões técnicas / Tipos / Auditoria.
 const navigation: NavigationItem[] = [
   { label: 'Painel', href: '/painel', icon: '◈' },
-  { label: 'Patrimônio', href: '/patrimonio', icon: '▣' },
+  { label: 'Inventário', href: '/inventario', icon: '▣' },
+  { label: 'Chamados', href: '/chamados', icon: '◌' },
   { label: 'Movimentações', href: '/movimentacoes', icon: '↔' },
   { label: 'Relatórios', href: '/relatorios', icon: '▤' },
-  { label: 'Missões técnicas', href: '/missoes-tecnicas', icon: '⚑', secondary: true },
-  { label: 'Auditoria', href: '/auditoria', icon: '◈', secondary: true },
+  { label: 'Manutenção', href: '/manutencao', icon: '⚒' },
+  { label: 'Administração', href: '/administracao', icon: '⚙' },
 ]
 
 const context: AppContext = {
@@ -30,10 +32,10 @@ function setViewport(width: number) {
   })))
 }
 
-function renderTopNav(activePath: string, onLogout = () => undefined) {
+function renderTopNav(activePath: string, onLogout = () => undefined, items = navigation) {
   return render(
     <MemoryRouter>
-      <TopNav items={navigation} activePath={activePath} context={context} onLogout={onLogout} />
+      <TopNav items={items} activePath={activePath} context={context} onLogout={onLogout} />
     </MemoryRouter>,
   )
 }
@@ -42,13 +44,13 @@ beforeEach(() => setViewport(2200))
 afterEach(() => vi.unstubAllGlobals())
 
 test('marks the active module and shows the unit context', () => {
-  renderTopNav('/patrimonio')
+  renderTopNav('/inventario')
 
   expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument()
   expect(screen.getByRole('list', { name: '' })).toHaveAttribute('data-alignment', 'page-center')
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' }).closest('.top-nav__search')).toHaveAttribute('data-alignment', 'available-center')
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' }).closest('.top-nav__search')).toHaveAttribute('data-actions-gap', 'comfortable')
-  expect(screen.getByRole('link', { name: /patrimônio/i })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: /inventário/i })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' })).toBeInTheDocument()
   expect(screen.getByText('Unidade Centro', { selector: '.top-nav__context strong' })).toBeInTheDocument()
 })
@@ -61,9 +63,9 @@ test('keeps the brand corner free of decorative symbols', () => {
 })
 
 test('exposes the active module as the current operational destination', () => {
-  renderTopNav('/patrimonio')
+  renderTopNav('/inventario')
 
-  expect(screen.getByRole('link', { name: /patrimônio/i })).toHaveAttribute('data-nav-state', 'active')
+  expect(screen.getByRole('link', { name: /inventário/i })).toHaveAttribute('data-nav-state', 'active')
   expect(screen.getByRole('link', { name: 'Painel' })).toHaveAttribute('data-nav-state', 'idle')
 })
 
@@ -82,36 +84,46 @@ test('opens the profile menu by keyboard and provides an explicit logout action'
   expect(onLogout).toHaveBeenCalledOnce()
 })
 
-test('desktop-wide shows all modules and the search without overlap', () => {
+test('desktop-wide shows all official modules and the search without overlap', () => {
   setViewport(2200)
   renderTopNav('/painel')
 
   expect(screen.getByRole('navigation')).toHaveAttribute('data-layout', 'desktop-wide')
-  // Todos os módulos visíveis, inclusive secundários
-  expect(screen.getByRole('link', { name: /missões técnicas/i })).toBeVisible()
-  expect(screen.getByRole('link', { name: /auditoria/i })).toBeVisible()
-  expect(screen.queryByRole('button', { name: 'Mais ações' })).not.toBeInTheDocument()
-  // Busca visível
+  for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Manutenção', 'Administração']) {
+    expect(screen.getByRole('link', { name: label, exact: true })).toBeVisible()
+  }
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' })).toBeVisible()
+  // Módulos removidos do menu oficial não aparecem
+  expect(screen.queryByRole('link', { name: /missões técnicas/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /tipos de equipamento/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument()
 })
 
-test('desktop compact hides secondary modules behind Mais and never overlaps the context', () => {
+test('desktop compact moves trailing modules behind Mais without hiding official modules', async () => {
+  const user = userEvent.setup()
   setViewport(1200)
-  renderTopNav('/auditoria')
+  renderTopNav('/painel')
 
   const nav = screen.getByRole('navigation')
   expect(nav).toHaveAttribute('data-layout', 'desktop')
 
   const moreButton = screen.getByRole('button', { name: 'Mais ações' })
-  // Secundários NÃO aparecem como links da barra; ficam só no menu Mais
-  expect(screen.queryByRole('link', { name: /missões técnicas/i })).not.toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument()
-  // Abrir Mais mostra os itens secundários com aria correto
   expect(moreButton).toHaveAttribute('aria-haspopup', 'menu')
   expect(moreButton).toHaveAttribute('aria-expanded', 'false')
+
+  // Núcleo oficial visível na barra; módulo excedente atrás de "Mais"
+  const visibleInBar = screen.queryByRole('link', { name: 'Administração' })
+  expect(screen.getByRole('link', { name: /manutenção/i })).toBeInTheDocument()
+
+  // Módulos removidos nunca aparecem, nem no menu Mais
+  await user.click(moreButton)
+  expect(screen.queryByRole('menuitem', { name: /missões técnicas/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('menuitem', { name: /tipos de equipamento/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('menuitem', { name: /auditoria/i })).not.toBeInTheDocument()
+  expect(visibleInBar ?? screen.getByRole('menuitem', { name: 'Administração' })).toBeInTheDocument()
 })
 
-test('opens Mais menu, navigates to secondary item and closes', async () => {
+test('opens Mais menu, navigates to trailing module and closes', async () => {
   const user = userEvent.setup()
   setViewport(1200)
   renderTopNav('/painel')
@@ -120,11 +132,9 @@ test('opens Mais menu, navigates to secondary item and closes', async () => {
   await user.click(moreButton)
 
   expect(moreButton).toHaveAttribute('aria-expanded', 'true')
-  const menu = screen.getByRole('menu', { name: 'Mais ações' })
-  expect(menu).toBeVisible()
-  expect(screen.getByRole('menuitem', { name: /auditoria/i })).toBeVisible()
+  expect(screen.getByRole('menu', { name: 'Mais ações' })).toBeVisible()
 
-  await user.click(screen.getByRole('menuitem', { name: /auditoria/i }))
+  await user.click(screen.getByRole('menuitem', { name: /administração/i }))
   expect(moreButton).toHaveAttribute('aria-expanded', 'false')
 })
 
@@ -141,24 +151,25 @@ test('closes Mais menu on Escape and returns focus', async () => {
   expect(moreButton).toHaveAttribute('aria-expanded', 'false')
 })
 
-test('tablet layout keeps primary modules and moves secondary to Mais', () => {
+test('tablet layout keeps core modules and moves trailing modules to Mais', () => {
   setViewport(800)
   renderTopNav('/movimentacoes')
 
   const nav = screen.getByRole('navigation')
   expect(nav).toHaveAttribute('data-layout', 'tablet')
   expect(screen.getByRole('link', { name: 'Painel' })).not.toHaveAttribute('hidden')
-  expect(screen.getByRole('link', { name: /patrimônio/i })).not.toHaveAttribute('hidden')
+  expect(screen.getByRole('link', { name: /inventário/i })).not.toHaveAttribute('hidden')
   expect(screen.getByRole('button', { name: 'Mais ações' })).not.toHaveAttribute('hidden')
-  // Secundários saem da barra
-  expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument()
+  // Manutenção e Administração ficam atrás de Mais no tablet
+  expect(screen.queryByRole('link', { name: /manutenção/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /administração/i })).not.toBeInTheDocument()
 })
 
 test('opens and closes the mobile menu with current module and context visible', async () => {
   const user = userEvent.setup()
   setViewport(480)
 
-  renderTopNav('/patrimonio')
+  renderTopNav('/inventario')
 
   const menuButton = screen.getByRole('button', { name: 'Menu' })
   expect(screen.getByRole('navigation')).toHaveAttribute('data-layout', 'mobile')
@@ -166,7 +177,7 @@ test('opens and closes the mobile menu with current module and context visible',
 
   expect(menuButton).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByText('Módulo atual')).toBeInTheDocument()
-  expect(screen.getByText('Patrimônio', { selector: '.top-nav__mobile-context strong' })).toBeInTheDocument()
+  expect(screen.getByText('Inventário', { selector: '.top-nav__mobile-context strong' })).toBeInTheDocument()
   expect(screen.getByText('Unidade Centro', { selector: '.top-nav__mobile-context span' })).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Fechar menu' }))

@@ -14,7 +14,6 @@ export type NavigationItem = {
   href: string
   icon?: string
   requires?: string
-  secondary?: boolean
 }
 
 export type SessionAdapter = {
