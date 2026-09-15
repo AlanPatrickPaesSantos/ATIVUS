@@ -12,6 +12,7 @@ import { AuthError, createSessionService, type SessionService } from './auth/ses
 import { env } from './config/env.js';
 import { readDatabaseReadiness } from './database/mongoose.js';
 import { createRequireSession } from './middlewares/requireSession.js';
+import { createCorsMiddleware } from './middlewares/corsMiddleware.js';
 import { createRequireTrustedOrigin } from './middlewares/requireTrustedOrigin.js';
 import { isAuditPersistenceError } from './repositories/auditRepository.js';
 import { createAuthRoutes } from './routes/authRoutes.js';
@@ -99,10 +100,14 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const requireTrustedOrigin = createRequireTrustedOrigin(
     resolveOriginProtectionOptions(options.authSecurity?.originProtection),
   );
+  const corsMiddleware = createCorsMiddleware(
+    resolveOriginProtectionOptions(options.authSecurity?.originProtection),
+  );
   const requireSession = createRequireSession(sessionService);
   const sessionCookieSecure = options.sessionCookieSecure ?? env.SESSION_COOKIE_SECURE;
 
   app.use(express.json());
+  app.use('/api/v1', corsMiddleware);
   app.use('/api/v1', requireTrustedOrigin);
 
   app.get('/api/v1/health', (_req, res) => {

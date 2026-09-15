@@ -337,4 +337,87 @@ describe('auth security protections', () => {
     });
     expect(sessionResponse.status).toBe(200);
   });
+
+  it('answers OPTIONS preflight from an allowed origin with CORS headers', async () => {
+    const app = createSecuredApp();
+
+    const preflight = await request(app)
+      .options('/api/v1/auth/login')
+      .set('Origin', 'https://sigat.local')
+      .set('Access-Control-Request-Method', 'POST');
+
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers['access-control-allow-origin']).toBe('https://sigat.local');
+    expect(preflight.headers['access-control-allow-credentials']).toBe('true');
+    expect(preflight.headers['access-control-allow-headers']).toBe('Content-Type');
+    expect(preflight.headers['access-control-allow-methods']).toBe('GET,POST,PATCH,DELETE,OPTIONS');
+    expect(String(preflight.headers.vary)).toContain('Origin');
+  });
+
+  it('returns Access-Control-Allow-Origin on POST login from an allowed origin', async () => {
+    await seedUser();
+    const app = createSecuredApp();
+
+    const loginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://sigat.local')
+      .send({ registration: 'secure-user', password: 'senha-segura' });
+
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.headers['access-control-allow-origin']).toBe('https://sigat.local');
+    expect(loginResponse.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('returns Access-Control-Allow-Origin on GET session from an allowed origin', async () => {
+    await seedUser();
+    const agent = request.agent(createSecuredApp());
+
+    const loginResponse = await agent
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://sigat.local')
+      .send({ registration: 'secure-user', password: 'senha-segura' });
+    expect(loginResponse.status).toBe(200);
+
+    const sessionResponse = await agent
+      .get('/api/v1/session')
+      .set('Origin', 'https://sigat.local');
+
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.headers['access-control-allow-origin']).toBe('https://sigat.local');
+    expect(sessionResponse.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('does not emit Access-Control-Allow-Origin for a disallowed origin', async () => {
+    const app = createSecuredApp();
+
+    const preflight = await request(app)
+      .options('/api/v1/auth/login')
+      .set('Origin', 'https://evil.example')
+      .set('Access-Control-Request-Method', 'POST');
+    const loginAttempt = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://evil.example')
+      .send({ registration: 'spray-unknown', password: 'senha-errada' });
+
+    expect(preflight.headers['access-control-allow-origin']).toBeUndefined();
+    expect(loginAttempt.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('still allows state-changing requests with cookie from an allowed origin', async () => {
+    await seedUser();
+    const agent = request.agent(createSecuredApp());
+
+    const loginResponse = await agent
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://sigat.local')
+      .send({ registration: 'secure-user', password: 'senha-segura' });
+    expect(loginResponse.status).toBe(200);
+
+    const logoutResponse = await agent
+      .post('/api/v1/auth/logout')
+      .set('Origin', 'https://sigat.local');
+
+    expect(logoutResponse.status).toBe(204);
+    expect(logoutResponse.headers['access-control-allow-origin']).toBe('https://sigat.local');
+  });
 });
