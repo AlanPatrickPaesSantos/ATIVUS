@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
@@ -57,21 +58,25 @@ export function EquipmentTypesPage({ session: _session }: { session: SessionCont
       <div className="equipment-types-list" role="table" aria-label="Tipos de equipamento">
         <div className="equipment-types-list__header" role="row">
           <span role="columnheader">Nome</span>
-          <span role="columnheader">Descrição</span>
-          <span role="columnheader">Situação</span>
+          <span role="columnheader" className="equipment-types-list__desc">Descrição</span>
+          <span role="columnheader" className="equipment-types-list__status">Situação</span>
           <span role="columnheader">Ações</span>
         </div>
         {typesQuery.data?.items.length ? typesQuery.data.items.map((item) => (
           <div className="equipment-types-list__row" role="row" key={item.id}>
             <span role="cell"><strong>{item.name}</strong></span>
-            <span role="cell">{item.description || '—'}</span>
-            <span role="cell">{item.active ? 'Ativo' : 'Inativo'}</span>
+            <span role="cell" className="equipment-types-list__desc">{item.description || '—'}</span>
+            <span role="cell" className="equipment-types-list__status">{item.active ? 'Ativo' : 'Inativo'}</span>
             <span role="cell">
               {item.active ? <button type="button" className="button-link" onClick={() => { setErrorMessage(null); setEditing({ id: item.id, name: item.name, description: item.description }) }}>Editar</button> : null}
               {item.active ? <button type="button" className="button-link button-link--danger" onClick={() => { if (window.confirm(`Desativar o tipo "${item.name}"?`)) submitDeactivate(item) }}>Desativar</button> : <small>Desativado</small>}
             </span>
           </div>
-        )) : <p className="equipment-types-list__empty">Nenhum tipo cadastrado.</p>}
+        )) : (
+          <div className="equipment-types-list__empty" role="row">
+            <span role="cell"><EmptyState title="Nenhum tipo cadastrado" description="Cadastre o primeiro tipo para começar a catalogar equipamentos." /></span>
+          </div>
+        )}
       </div>
     ) : null}
 

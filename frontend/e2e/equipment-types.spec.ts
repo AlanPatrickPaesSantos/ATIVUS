@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 async function signInDitel(page: import('@playwright/test').Page) {
   await page.goto('/login')
@@ -10,7 +11,7 @@ async function signInDitel(page: import('@playwright/test').Page) {
 
 test('DITEL manages equipment types catalog', async ({ page }) => {
   await signInDitel(page)
-  await page.getByRole('link', { name: 'Tipos de equipamento', exact: true }).click()
+  await spaNavigate(page, '/tipos-equipamento')
   await expect(page).toHaveURL(/tipos-equipamento/)
 
   await expect(page.getByRole('heading', { name: 'Tipos de equipamento' })).toBeVisible({ timeout: 15000 })

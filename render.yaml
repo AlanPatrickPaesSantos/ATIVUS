@@ -1,0 +1,41 @@
+packages:
+  sigat-backend@0.0.0:
+    type: web
+    name: ativus-backend
+    env: node
+    plan: free
+    repo: alanpatrickpaessantos/ativus
+    branch: master
+    rootDirectory: backend
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_SAME_SITE
+        value: none
+      - key: ALLOWED_ORIGINS
+        value: ""
+  sigat-frontend@0.0.0:
+    type: static
+    name: ativus-frontend
+    plan: free
+    repo: alanpatrickpaessantos/ativus
+    branch: master
+    rootDirectory: frontend
+    buildCommand: npm ci && npm run build
+    publishDirectory: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ativus.onrender.com/api/v1
+      - key: VITE_ENABLE_MSW
+        value: "false"
+    # Serve a SPA: qualquer rota (profunda /dashboard, /manutencao,
+    # /missoes-tecnicas, /tipos-equipamento, /auditoria, /administracao)
+    # deve responder com index.html para o React Router resolver.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

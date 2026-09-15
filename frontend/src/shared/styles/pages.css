@@ -1,0 +1,513 @@
+/* ============================================================================
+   Páginas de governança estadual (Manutenção DITEL, Missões, Tipos, Auditoria)
+   Camada visual institucional — mesmo padrão de módulos/consoles existentes.
+   ============================================================================ */
+
+/* ---------- Manutenções DITEL ---------- */
+.maintenance-page { margin: 0 auto; max-width: 100rem; }
+.maintenance-page .page-eyebrow { color: var(--sigat-muted); }
+.maintenance-page__header {
+  align-items: end;
+  border-bottom: 1px solid var(--sigat-border);
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: .35rem 0 1.25rem;
+}
+.maintenance-page__header h1 {
+  color: var(--sigat-text);
+  font-family: var(--font-title);
+  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  letter-spacing: 0;
+  margin: .25rem 0;
+}
+.maintenance-page__header p:last-child { color: var(--sigat-muted); margin: 0; }
+
+.maintenance-page__filters {
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: 1rem;
+  padding: .7rem .8rem;
+}
+.maintenance-page__filters button {
+  background: transparent;
+  border: 1px solid var(--sigat-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--sigat-muted);
+  cursor: pointer;
+  font-size: .72rem;
+  min-height: 2rem;
+  padding: .35rem .7rem;
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+}
+.maintenance-page__filters button:hover:not(.is-active) { border-color: var(--sigat-operational-bright); color: var(--sigat-text); }
+.maintenance-page__filters button.is-active {
+  background: rgb(22 119 255 / 12%);
+  border-color: var(--sigat-operational-bright);
+  color: var(--sigat-operational-bright);
+  font-weight: 700;
+}
+
+.maintenance-table {
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-top: 3px solid var(--sigat-operational);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+  overflow: hidden;
+}
+.maintenance-table__header,
+.maintenance-table__row {
+  align-items: center;
+  border-bottom: 1px solid var(--sigat-border);
+  display: grid;
+  gap: .9rem;
+  grid-template-columns: minmax(12rem, 1.2fr) minmax(14rem, 1.4fr) minmax(7rem, .5fr) minmax(8rem, .55fr) auto;
+  padding: .75rem .85rem;
+}
+.maintenance-table__row:last-child { border-bottom: 0; }
+.maintenance-table__header {
+  background: var(--sigat-night-raised);
+  color: var(--sigat-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.maintenance-table__row:not(.maintenance-table__header):hover { background: rgb(22 119 255 / 7%); }
+.maintenance-table__row > span { color: var(--sigat-muted); font-size: .78rem; }
+.maintenance-table__main {
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--sigat-operational);
+  color: var(--sigat-text);
+  cursor: pointer;
+  display: grid;
+  gap: .22rem;
+  padding: .1rem 0 .1rem .55rem;
+  text-align: left;
+}
+.maintenance-table__main strong { font-family: var(--font-identifier); font-size: .8rem; }
+.maintenance-table__main small { color: var(--sigat-muted); font-family: var(--font-interface); font-size: .7rem; }
+.maintenance-table__main:hover strong { color: var(--sigat-operational-bright); }
+.maintenance-table__empty {
+  background: var(--sigat-surface);
+  border: 1px dashed var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-muted);
+  font-size: .82rem;
+  margin: 0;
+  padding: 2.2rem 1rem;
+  text-align: center;
+}
+
+/* ---------- Missões técnicas (DITEL + unidade) ---------- */
+.missions-page { margin: 0 auto; max-width: 92rem; }
+.missions-page .page-eyebrow { color: var(--sigat-muted); }
+.section.missions-page.module-panel,
+.missions-page.module-panel {
+  padding: 1.15rem;
+}
+.missions-page.module-panel .module-panel__header {
+  align-items: end;
+  border-bottom: 1px solid var(--sigat-border);
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin: -.15rem 0 1.1rem;
+  padding: .35rem 0 1.1rem;
+}
+.missions-page.module-panel .module-panel__header h1 {
+  color: var(--sigat-text);
+  font-family: var(--font-title);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  letter-spacing: 0;
+  margin: .25rem 0;
+}
+.missions-page.module-panel .module-panel__header p:last-child { color: var(--sigat-muted); margin: 0; }
+.missions-page.module-panel .module-panel__actions { display: flex; gap: .55rem; }
+
+.missions-list {
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-top: 3px solid var(--sigat-operational);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+  overflow: hidden;
+}
+.missions-list__header,
+.missions-list__row {
+  align-items: center;
+  border-bottom: 1px solid var(--sigat-border);
+  display: grid;
+  gap: .9rem;
+  grid-template-columns: minmax(14rem, 1.6fr) minmax(10rem, .9fr) minmax(8rem, .7fr) minmax(8rem, .6fr) auto;
+  padding: .75rem .85rem;
+}
+.missions-list__row:last-child { border-bottom: 0; }
+.missions-list__header {
+  background: var(--sigat-night-raised);
+  color: var(--sigat-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.missions-list__row {
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.missions-list__row:hover { background: rgb(22 119 255 / 7%); }
+.missions-list__row > span { color: var(--sigat-muted); font-size: .78rem; }
+.missions-list__row strong { color: var(--sigat-text); font-size: .82rem; }
+.missions-list__empty {
+  background: var(--sigat-surface);
+  border: 1px dashed var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-muted);
+  font-size: .82rem;
+  margin: 0;
+  padding: 2.2rem 1rem;
+  text-align: center;
+}
+
+.form-error {
+  background: rgb(228 101 80 / 11%);
+  border-left: 2px solid var(--sigat-critical);
+  color: #ff9b8c;
+  font-size: .78rem;
+  margin: .6rem 0 0;
+  padding: .55rem .7rem;
+}
+
+/* Formulários dentro dos modais de missão/tipo */
+.mission-form, .equipment-type-form { display: grid; gap: .9rem; }
+.mission-form label, .equipment-type-form label { color: var(--sigat-muted); display: grid; font-size: .74rem; font-weight: 700; gap: .4rem; }
+.mission-form label b { color: var(--sigat-operational-bright); }
+.mission-form input, .mission-form select, .mission-form textarea,
+.equipment-type-form input, .equipment-type-form textarea {
+  background: var(--sigat-night-raised);
+  border: 1px solid var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-text);
+  font-family: var(--font-interface);
+  font-size: .84rem;
+  min-height: 2.55rem;
+  padding: .55rem .7rem;
+  resize: vertical;
+  width: 100%;
+}
+.mission-form input:focus, .mission-form select:focus, .mission-form textarea:focus,
+.equipment-type-form input:focus, .equipment-type-form textarea:focus {
+  border-color: var(--sigat-operational-bright);
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+
+.mission-detail { display: grid; gap: 1rem; }
+.mission-detail > p:not(.page-eyebrow) { color: var(--sigat-muted); font-size: .85rem; line-height: 1.5; margin: 0; }
+.mission-detail__meta {
+  border-bottom: 1px solid var(--sigat-border);
+  border-top: 1px solid var(--sigat-border);
+  display: grid;
+  gap: .9rem 1.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: .2rem 0 0;
+  padding: .9rem 0;
+}
+.mission-detail__meta dt, .mission-detail__notes h4 { color: var(--sigat-muted); font-size: .66rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.mission-detail__meta dd { color: var(--sigat-text); font-size: .84rem; margin: .25rem 0 0; }
+.mission-detail__notes {
+  background: var(--sigat-night-raised);
+  border: 1px solid var(--sigat-border);
+  padding: .85rem;
+}
+.mission-detail__notes h4 { margin: 0 0 .5rem; }
+.mission-detail__notes ul { display: grid; gap: .45rem; list-style: none; margin: 0; padding: 0; }
+.mission-detail__notes li { color: var(--sigat-muted); font-size: .8rem; line-height: 1.45; }
+.mission-detail__notes li strong { color: var(--sigat-operational-bright); }
+.mission-detail__equipment {
+  background: var(--sigat-night-raised);
+  border: 1px solid var(--sigat-border);
+  padding: .85rem;
+}
+.mission-detail__equipment h4 { color: var(--sigat-muted); font-size: .66rem; font-weight: 800; letter-spacing: .04em; margin: 0 0 .5rem; text-transform: uppercase; }
+.mission-detail__equipment ul { display: grid; gap: .35rem; list-style: none; margin: 0; padding: 0; }
+.mission-detail__equipment li { color: var(--sigat-text); font-family: var(--font-identifier); font-size: .78rem; }
+
+/* ---------- Tipos de equipamento ---------- */
+.equipment-types-page { margin: 0 auto; max-width: 76rem; }
+.equipment-types-page .page-eyebrow { color: var(--sigat-muted); }
+.equipment-types-page.module-panel { padding: 1.15rem; }
+.equipment-types-page.module-panel .module-panel__header {
+  align-items: end;
+  border-bottom: 1px solid var(--sigat-border);
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin: -.15rem 0 1.1rem;
+  padding: .35rem 0 1.1rem;
+}
+.equipment-types-page.module-panel .module-panel__header h1 {
+  color: var(--sigat-text);
+  font-family: var(--font-title);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  letter-spacing: 0;
+  margin: .25rem 0;
+}
+.equipment-types-page.module-panel .module-panel__header p:last-child { color: var(--sigat-muted); margin: 0; }
+.equipment-types-page.module-panel .module-panel__actions { display: flex; gap: .55rem; }
+
+.equipment-types-list {
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-top: 3px solid var(--sigat-operational);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+  overflow: hidden;
+}
+.equipment-types-list__header,
+.equipment-types-list__row {
+  align-items: center;
+  border-bottom: 1px solid var(--sigat-border);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(12rem, 1.2fr) minmax(16rem, 1.6fr) minmax(7rem, .5fr) auto;
+  padding: .75rem .85rem;
+}
+.equipment-types-list__row:last-child { border-bottom: 0; }
+.equipment-types-list__header {
+  background: var(--sigat-night-raised);
+  color: var(--sigat-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.equipment-types-list__row:hover { background: rgb(22 119 255 / 7%); }
+.equipment-types-list__row > span { color: var(--sigat-muted); font-size: .78rem; }
+.equipment-types-list__row strong { color: var(--sigat-text); font-size: .82rem; }
+.equipment-types-list__row small { color: var(--sigat-subtle); font-size: .72rem; }
+.equipment-types-list__empty {
+  background: var(--sigat-surface);
+  border: 1px dashed var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-muted);
+  font-size: .82rem;
+  margin: 0;
+  padding: 2.2rem 1rem;
+  text-align: center;
+}
+
+/* ---------- Auditoria ---------- */
+.audit-page { margin: 0 auto; max-width: 100rem; }
+.audit-page .page-eyebrow { color: var(--sigat-muted); }
+.audit-page.module-panel { padding: 1.15rem; }
+.audit-page.module-panel .module-panel__header {
+  align-items: end;
+  border-bottom: 1px solid var(--sigat-border);
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin: -.15rem 0 1.1rem;
+  padding: .35rem 0 1.1rem;
+}
+.audit-page.module-panel .module-panel__header h1 {
+  color: var(--sigat-text);
+  font-family: var(--font-title);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  letter-spacing: 0;
+  margin: .25rem 0;
+}
+.audit-page.module-panel .module-panel__header p:last-child { color: var(--sigat-muted); margin: 0; }
+
+.audit-filters {
+  align-items: end;
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: .8rem .9rem;
+}
+.audit-filters label { color: var(--sigat-muted); display: grid; font-size: .72rem; font-weight: 700; gap: .4rem; }
+.audit-filters select {
+  background: var(--sigat-night-raised);
+  border: 1px solid var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-text);
+  min-height: 2.55rem;
+  min-width: 13rem;
+  padding: .5rem .65rem;
+}
+.audit-filters select:focus { border-color: var(--sigat-operational-bright); box-shadow: var(--focus-ring); outline: 0; }
+
+.audit-table-wrap {
+  background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
+  border: 1px solid var(--sigat-border);
+  border-top: 3px solid var(--sigat-operational);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+  overflow-x: auto;
+}
+.audit-table__header,
+.audit-table__row {
+  align-items: center;
+  border-bottom: 1px solid var(--sigat-border);
+  display: grid;
+  gap: .9rem;
+  grid-template-columns: minmax(13rem, 1.4fr) minmax(9rem, .8fr) minmax(7rem, .55fr) minmax(10rem, .9fr) minmax(11rem, .9fr);
+  min-width: 52rem;
+  padding: .75rem .85rem;
+  width: 100%;
+}
+.audit-table__row:last-child { border-bottom: 0; }
+.audit-table__header {
+  background: var(--sigat-night-raised);
+  color: var(--sigat-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.audit-table__row {
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.audit-table__row:hover { background: rgb(22 119 255 / 7%); }
+.audit-table__row > span { color: var(--sigat-muted); font-size: .78rem; }
+.audit-table__row strong { color: var(--sigat-text); font-size: .82rem; }
+.audit-table__empty {
+  background: var(--sigat-surface);
+  border: 1px dashed var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--sigat-muted);
+  font-size: .82rem;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 2.2rem 1rem;
+  text-align: center;
+}
+.text-danger { color: var(--sigat-critical) !important; font-weight: 700; }
+
+.audit-pagination {
+  align-items: center;
+  display: flex;
+  gap: .8rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.audit-pagination span { color: var(--sigat-muted); font-family: var(--font-identifier); font-size: .72rem; }
+.audit-pagination .button-link:disabled { cursor: not-allowed; opacity: .45; transform: none; }
+
+.audit-detail { display: grid; gap: 1rem; }
+.audit-detail__meta {
+  border-bottom: 1px solid var(--sigat-border);
+  border-top: 1px solid var(--sigat-border);
+  display: grid;
+  gap: .9rem 1.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: .2rem 0 0;
+  padding: .9rem 0;
+}
+.audit-detail__meta dt { color: var(--sigat-muted); font-size: .66rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.audit-detail__meta dd { color: var(--sigat-text); font-size: .84rem; margin: .25rem 0 0; }
+.audit-detail__unit {
+  background: rgb(22 119 255 / 8%);
+  border-left: 2px solid var(--sigat-operational-bright);
+  color: var(--sigat-muted);
+  font-size: .8rem;
+  margin: 0;
+  padding: .55rem .7rem;
+}
+.audit-detail__unit strong { color: var(--sigat-operational-bright); }
+.audit-detail__diff { background: var(--sigat-night-raised); border: 1px solid var(--sigat-border); padding: .85rem; }
+.audit-detail__diff h4 { color: var(--sigat-muted); font-size: .66rem; font-weight: 800; letter-spacing: .04em; margin: 0 0 .45rem; text-transform: uppercase; }
+.audit-detail__diff pre {
+  color: var(--sigat-text);
+  font-family: var(--font-identifier);
+  font-size: .76rem;
+  line-height: 1.5;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.audit-detail__reason { color: var(--sigat-muted); font-size: .8rem; margin: 0; }
+.audit-detail__reason strong { color: var(--sigat-text); }
+
+/* ---------- Empty state padrão ---------- */
+.empty-state {
+  background: var(--sigat-surface);
+  border: 1px dashed var(--sigat-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 2.2rem 1rem;
+}
+
+/* ---------- Responsivo das páginas ---------- */
+@media (max-width: 900px) {
+  .maintenance-table__header,
+  .maintenance-table__row { grid-template-columns: minmax(11rem, 1fr) minmax(0, 1fr) auto; }
+  .maintenance-table__header .maintenance-table__desc,
+  .maintenance-table__row .maintenance-table__desc { display: none; }
+  .maintenance-table__header .maintenance-table__type,
+  .maintenance-table__row .maintenance-table__type { display: none; }
+  .missions-list__header,
+  .missions-list__row { grid-template-columns: minmax(12rem, 1fr) minmax(0, .9fr) minmax(7rem, .55fr) auto; }
+  .missions-list__row .missions-list__unit { display: none; }
+  .equipment-types-list__header,
+  .equipment-types-list__row { grid-template-columns: minmax(11rem, 1fr) minmax(0, 1fr) auto; }
+  .equipment-types-list__header .equipment-types-list__desc,
+  .equipment-types-list__row .equipment-types-list__desc { display: none; }
+}
+@media (max-width: 640px) {
+  .maintenance-page__header,
+  .missions-page.module-panel .module-panel__header,
+  .equipment-types-page.module-panel .module-panel__header,
+  .audit-page.module-panel .module-panel__header { align-items: start; flex-direction: column; gap: .7rem; }
+  .maintenance-page__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .maintenance-page__filters button { width: 100%; }
+  .maintenance-table__header,
+  .maintenance-table__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .maintenance-table__header .maintenance-table__status,
+  .maintenance-table__row .maintenance-table__status { display: none; }
+  .missions-list__header,
+  .missions-list__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .missions-list__header .missions-list__type,
+  .missions-list__row .missions-list__type,
+  .missions-list__header .missions-list__status,
+  .missions-list__row .missions-list__status { display: none; }
+  .equipment-types-list__header,
+  .equipment-types-list__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .equipment-types-list__header .equipment-types-list__status,
+  .equipment-types-list__row .equipment-types-list__status { display: none; }
+  .audit-filters { align-items: stretch; flex-direction: column; }
+  .audit-filters select { width: 100%; }
+  .audit-pagination { justify-content: stretch; }
+  .audit-pagination .button-link { flex: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .maintenance-page__header,
+  .missions-page.module-panel .module-panel__header,
+  .equipment-types-page.module-panel .module-panel__header,
+  .audit-page.module-panel .module-panel__header { animation: ditel-page-enter .28s ease both; }
+  .maintenance-table, .missions-list, .equipment-types-list, .audit-table-wrap { animation: ditel-page-enter .3s 60ms ease both; }
+}
+@keyframes ditel-page-enter { from { opacity: 0; transform: translateY(.35rem); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .maintenance-page__header, .missions-page.module-panel .module-panel__header,
+  .equipment-types-page.module-panel .module-panel__header, .audit-page.module-panel .module-panel__header,
+  .maintenance-table, .missions-list, .equipment-types-list, .audit-table-wrap, .top-nav__link, .top-nav__toggle, .top-nav__profile { animation: none; transition: none; }
+}

@@ -13,7 +13,11 @@ export interface AttachmentStorage {
 }
 
 function storageRoot() {
-  return resolve(process.env.SIGAT_ATTACHMENT_STORAGE_DIR || resolve(process.cwd(), 'var', 'attachments'));
+  return resolve(
+    process.env.ATTACHMENT_STORAGE_DIR
+    ?? process.env.SIGAT_ATTACHMENT_STORAGE_DIR
+    ?? resolve(process.cwd(), 'var', 'attachments'),
+  );
 }
 
 function extensionFor(name: string) {
@@ -50,5 +54,10 @@ export class LocalAttachmentStorage implements AttachmentStorage {
 }
 
 export function createAttachmentStorage(): AttachmentStorage {
-  return new LocalAttachmentStorage();
+  const driver = process.env.ATTACHMENT_STORAGE_DRIVER ?? 'local';
+  if (driver === 'local') return new LocalAttachmentStorage();
+  if (driver === 's3') {
+    throw new Error('ATTACHMENT_STORAGE_DRIVER=s3 ainda não implementado: nenhuma credencial S3 foi fornecida ou conectada.');
+  }
+  throw new Error(`ATTACHMENT_STORAGE_DRIVER inválido: ${driver}. Use "local" (ou "s3" quando implementado).`);
 }

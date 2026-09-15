@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
@@ -21,6 +22,8 @@ export function DitelMaintenancePage({ session: _session }: { session: SessionCo
     statusFilter === 'all' ? maintenanceQuery.data?.items ?? [] : maintenanceQuery.data?.items.filter((item) => item.status === statusFilter) ?? []
   ), [maintenanceQuery.data, statusFilter])
 
+  const total = maintenanceQuery.data?.items.length ?? 0
+
   return <section className="maintenance-page" data-testid="ditel-maintenance-console" data-visual-variant="statewide-governance-console" aria-labelledby="maintenance-title">
     <header className="maintenance-page__header">
       <div>
@@ -28,6 +31,7 @@ export function DitelMaintenancePage({ session: _session }: { session: SessionCo
         <h1 id="maintenance-title">Manutenções DITEL</h1>
         <p>Acompanhe e conclua as intervenções de todas as Unidades do Estado.</p>
       </div>
+      <span className="module-total" role="status">{total} {total === 1 ? 'registro' : 'registros'}</span>
     </header>
 
     <div className="maintenance-page__filters" aria-label="Filtros de situação">
@@ -37,7 +41,10 @@ export function DitelMaintenancePage({ session: _session }: { session: SessionCo
 
     {maintenanceQuery.isLoading ? <LoadingState label="Carregando manutenções do Estado" /> : null}
     {maintenanceQuery.isError ? <ErrorState message="Não foi possível carregar as manutenções do Estado." onRetry={() => { void maintenanceQuery.refetch() }} /> : null}
-    {!maintenanceQuery.isLoading && !maintenanceQuery.isError ? <MaintenanceTable items={visibleItems} onSelect={setSelected} actionLabel="Atualizar" /> : null}
+    {!maintenanceQuery.isLoading && !maintenanceQuery.isError && visibleItems.length === 0
+      ? <EmptyState title="Nenhuma manutenção encontrada" description={statusFilter === 'all' ? 'Não há intervenções registradas no Estado até o momento.' : `Não há manutenções ${statusLabels[statusFilter].toLowerCase()} registradas.`} />
+      : null}
+    {!maintenanceQuery.isLoading && !maintenanceQuery.isError && visibleItems.length > 0 ? <MaintenanceTable items={visibleItems} onSelect={setSelected} actionLabel="Atualizar" /> : null}
 
     <Modal open={Boolean(selected)} title="Atualizar manutenção" ariaLabel="Atualizar manutenção DITEL" size="md" onClose={() => setSelected(null)}>
       {selected ? <MaintenanceProgressModal item={selected} onClose={() => setSelected(null)} /> : null}

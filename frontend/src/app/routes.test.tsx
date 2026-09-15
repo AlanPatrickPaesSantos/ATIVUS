@@ -178,7 +178,7 @@ test('revokes the server session before returning to the login route', async () 
   renderRoutes('/dashboard', ditelSession)
 
   await user.click(screen.getByRole('button', { name: 'Carlos Lima' }))
-  await user.click(screen.getByRole('button', { name: 'Sair' }))
+  await user.click(screen.getByRole('menuitem', { name: 'Sair' }))
 
   expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
   expect(fetchSpy).toHaveBeenCalledWith(

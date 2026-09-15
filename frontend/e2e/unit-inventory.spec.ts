@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 async function signInAsUnit(page: import('@playwright/test').Page) {
   await page.goto('/dashboard')
   const profile = page.locator('button.top-nav__profile')
-  if (await profile.count()) { await profile.click({ force: true }); await page.getByRole('button', { name: 'Sair' }).click() }
+  if (await profile.count()) { await profile.click({ force: true }); await page.getByRole('menuitem', { name: 'Sair' }).click() }
   await page.goto('/login')
   await page.getByLabel('Matrícula').fill('100001')
   await page.getByLabel('Senha').fill('sigat-unit')

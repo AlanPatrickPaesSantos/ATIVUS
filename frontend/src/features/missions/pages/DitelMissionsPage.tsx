@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
@@ -46,17 +47,17 @@ export function DitelMissionsPage({ session: _session }: { session: SessionConte
         <div className="missions-list" role="table" aria-label="Missões técnicas">
           <div className="missions-list__header" role="row">
             <span role="columnheader">Missão</span>
-            <span role="columnheader">Unidade</span>
-            <span role="columnheader">Tipo</span>
-            <span role="columnheader">Situação</span>
+            <span role="columnheader" className="missions-list__unit">Unidade</span>
+            <span role="columnheader" className="missions-list__type">Tipo</span>
+            <span role="columnheader" className="missions-list__status">Situação</span>
             <span role="columnheader">Ações</span>
           </div>
           {missionsQuery.data?.items.length ? missionsQuery.data.items.map((item) => (
             <div className="missions-list__row" role="row" key={item.id}>
               <span role="cell"><strong>{item.title}</strong></span>
-              <span role="cell">{item.unit.name}</span>
-              <span role="cell">{missionTypeLabels[item.type]}</span>
-              <span role="cell">{missionStatusLabels[item.status]}</span>
+              <span role="cell" className="missions-list__unit">{item.unit.name}</span>
+              <span role="cell" className="missions-list__type">{missionTypeLabels[item.type]}</span>
+              <span role="cell" className="missions-list__status">{missionStatusLabels[item.status]}</span>
               <span role="cell">
                 <button type="button" className="button-link" onClick={() => { setFormError(null); setSelected(item) }}>Ver</button>
                 {item.status === 'assigned' || item.status === 'in_progress' ? (
@@ -64,7 +65,11 @@ export function DitelMissionsPage({ session: _session }: { session: SessionConte
                 ) : null}
               </span>
             </div>
-          )) : <p className="missions-list__empty">Nenhuma missão técnica registrada.</p>}
+          )) : (
+            <div className="missions-list__empty" role="row">
+              <span role="cell"><EmptyState title="Nenhuma missão técnica registrada" description="Crie a primeira missão para as unidades do Estado." /></span>
+            </div>
+          )}
         </div>
       ) : null}
 

@@ -12,10 +12,10 @@ const navigation: NavigationItem[] = [
   { label: 'Movimentações', href: '/movimentacoes', icon: '↔', requires: 'movements' },
   { label: 'Relatórios', href: '/relatorios', icon: '▤', requires: 'reports' },
   { label: 'Manutenção', href: '/manutencao', icon: '⚒', requires: 'maintenance' },
-  { label: 'Missões técnicas', href: '/missoes-tecnicas', icon: '⚑', requires: 'maintenance' },
-  { label: 'Tipos de equipamento', href: '/tipos-equipamento', icon: '▣', requires: 'administration' },
-  { label: 'Auditoria', href: '/auditoria', icon: '◈', requires: 'administration' },
-  { label: 'Administração', href: '/administracao', icon: '⚙', requires: 'administration' },
+  { label: 'Missões técnicas', href: '/missoes-tecnicas', icon: '⚑', requires: 'maintenance', secondary: true },
+  { label: 'Tipos de equipamento', href: '/tipos-equipamento', icon: '▣', requires: 'administration', secondary: true },
+  { label: 'Auditoria', href: '/auditoria', icon: '◈', requires: 'administration', secondary: true },
+  { label: 'Administração', href: '/administracao', icon: '⚙', requires: 'administration', secondary: true },
 ]
 
 export function can(session: SessionContext, permission: string): boolean {

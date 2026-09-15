@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
@@ -37,18 +38,22 @@ export function MissionsPage({ session }: { session: SessionContext }) {
         <div className="missions-list" role="table" aria-label="Missões técnicas">
           <div className="missions-list__header" role="row">
             <span role="columnheader">Missão</span>
-            <span role="columnheader">Tipo</span>
-            <span role="columnheader">Situação</span>
+            <span role="columnheader" className="missions-list__type">Tipo</span>
+            <span role="columnheader" className="missions-list__status">Situação</span>
             <span role="columnheader">Prioridade</span>
           </div>
           {missionsQuery.data?.items.length ? missionsQuery.data.items.map((item) => (
             <button type="button" className="missions-list__row" role="row" key={item.id} onClick={() => { setActionError(null); setSelected(item) }}>
               <span role="cell"><strong>{item.title}</strong></span>
-              <span role="cell">{missionTypeLabels[item.type]}</span>
-              <span role="cell">{missionStatusLabels[item.status]}</span>
+              <span role="cell" className="missions-list__type">{missionTypeLabels[item.type]}</span>
+              <span role="cell" className="missions-list__status">{missionStatusLabels[item.status]}</span>
               <span role="cell">{item.priority}</span>
             </button>
-          )) : <p className="missions-list__empty">Nenhuma missão atribuída à sua unidade.</p>}
+          )) : (
+            <div className="missions-list__empty" role="row">
+              <span role="cell"><EmptyState title="Nenhuma missão atribuída" description="Quando a DITEL criar uma missão para a sua unidade, ela aparecerá aqui." /></span>
+            </div>
+          )}
         </div>
       ) : null}
 

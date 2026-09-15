@@ -7,6 +7,8 @@ export type NavigationItem = {
   href: string
   icon?: ReactNode
   requires?: string
+  /** Itens secundários: movem para "Mais ações" em desktop compacto/tablet. */
+  secondary?: boolean
 }
 
 export type AppContext = {
@@ -23,6 +25,8 @@ type TopNavProps = {
   onLogout: () => void
 }
 
+type Layout = 'mobile' | 'tablet' | 'desktop' | 'desktop-wide'
+
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(() => window.matchMedia?.(query).matches ?? false)
 
@@ -30,7 +34,6 @@ function useMediaQuery(query: string) {
     const mediaQuery = window.matchMedia?.(query)
     if (!mediaQuery) return
     const updateMatches = () => setMatches(mediaQuery.matches)
-
     updateMatches()
     mediaQuery.addEventListener('change', updateMatches)
     return () => mediaQuery.removeEventListener('change', updateMatches)
@@ -39,8 +42,8 @@ function useMediaQuery(query: string) {
   return matches
 }
 
-function NavigationIcon({ href }: { href: string }) {
-  const paths: Record<string, ReactNode> = {
+function navigationIconPaths(): Record<string, ReactNode> {
+  return {
     '/dashboard': <><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></>,
     '/inventario': <><path d="M5 7h14v13H5z"/><path d="M8 7V4h8v3M9 11h6M9 15h6"/></>,
     '/chamados': <><path d="M4 13v-2a8 8 0 0 1 16 0v2"/><path d="M4 13h3v6H5a1 1 0 0 1-1-1zm16 0h-3v6h2a1 1 0 0 0 1-1zM17 19c0 1.1-.9 2-2 2h-2"/></>,
@@ -48,7 +51,18 @@ function NavigationIcon({ href }: { href: string }) {
     '/relatorios': <><path d="M5 20V10M12 20V4M19 20v-7M3 20h18"/></>,
     '/administracao': <><circle cx="12" cy="8" r="3"/><path d="M5 20v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></>,
   }
-  return <svg className="top-nav__icon" viewBox="0 0 24 24" aria-hidden="true">{paths[href] ?? <circle cx="12" cy="12" r="7"/>}</svg>
+}
+
+function NavigationIcon({ href }: { href: string }) {
+  return <svg className="top-nav__icon" viewBox="0 0 24 24" aria-hidden="true">{navigationIconPaths()[href] ?? <circle cx="12" cy="12" r="7"/>}</svg>
+}
+
+const OVERFLOW_MAX = 1450
+
+function computeLayout(isMobile: boolean, isTablet: boolean, isCompact: boolean): Layout {
+  if (isMobile) return 'mobile'
+  if (isTablet) return 'tablet'
+  return isCompact ? 'desktop' : 'desktop-wide'
 }
 
 export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
@@ -58,18 +72,70 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
   const [panel, setPanel] = useState<'notifications' | 'help' | null>(null)
   const [search, setSearch] = useState('')
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+  const profileButtonRef = useRef<HTMLButtonElement>(null)
+  const profileMenuRef = useRef<HTMLElement>(null)
+
   const isMobile = useMediaQuery('(max-width: 640px)')
   const isTablet = useMediaQuery('(max-width: 900px)')
-  const isCompactDesktop = useMediaQuery('(max-width: 1950px)')
+  const isCompact = useMediaQuery(`(max-width: ${OVERFLOW_MAX}px)`)
+  const layout = computeLayout(isMobile, isTablet, isCompact)
   const navigate = useNavigate()
-  const layout = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'
-  const shouldHideSearch = layout === 'mobile' || isCompactDesktop
+
+  const shouldHideSearch = layout !== 'desktop-wide'
   const activeItem = items.find((item) => item.href === activePath)
-  const secondaryItems = items.slice(2)
+
+  // Desktop/tablet overflow: modules flagged as `secondary` (Missões técnicas,
+  // Tipos, Auditoria, Administração) move to "Mais ações" on compact widths;
+  // core modules (Painel… Manutenção) always stay visible. On tablet, cap the
+  // bar to 4 visible items to avoid crowding.
+  const showOverflow = (layout === 'desktop' || layout === 'tablet') && items.some((item) => item.secondary)
+  const overflowItems = showOverflow ? items.filter((item) => item.secondary) : []
+  const visibleItems = showOverflow
+    ? (layout === 'tablet' ? items.filter((item) => !item.secondary).slice(0, 4) : items.filter((item) => !item.secondary))
+    : items
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      const clickedInsideMore = moreMenuRef.current?.contains(target) || moreButtonRef.current?.contains(target)
+      const clickedInsideProfile = profileButtonRef.current?.contains(target) || profileMenuRef.current?.contains(target)
+      if (!clickedInsideMore && isMoreOpen) setIsMoreOpen(false)
+      if (!clickedInsideProfile && isProfileOpen) setIsProfileOpen(false)
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsMoreOpen(false)
+        setIsProfileOpen(false)
+        setIsMobileMenuOpen(false)
+        setPanel(null)
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isMoreOpen, isProfileOpen])
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false)
     menuButtonRef.current?.focus()
+  }
+
+  function toggleMore() {
+    setIsMoreOpen((open) => {
+      const next = !open
+      if (next) setIsProfileOpen(false)
+      return next
+    })
+  }
+
+  function closeMore() {
+    setIsMoreOpen(false)
+    moreButtonRef.current?.focus()
   }
 
   return (
@@ -88,7 +154,7 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
         <li className="top-nav__mobile-close" hidden={layout !== 'mobile'}>
           <button className="top-nav__toggle" type="button" onClick={closeMobileMenu}>Fechar menu</button>
         </li>
-        {items.map((item, index) => (
+        {visibleItems.map((item, index) => (
           <li key={item.href} className={index < 2 ? 'top-nav__primary' : 'top-nav__secondary'} hidden={layout === 'tablet' && index >= 2}>
             <Link className="top-nav__link" to={item.href} onClick={closeMobileMenu} aria-current={item.href === activePath ? 'page' : undefined} data-nav-state={item.href === activePath ? 'active' : 'idle'}>
               <NavigationIcon href={item.href} />
@@ -96,16 +162,31 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
             </Link>
           </li>
         ))}
-        {secondaryItems.length > 0 && (
-          <li className="top-nav__more" hidden={layout !== 'tablet'}>
-            <details open={isMoreOpen} onToggle={(event) => setIsMoreOpen((event.currentTarget as HTMLDetailsElement).open)}>
-              <summary className="top-nav__toggle" role="button" aria-haspopup="menu" aria-expanded={isMoreOpen} aria-label="Mais ações">Mais</summary>
-              {secondaryItems.map((item) => (
-                <Link key={item.href} className="top-nav__link" to={item.href} onClick={closeMobileMenu} aria-current={item.href === activePath ? 'page' : undefined} data-nav-state={item.href === activePath ? 'active' : 'idle'}>
-                  {item.label}
-                </Link>
-              ))}
-            </details>
+        {overflowItems.length > 0 && (
+          <li className="top-nav__more" hidden={layout === 'tablet' && visibleItems.length === 0}>
+            <button
+              ref={moreButtonRef}
+              type="button"
+              className="top-nav__toggle top-nav__more-toggle"
+              aria-haspopup="menu"
+              aria-expanded={isMoreOpen}
+              aria-controls="more-menu"
+              aria-label="Mais ações"
+              onClick={toggleMore}
+            >
+              Mais
+              <span className="top-nav__more-chevron" aria-hidden="true">▾</span>
+            </button>
+            {isMoreOpen && (
+              <div ref={moreMenuRef} id="more-menu" className="top-nav__menu top-nav__menu--more" role="menu" aria-label="Mais ações">
+                {overflowItems.map((item) => (
+                  <Link key={item.href} role="menuitem" className="top-nav__link" to={item.href} onClick={closeMore} tabIndex={-1} aria-current={item.href === activePath ? 'page' : undefined} data-nav-state={item.href === activePath ? 'active' : 'idle'}>
+                    <NavigationIcon href={item.href} />
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </li>
         )}
         </ul>
@@ -133,16 +214,16 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
         </button>
-        <button className="top-nav__profile" type="button" hidden={layout === 'mobile'} aria-expanded={isProfileOpen} aria-haspopup="menu" aria-controls="profile-menu" onClick={() => setIsProfileOpen((open) => !open)} aria-label={context.userName}>
+        <button ref={profileButtonRef} className="top-nav__profile" type="button" hidden={layout === 'mobile'} aria-expanded={isProfileOpen} aria-haspopup="menu" aria-controls="profile-menu" onClick={() => setIsProfileOpen((open) => !open)} aria-label={context.userName}>
           <span aria-hidden="true">{context.userName.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
           <span className="top-nav__profile-name" style={{ display: 'none' }}>{context.userName}</span>
         </button>
       </div>
       {isProfileOpen && (
-        <section id="profile-menu" className="top-nav__menu" role="menu" aria-label="Perfil do usuário">
+        <section ref={profileMenuRef} id="profile-menu" className="top-nav__menu" role="menu" aria-label="Perfil do usuário">
           <strong>{context.userName}</strong>
           <p>{context.roleLabel}</p>
-          <button className="top-nav__logout" type="button" onClick={onLogout}>Sair</button>
+          <button className="top-nav__logout" type="button" role="menuitem" onClick={onLogout}>Sair</button>
         </section>
       )}
       {panel === 'notifications' && <section id="notifications-menu" className="top-nav__menu" aria-label="Notificações"><strong>Notificações</strong><p role="status">Nenhuma notificação nova</p></section>}

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 test('DITEL views audit trail and opens event details', async ({ page }) => {
   await page.goto('/login')
@@ -7,7 +8,7 @@ test('DITEL views audit trail and opens event details', async ({ page }) => {
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/dashboard/, { timeout: 15000 })
 
-  await page.getByRole('link', { name: 'Auditoria', exact: true }).click()
+  await spaNavigate(page, '/auditoria')
   await expect(page.getByRole('heading', { name: 'Auditoria' })).toBeVisible()
   await expect(page.getByText('Atualização de manutenção')).toBeVisible()
 

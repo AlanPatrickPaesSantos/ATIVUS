@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 async function signInDitel(page: import('@playwright/test').Page) {
   await page.goto('/login')
@@ -18,7 +19,7 @@ async function signInUnit(page: import('@playwright/test').Page) {
 
 test('DITEL creates a mission and unit starts it', async ({ page }) => {
   await signInDitel(page)
-  await page.getByRole('link', { name: 'Missões técnicas', exact: true }).click()
+  await spaNavigate(page, '/missoes-tecnicas')
   await expect(page.getByRole('heading', { name: 'Missões técnicas' })).toBeVisible()
 
   // Create
@@ -34,13 +35,13 @@ test('DITEL creates a mission and unit starts it', async ({ page }) => {
   // Switch to unit WITHOUT full page reload (keeps MSW in-memory state)
   await page.locator('.top-nav__profile').focus()
   await page.keyboard.press('Enter')
-  await page.getByRole('button', { name: 'Sair' }).click()
+  await page.getByRole('menuitem', { name: 'Sair' }).click()
   await expect(page.getByLabel('Matrícula')).toBeVisible()
   await page.getByLabel('Matrícula').fill('100001')
   await page.getByLabel('Senha').fill('sigat-unit')
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/dashboard/, { timeout: 15000 })
-  await page.getByRole('link', { name: 'Missões técnicas', exact: true }).click()
+  await spaNavigate(page, '/missoes-tecnicas')
   await expect(page.getByRole('heading', { name: 'Missões técnicas' })).toBeVisible()
   await page.getByText('Substituir antena da torre').click()
   const detail = page.getByRole('dialog')

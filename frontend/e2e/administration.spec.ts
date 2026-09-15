@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 test('DITEL opens unit details and sees real inventory, calls, users', async ({ page }) => {
   await page.goto('/login')
@@ -7,7 +8,7 @@ test('DITEL opens unit details and sees real inventory, calls, users', async ({ 
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/dashboard/, { timeout: 15000 })
 
-  await page.getByRole('link', { name: 'Administração', exact: true }).click()
+  await spaNavigate(page, '/administracao')
   await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
 
   await page.getByRole('tab', { name: 'Unidades' }).click()
@@ -20,7 +21,7 @@ test('DITEL opens unit details and sees real inventory, calls, users', async ({ 
 
   // Chamados — chamado real aberto pela unidade (unit-centro tem 3 no seed)
   await dialog.getByRole('tab', { name: 'Chamados' }).click()
-  await expect(dialog.getByText(/Carregando chamados|Nenhum chamado|Rádio operacional indisponível|Enlace de dados instável|Impressora do arquivo sem resposta/)).toBeVisible()
+  await expect(dialog.getByText(/Carregando chamados|Nenhum chamado|Rádio operacional indisponível|Enlace de dados instável|Impressora do arquivo sem resposta/).first()).toBeVisible()
 
   // Usuários — usuário real da unidade
   await dialog.getByRole('tab', { name: 'Usuários' }).click()

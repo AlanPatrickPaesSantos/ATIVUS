@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 async function signIn(page: import('@playwright/test').Page, registration: string, password: string) {
   await page.goto('/login')
@@ -11,7 +12,7 @@ test('DITEL user reaches the statewide dashboard and administration route', asyn
   await signIn(page, '200001', 'sigat-ditel')
 
   await expect(page.getByRole('heading', { name: 'Painel estadual' })).toBeVisible()
-  await page.getByRole('link', { name: 'Administração', exact: true }).click()
+  await spaNavigate(page, '/administracao')
   await expect(page).toHaveURL(/\/administracao$/)
   await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Consultar inventário estadual' })).toBeVisible()
@@ -19,7 +20,7 @@ test('DITEL user reaches the statewide dashboard and administration route', asyn
 
 test('DITEL admin confirms a user block and refreshes the administrative list', async ({ page }) => {
   await signIn(page, '200001', 'sigat-ditel')
-  await page.getByRole('link', { name: 'Administração', exact: true }).click()
+  await spaNavigate(page, '/administracao')
   await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
   await page.getByRole('button', { name: 'Ver detalhes de Ana Souza' }).click()
 
@@ -35,7 +36,7 @@ test('DITEL admin confirms a user block and refreshes the administrative list', 
 
 test('DITEL admin edits a user profile and keeps the administration list in sync', async ({ page }) => {
   await signIn(page, '200001', 'sigat-ditel')
-  await page.getByRole('link', { name: 'Administração', exact: true }).click()
+  await spaNavigate(page, '/administracao')
   await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
   await page.getByRole('button', { name: 'Ver detalhes de Ana Souza' }).click()
 
@@ -52,7 +53,7 @@ test('DITEL admin edits a user profile and keeps the administration list in sync
 
 test('DITEL admin creates a unit user with an active unit', async ({ page }) => {
   await signIn(page, '200001', 'sigat-ditel')
-  await page.getByRole('link', { name: 'Administração', exact: true }).click()
+  await spaNavigate(page, '/administracao')
   await page.getByRole('button', { name: 'Cadastrar usuário' }).click()
 
   const dialog = page.getByRole('dialog', { name: 'Cadastrar usuário' })

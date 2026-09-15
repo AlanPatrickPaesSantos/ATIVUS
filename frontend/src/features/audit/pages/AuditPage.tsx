@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
@@ -114,7 +115,11 @@ export function AuditPage({ session: _session }: { session: SessionContext }) {
                 <span role="cell">{event.actor && 'name' in event.actor ? String(event.actor.name) : event.userId ?? '—'}</span>
                 <span role="cell">{new Date(event.createdAt).toLocaleString('pt-BR')}</span>
               </button>
-            )) : <p className="audit-table__empty">Nenhum evento de auditoria encontrado.</p>}
+            )) : (
+              <div className="audit-table__empty" role="row">
+                <span role="cell"><EmptyState title="Nenhum evento de auditoria encontrado" description="Ajuste os filtros ou aguarde novos eventos serem registrados." /></span>
+              </div>
+            )}
           </div>
 
           <footer className="audit-pagination">
