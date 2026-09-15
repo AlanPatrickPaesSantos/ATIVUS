@@ -14,14 +14,18 @@ export interface CreateAuthRoutesOptions {
   loginRateLimiter: LoginRateLimiter;
   requireSession: RequestHandler;
   sessionCookieSecure: boolean;
+  sessionCookieSameSite: CookieOptions['sameSite'];
   sessionService: SessionService;
 }
 
-function buildSessionCookieOptions(sessionCookieSecure: boolean): CookieOptions {
+function buildSessionCookieOptions(
+  sessionCookieSecure: boolean,
+  sessionCookieSameSite: CookieOptions['sameSite'],
+): CookieOptions {
   return {
     httpOnly: true,
     path: '/',
-    sameSite: 'lax',
+    sameSite: sessionCookieSameSite,
     secure: sessionCookieSecure,
   };
 }
@@ -55,7 +59,10 @@ function unlockedSessionContext(context: NonNullable<Express.Request['sessionCon
 
 export function createAuthRoutes(options: CreateAuthRoutesOptions) {
   const router = Router();
-  const sessionCookieOptions = buildSessionCookieOptions(options.sessionCookieSecure);
+  const sessionCookieOptions = buildSessionCookieOptions(
+    options.sessionCookieSecure,
+    options.sessionCookieSameSite,
+  );
 
   router.post('/auth/login', async (req, res, next) => {
     const registration = typeof req.body?.registration === 'string' ? req.body.registration : '';

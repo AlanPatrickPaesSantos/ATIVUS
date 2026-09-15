@@ -1,4 +1,5 @@
 type NodeEnv = 'development' | 'test' | 'production';
+type CookieSameSite = 'lax' | 'strict' | 'none';
 
 export function parsePort(value: string | undefined): number {
   if (!value) return 3000;
@@ -54,6 +55,17 @@ export function parseCsvList(value: string | undefined): string[] {
     .filter((item) => item.length > 0);
 }
 
+export function parseCookieSameSite(value: string | undefined): CookieSameSite {
+  if (value === undefined || value === '') return 'lax';
+
+  const normalized = value.toLowerCase();
+  if (normalized === 'lax' || normalized === 'strict' || normalized === 'none') {
+    return normalized;
+  }
+
+  throw new Error(`Invalid SESSION_COOKIE_SAME_SITE value: ${value}`);
+}
+
 export const env = {
   NODE_ENV: parseNodeEnv(process.env.NODE_ENV),
   PORT: parsePort(process.env.PORT),
@@ -61,6 +73,7 @@ export const env = {
     process.env.SESSION_COOKIE_SECURE,
     parseNodeEnv(process.env.NODE_ENV) === 'production',
   ),
+  SESSION_COOKIE_SAME_SITE: parseCookieSameSite(process.env.SESSION_COOKIE_SAME_SITE),
   LOGIN_RATE_LIMIT_WINDOW_MS: parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_WINDOW_MS, 60_000),
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_IP: parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_IP, 10),
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_REGISTRATION: parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_REGISTRATION, 5),

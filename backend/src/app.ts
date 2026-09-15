@@ -32,6 +32,7 @@ import { createMaintenanceRoutes } from './routes/maintenanceRoutes.js';
 type ErrorLogger = Pick<Console, 'error'>;
 export interface CreateAppOptions {
   authSecurity?: AuthSecurityOptionsInput;
+  sessionCookieSameSite?: 'lax' | 'strict' | 'none';
   sessionCookieSecure?: boolean;
   sessionService?: SessionService;
 }
@@ -105,6 +106,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   );
   const requireSession = createRequireSession(sessionService);
   const sessionCookieSecure = options.sessionCookieSecure ?? env.SESSION_COOKIE_SECURE;
+  const sessionCookieSameSite = options.sessionCookieSameSite ?? env.SESSION_COOKIE_SAME_SITE;
 
   app.use(express.json());
   app.use('/api/v1', corsMiddleware);
@@ -128,6 +130,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use('/api/v1', createAuthRoutes({
     loginRateLimiter,
     requireSession,
+    sessionCookieSameSite,
     sessionCookieSecure,
     sessionService,
   }));

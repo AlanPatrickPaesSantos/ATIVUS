@@ -156,6 +156,33 @@ describe('auth routes', () => {
     expect(response.headers['set-cookie']?.[0]).toContain('Secure');
   });
 
+  it('allows cross-site session cookies when explicitly configured for hosted frontend/backend origins', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('SESSION_COOKIE_SAME_SITE', 'none');
+    vi.resetModules();
+    const { createApp: createProductionApp } = await import('../app.js');
+
+    await UserModel.create({
+      name: 'Helena Costa',
+      registration: '99999',
+      role: 'ditel_admin',
+      active: true,
+      unit: null,
+      password: 'segredo-admin',
+    });
+
+    const response = await request(createProductionApp()).post('/api/v1/auth/login').send({
+      registration: '99999',
+      password: 'segredo-admin',
+    });
+
+    const setCookieHeader = response.headers['set-cookie']?.[0];
+
+    expect(response.status).toBe(200);
+    expect(setCookieHeader).toContain('Secure');
+    expect(setCookieHeader).toContain('SameSite=None');
+  });
+
   it('returns the same generic error for an unknown registration and a wrong password', async () => {
     await upsertUnit({
       id: 'unit-2',
