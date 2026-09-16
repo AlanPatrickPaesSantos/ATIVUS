@@ -31,6 +31,22 @@ export type UnitDashboard = {
     equipment: number
     attention: number
   }>
+  callsByStatus?: Array<{
+    status: string
+    label: string
+    count: number
+  }>
+  criticalCalls?: number
+  pendingMovements?: number
+  monitoredUnits?: number
+  recentMovements?: Array<{
+    id: string
+    equipmentId: string
+    origin: UnitContext
+    destination: UnitContext
+    status: string
+    occurredAt: string
+  }>
   recentActivity: Activity[]
 }
 
@@ -82,6 +98,11 @@ export function getDashboard(): Promise<UnitDashboard> {
       metrics: response.metrics,
       situations: response.situations ?? [],
       ...(response.unitSummaries ? { unitSummaries: response.unitSummaries } : {}),
+      ...(response.callsByStatus ? { callsByStatus: response.callsByStatus } : {}),
+      ...(response.criticalCalls !== undefined ? { criticalCalls: response.criticalCalls } : {}),
+      ...(response.pendingMovements !== undefined ? { pendingMovements: response.pendingMovements } : {}),
+      ...(response.monitoredUnits !== undefined ? { monitoredUnits: response.monitoredUnits } : {}),
+      ...(response.recentMovements ? { recentMovements: response.recentMovements } : {}),
       recentActivity: response.recentActivity ?? [],
     }))
   }

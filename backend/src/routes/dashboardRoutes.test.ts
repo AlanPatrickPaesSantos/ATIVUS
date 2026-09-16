@@ -86,6 +86,69 @@ async function seedEquipment() {
       updatedAt: new Date('2026-08-23T10:00:00.000Z'),
     },
   ]);
+
+  await UnitModel.create([
+    { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA', active: true },
+    { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA', active: true },
+  ]);
+
+  await database.collection('calls').insertMany([
+    {
+      protocol: 'SIGAT-2026-0001',
+      problem: 'radio',
+      priority: 'Crítica',
+      subject: 'Falha no rádio operacional',
+      description: 'Rádio sem transmissão durante operação.',
+      section: 'Telecom',
+      status: 'Aberto',
+      unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+      equipmentId: null,
+      createdBy: 'usuário-teste',
+      createdAt: new Date('2026-09-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-09-01T10:00:00.000Z'),
+    },
+    {
+      protocol: 'SIGAT-2026-0002',
+      problem: 'printer',
+      priority: 'Alta',
+      subject: 'Impressora sem conexão',
+      description: 'Impressora da administração fora da rede.',
+      section: 'Suporte',
+      status: 'Em atendimento',
+      unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+      equipmentId: null,
+      createdBy: 'usuário-teste',
+      createdAt: new Date('2026-09-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-09-02T10:00:00.000Z'),
+    },
+    {
+      protocol: 'SIGAT-2026-0003',
+      problem: 'software',
+      priority: 'Média',
+      subject: 'GPS desatualizado',
+      description: 'Atualização de mapas do GPS.',
+      section: 'Suporte',
+      status: 'Resolvido',
+      unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+      equipmentId: null,
+      createdBy: 'usuário-teste',
+      createdAt: new Date('2026-09-03T10:00:00.000Z'),
+      updatedAt: new Date('2026-09-03T10:00:00.000Z'),
+    },
+  ]);
+
+  await database.collection('movements').insertMany([
+    {
+      type: 'Transferência definitiva',
+      equipmentId: 'PAT-004',
+      origin: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+      destination: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+      requestedBy: 'usuário-teste',
+      status: 'Pendente',
+      createdAt: new Date('2026-09-04T10:00:00.000Z'),
+      updatedAt: new Date('2026-09-04T10:00:00.000Z'),
+    },
+  ]);
 }
 
 async function loginAsUnitUser() {
@@ -300,7 +363,7 @@ describe('dashboard routes', () => {
     const response = await agent.get('/api/v1/dashboard').query({ unitId: 'unit-2' });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       unit: {
         id: 'unit-1',
         name: '1ª Companhia',
@@ -318,7 +381,28 @@ describe('dashboard routes', () => {
         { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
       recentActivity: [],
+      unitSummaries: [
+        { unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' }, coverage: '100%', equipment: 2, attention: 0 },
+      ],
+      callsByStatus: [
+        { status: 'Aberto', label: 'Aberto', count: 1 },
+        { status: 'Resolvido', label: 'Resolvido', count: 1 },
+      ],
+      criticalCalls: 1,
+      pendingMovements: 1,
+      monitoredUnits: 1,
+      recentMovements: [
+        {
+          equipmentId: 'PAT-004',
+          origin: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+          destination: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+          status: 'Pendente',
+        },
+      ],
     });
+    expect(response.body.recentMovements).toHaveLength(1);
+    expect(response.body.recentMovements[0].id).toEqual(expect.any(String));
+    expect(response.body.recentMovements[0].occurredAt).toEqual(expect.any(String));
   });
 
   it('returns the statewide dashboard for a ditel administrator', async () => {
@@ -328,7 +412,7 @@ describe('dashboard routes', () => {
     const response = await agent.get('/api/v1/dashboard');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       unit: {
         id: 'statewide',
         name: 'Estado do Pará',
@@ -346,6 +430,26 @@ describe('dashboard routes', () => {
         { situation: 'attention', label: 'Requer atenção', count: 2 },
       ],
       recentActivity: [],
+      unitSummaries: [
+        { unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' }, coverage: '50%', equipment: 2, attention: 0 },
+        { unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' }, coverage: '50%', equipment: 2, attention: 2 },
+      ],
+      callsByStatus: [
+        { status: 'Aberto', label: 'Aberto', count: 1 },
+        { status: 'Em atendimento', label: 'Em atendimento', count: 1 },
+        { status: 'Resolvido', label: 'Resolvido', count: 1 },
+      ],
+      criticalCalls: 1,
+      pendingMovements: 1,
+      monitoredUnits: 2,
+      recentMovements: [
+        {
+          equipmentId: 'PAT-004',
+          origin: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+          destination: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+          status: 'Pendente',
+        },
+      ],
     });
   });
 
@@ -393,5 +497,72 @@ describe('dashboard routes', () => {
       label: 'Requer atenção',
       count: 3,
     });
+  });
+
+  it('returns statewide unit summaries, call indicators, pending movements and recent activity for DITEL without secrets', async () => {
+    await seedEquipment();
+    const agent = await loginAsDitelAdmin();
+
+    const response = await agent.get('/api/v1/dashboard');
+
+    expect(response.status).toBe(200);
+    expect(response.body.unitSummaries).toEqual([
+      {
+        unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+        coverage: '50%',
+        equipment: 2,
+        attention: 0,
+      },
+      {
+        unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+        coverage: '50%',
+        equipment: 2,
+        attention: 2,
+      },
+    ]);
+    expect(response.body.callsByStatus).toEqual([
+      { status: 'Aberto', label: 'Aberto', count: 1 },
+      { status: 'Em atendimento', label: 'Em atendimento', count: 1 },
+      { status: 'Resolvido', label: 'Resolvido', count: 1 },
+    ]);
+    expect(response.body.criticalCalls).toBe(1);
+    expect(response.body.pendingMovements).toBe(1);
+    expect(response.body.monitoredUnits).toBe(2);
+    expect(response.body.recentMovements).toHaveLength(1);
+    expect(response.body.recentMovements[0]).toMatchObject({
+      equipmentId: 'PAT-004',
+      status: 'Pendente',
+      origin: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+      destination: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
+    });
+    expect(response.body.recentMovements[0].id).toEqual(expect.any(String));
+    expect(response.body.recentMovements[0].occurredAt).toEqual(expect.any(String));
+    expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+  });
+
+  it('scopes call indicators, pending movements and unit summaries for a unit user', async () => {
+    await seedEquipment();
+    const agent = await loginAsUnitUser();
+
+    const response = await agent.get('/api/v1/dashboard');
+
+    expect(response.status).toBe(200);
+    expect(response.body.unitSummaries).toEqual([
+      {
+        unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' },
+        coverage: '100%',
+        equipment: 2,
+        attention: 0,
+      },
+    ]);
+    expect(response.body.callsByStatus).toEqual([
+      { status: 'Aberto', label: 'Aberto', count: 1 },
+      { status: 'Resolvido', label: 'Resolvido', count: 1 },
+    ]);
+    expect(response.body.criticalCalls).toBe(1);
+    expect(response.body.pendingMovements).toBe(1);
+    expect(response.body.monitoredUnits).toBe(1);
+    expect(response.body.recentMovements).toHaveLength(1);
+    expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
   });
 });

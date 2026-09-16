@@ -1,6 +1,8 @@
 import mongoose, { type ClientSession } from 'mongoose';
 import { CallModel } from '../models/Call.js';
 import { EquipmentModel, type EquipmentSituation } from '../models/Equipment.js';
+import { MovementModel } from '../models/Movement.js';
+import { UnitModel } from '../models/Unit.js';
 import type { UnitReference } from '../models/User.js';
 import { publicAttachment, type AttachmentMetadata } from '../services/attachments.js';
 
@@ -73,16 +75,45 @@ export interface DashboardActivity {
   occurredAt: string;
 }
 
+export interface DashboardCallStatus {
+  status: string;
+  label: string;
+  count: number;
+}
+
+export interface DashboardMovementActivity {
+  id: string;
+  equipmentId: string;
+  origin: UnitReference;
+  destination: UnitReference;
+  status: string;
+  occurredAt: string;
+}
+
+export interface DashboardUnitSummary {
+  unit: UnitReference;
+  coverage: string;
+  equipment: number;
+  attention: number;
+}
+
 export interface DashboardResponse {
   unit: UnitReference;
   metrics: DashboardMetrics;
   situations: DashboardSituationSummary[];
   recentActivity: DashboardActivity[];
+  unitSummaries?: DashboardUnitSummary[];
+  callsByStatus?: DashboardCallStatus[];
+  criticalCalls?: number;
+  pendingMovements?: number;
+  monitoredUnits?: number;
+  recentMovements?: DashboardMovementActivity[];
 }
 
 export interface DashboardReadScope {
   unit: UnitReference;
   unitId: string | null;
+  role?: 'unit_user' | 'ditel_admin';
 }
 
 function buildEquipmentFilter(unitId: string | null) {
@@ -98,6 +129,112 @@ function labelForSituation(situation: DashboardSituationSummary['situation']): s
     case 'attention':
       return 'Requer atenção';
   }
+}
+
+const ATTENTION_SITUATIONS = ['inactive', 'lost', 'written_off'] as const;
+
+function isAttentionSituation(situation: string): boolean {
+  return (ATTENTION_SITUATIONS as readonly string[]).includes(situation);
+}
+
+async function readUnitSummaries(unitId?: string | null): Promise<DashboardUnitSummary[]> {
+  const scopeFilter = unitId ? { 'unit.id': unitId } : {};
+  const documents = await EquipmentModel.find(scopeFilter)
+    .select({ 'unit.id': 1, 'unit.name': 1, 'unit.acronym': 1, situation: 1 })
+    .lean()
+    .exec();
+
+  const byUnit = new Map<string, DashboardUnitSummary>();
+
+  for (const document of documents) {
+    const unit = document.unit as UnitReference;
+    const existing = byUnit.get(unit.id) ?? {
+      unit,
+      coverage: '0%',
+      equipment: 0,
+      attention: 0,
+    };
+    existing.equipment += 1;
+    if (isAttentionSituation(document.situation as string)) {
+      existing.attention += 1;
+    }
+    byUnit.set(unit.id, existing);
+  }
+
+  const summaries = [...byUnit.values()];
+
+  if (summaries.length === 0) {
+    return [];
+  }
+
+  const total = summaries.reduce((sum, summary) => sum + summary.equipment, 0);
+
+  return summaries
+    .map((summary) => ({
+      ...summary,
+      coverage: `${Math.round((summary.equipment / total) * 100)}%`,
+    }))
+    .sort((left, right) => left.unit.name.localeCompare(right.unit.name) || left.unit.id.localeCompare(right.unit.id));
+}
+
+const CALL_STATUS_ORDER = ['Aberto', 'Em análise', 'Em atendimento', 'Aguardando informação', 'Resolvido', 'Encerrado'];
+
+async function readCallsByStatus(unitId?: string | null): Promise<DashboardCallStatus[]> {
+  const filter = unitId ? { 'unit.id': unitId } : {};
+  const documents = await CallModel.find(filter).select({ status: 1 }).lean().exec();
+
+  const countsByStatus = new Map<string, number>();
+
+  for (const document of documents) {
+    const status = document.status as string;
+    countsByStatus.set(status, (countsByStatus.get(status) ?? 0) + 1);
+  }
+
+  return [...countsByStatus.entries()]
+    .map(([status]) => ({ status, label: status, count: countsByStatus.get(status) ?? 0 }))
+    .sort((left, right) => CALL_STATUS_ORDER.indexOf(left.status) - CALL_STATUS_ORDER.indexOf(right.status));
+}
+
+async function readCriticalCalls(unitId?: string | null): Promise<number> {
+  const filter: Record<string, unknown> = { priority: 'Crítica' };
+  if (unitId) {
+    filter['unit.id'] = unitId;
+  }
+  return CallModel.countDocuments(filter).exec();
+}
+
+async function readPendingMovements(unitId?: string | null): Promise<number> {
+  const filter: Record<string, unknown> = { status: 'Pendente' };
+  if (unitId) {
+    filter['origin.id'] = unitId;
+  }
+  return MovementModel.countDocuments(filter).exec();
+}
+
+async function readMonitoredUnits(unitId?: string | null): Promise<number> {
+  const filter: Record<string, unknown> = {};
+  if (unitId) {
+    filter.id = unitId;
+  }
+  return UnitModel.countDocuments(filter).exec();
+}
+
+async function readRecentMovements(unitId?: string | null): Promise<DashboardMovementActivity[]> {
+  const filter = unitId ? { 'origin.id': unitId } : {};
+  const documents = await MovementModel.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(6)
+    .lean()
+    .exec();
+
+  return documents.map((document) => ({
+    id: String(document._id),
+    equipmentId: document.equipmentId,
+    origin: document.origin as UnitReference,
+    destination: document.destination as UnitReference,
+    status: document.status as string,
+    occurredAt: new Date(document.createdAt).toISOString(),
+  }));
 }
 
 async function countBySituation(
@@ -217,5 +354,11 @@ export async function readDashboardByScope(scope: DashboardReadScope): Promise<D
       },
     ],
     recentActivity: [],
+    ...(scope.role === 'ditel_admin' ? { unitSummaries: await readUnitSummaries() } : { unitSummaries: await readUnitSummaries(scope.unitId) }),
+    callsByStatus: await readCallsByStatus(scope.unitId),
+    criticalCalls: await readCriticalCalls(scope.unitId),
+    pendingMovements: await readPendingMovements(scope.unitId),
+    monitoredUnits: await readMonitoredUnits(scope.unitId),
+    recentMovements: await readRecentMovements(scope.unitId),
   };
 }

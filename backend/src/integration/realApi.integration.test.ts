@@ -62,7 +62,7 @@ describe('real API integration', () => {
     expect((await agent.get('/api/v1/session')).status).toBe(200);
     const dashboard = await agent.get('/api/v1/dashboard');
     expect(dashboard.status).toBe(200);
-    expect(dashboard.body).toEqual({
+    expect(dashboard.body).toMatchObject({
       unit,
       metrics: { total: 1, active: 1, maintenance: 0, attention: 0 },
       situations: [

@@ -394,6 +394,23 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503': { $ref: '#/components/responses/AuditUnavailable' }
+    delete:
+      tags: [Administration]
+      summary: Exclui (inativa) um usuário com segurança
+      operationId: deleteAdminUser
+      description: Exclusivo para administrador DITEL. Exclusão lógica — o usuário recebe situação 'inactive', permanece no histórico, não consegue mais autenticar e as sessões ativas são revogadas. Nunca retorna senha, hash, tokens ou identificadores de sessão.
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AdminUserId' }]
+      responses:
+        '200':
+          description: Usuário inativado (exclusão lógica concluída)
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdminUserDeleteResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
   /admin/users/{userId}/situation:
     patch:
       tags: [Administration]
@@ -613,6 +630,62 @@ paths:
               schema: { type: string }
             application/pdf:
               schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/calls-summary:
+    get:
+      tags: [Reports]
+      summary: Gera a prévia autenticada de chamados por status e prioridade
+      operationId: getCallsSummaryReport
+      description: Usuários de Unidade recebem somente sua unidade autenticada. Administradores DITEL podem consultar o consolidado estadual ou filtrar por unidade ativa.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/UnitId' }
+      responses:
+        '200':
+          description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CallsSummaryReportResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/movements-summary:
+    get:
+      tags: [Reports]
+      summary: Gera a prévia autenticada de movimentações por período
+      operationId: getMovementsSummaryReport
+      description: Usuários de Unidade recebem somente movimentações que envolvem sua unidade (origem ou destino). Administradores DITEL podem consultar o consolidado estadual ou filtrar por unidade ativa.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/UnitId' }
+      responses:
+        '200':
+          description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MovementsSummaryReportResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/general:
+    get:
+      tags: [Reports]
+      summary: Gera o relatório geral DITEL consolidado (inventário, chamados e movimentações)
+      operationId: getGeneralReport
+      description: Consolida inventário, chamados e movimentações no escopo autenticado. Usuários de Unidade recebem somente dados da própria unidade; administradores DITEL podem consultar o estadual ou filtrar por unidade ativa.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportPeriod' }
+      responses:
+        '200':
+          description: Relatório geral sem senhas, tokens, hashes ou identificadores de sessão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GeneralReportResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1138,6 +1211,12 @@ components:
       properties:
         id: { type: string }
         situation: { type: string, enum: [active, blocked] }
+    AdminUserDeleteResponse:
+      type: object
+      required: [id, situation]
+      properties:
+        id: { type: string }
+        situation: { type: string, enum: [inactive] }
     AdminUserPasswordResetResponse:
       type: object
       required: [userId, temporaryPassword, mustChangePassword]
@@ -1367,6 +1446,172 @@ components:
           properties:
             name: { type: string }
             role: { $ref: '#/components/schemas/UserRole' }
+    CallsSummaryReportResponse:
+      type: object
+      required: [report, totals, byStatus, byPriority, generatedBy]
+      properties:
+        report:
+          type: object
+          required: [id, title, generatedAt, scope, filters]
+          properties:
+            id: { type: string, enum: [calls-summary] }
+            title: { type: string }
+            generatedAt: { type: string, format: date-time }
+            scope: { $ref: '#/components/schemas/UnitContext' }
+            filters:
+              type: object
+              properties: {}
+        totals:
+          type: object
+          required: [total, open, critical, attention, resolved]
+          properties:
+            total: { type: integer, minimum: 0 }
+            open: { type: integer, minimum: 0 }
+            critical: { type: integer, minimum: 0 }
+            attention: { type: integer, minimum: 0 }
+            resolved: { type: integer, minimum: 0 }
+        byStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer, minimum: 0 }
+        byPriority:
+          type: array
+          items:
+            type: object
+            required: [priority, count]
+            properties:
+              priority: { type: string }
+              count: { type: integer, minimum: 0 }
+        generatedBy:
+          type: object
+          required: [name, role]
+          properties:
+            name: { type: string }
+            role: { $ref: '#/components/schemas/UserRole' }
+    MovementsSummaryReportResponse:
+      type: object
+      required: [report, totals, byStatus, generatedBy]
+      properties:
+        report:
+          type: object
+          required: [id, title, generatedAt, scope, filters]
+          properties:
+            id: { type: string, enum: [movements-summary] }
+            title: { type: string }
+            generatedAt: { type: string, format: date-time }
+            scope: { $ref: '#/components/schemas/UnitContext' }
+            filters:
+              type: object
+              properties: {}
+        totals:
+          type: object
+          required: [total, pending, approved, rejected]
+          properties:
+            total: { type: integer, minimum: 0 }
+            pending: { type: integer, minimum: 0 }
+            approved: { type: integer, minimum: 0 }
+            rejected: { type: integer, minimum: 0 }
+        byStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer, minimum: 0 }
+        generatedBy:
+          type: object
+          required: [name, role]
+          properties:
+            name: { type: string }
+            role: { $ref: '#/components/schemas/UserRole' }
+    GeneralReportResponse:
+      type: object
+      required: [report, inventory, calls, movements, generatedBy]
+      properties:
+        report:
+          type: object
+          required: [id, title, generatedAt, scope, filters]
+          properties:
+            id: { type: string, enum: [general] }
+            title: { type: string }
+            generatedAt: { type: string, format: date-time }
+            scope: { $ref: '#/components/schemas/UnitContext' }
+            filters:
+              type: object
+              required: [situation]
+              properties:
+                situation:
+                  oneOf:
+                    - { $ref: '#/components/schemas/EquipmentSituation' }
+                    - { type: 'null' }
+        inventory:
+          type: object
+          required: [totals, units]
+          properties:
+            totals: { $ref: '#/components/schemas/InventoryReportCounters' }
+            units:
+              type: array
+              items: { $ref: '#/components/schemas/InventoryReportUnitSummary' }
+        calls:
+          type: object
+          required: [totals, byStatus, byPriority]
+          properties:
+            totals:
+              type: object
+              required: [total, open, critical, attention, resolved]
+              properties:
+                total: { type: integer, minimum: 0 }
+                open: { type: integer, minimum: 0 }
+                critical: { type: integer, minimum: 0 }
+                attention: { type: integer, minimum: 0 }
+                resolved: { type: integer, minimum: 0 }
+            byStatus:
+              type: array
+              items:
+                type: object
+                required: [status, count]
+                properties:
+                  status: { type: string }
+                  count: { type: integer, minimum: 0 }
+            byPriority:
+              type: array
+              items:
+                type: object
+                required: [priority, count]
+                properties:
+                  priority: { type: string }
+                  count: { type: integer, minimum: 0 }
+        movements:
+          type: object
+          required: [totals, byStatus]
+          properties:
+            totals:
+              type: object
+              required: [total, pending, approved, rejected]
+              properties:
+                total: { type: integer, minimum: 0 }
+                pending: { type: integer, minimum: 0 }
+                approved: { type: integer, minimum: 0 }
+                rejected: { type: integer, minimum: 0 }
+            byStatus:
+              type: array
+              items:
+                type: object
+                required: [status, count]
+                properties:
+                  status: { type: string }
+                  count: { type: integer, minimum: 0 }
+        generatedBy:
+          type: object
+          required: [name, role]
+          properties:
+            name: { type: string }
+            role: { $ref: '#/components/schemas/UserRole' }
     MaintenanceStatus:
       type: string
       enum: [open, in_progress, completed, cancelled]
@@ -1542,6 +1787,40 @@ components:
               label: { type: string }
               count: { type: integer, minimum: 0 }
         recentActivity: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }
+        unitSummaries:
+          type: array
+          items:
+            type: object
+            required: [unit, coverage, equipment, attention]
+            properties:
+              unit: { $ref: '#/components/schemas/UnitContext' }
+              coverage: { type: string }
+              equipment: { type: integer, minimum: 0 }
+              attention: { type: integer, minimum: 0 }
+        callsByStatus:
+          type: array
+          items:
+            type: object
+            required: [status, label, count]
+            properties:
+              status: { type: string }
+              label: { type: string }
+              count: { type: integer, minimum: 0 }
+        criticalCalls: { type: integer, minimum: 0 }
+        pendingMovements: { type: integer, minimum: 0 }
+        monitoredUnits: { type: integer, minimum: 0 }
+        recentMovements:
+          type: array
+          items:
+            type: object
+            required: [id, equipmentId, origin, destination, status, occurredAt]
+            properties:
+              id: { type: string }
+              equipmentId: { type: string }
+              origin: { $ref: '#/components/schemas/UnitContext' }
+              destination: { $ref: '#/components/schemas/UnitContext' }
+              status: { type: string }
+              occurredAt: { type: string, format: date-time }
     CallQueueItem:
       type: object
       required: [id, subject, unitId, unitName, priority, status, updatedAt]

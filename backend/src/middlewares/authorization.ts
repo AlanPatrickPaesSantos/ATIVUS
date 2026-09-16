@@ -7,6 +7,7 @@ import type { UnitReference } from '../models/User.js';
 export interface DashboardAccessScope {
   unit: UnitReference;
   unitId: string | null;
+  role: 'unit_user' | 'ditel_admin';
 }
 
 export const STATEWIDE_DASHBOARD_UNIT: UnitReference = {
@@ -38,12 +39,14 @@ async function resolveDashboardScope(sessionContext: SessionContext | undefined)
     return {
       unit: STATEWIDE_DASHBOARD_UNIT,
       unitId: null,
+      role: access.role,
     };
   }
 
   return {
     unit: access.unit,
     unitId: access.unitId,
+    role: access.role,
   };
 }
 

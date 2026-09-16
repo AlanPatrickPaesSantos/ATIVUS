@@ -30,6 +30,16 @@ const dashboard = {
   unitSummaries: [
     { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '84%', equipment: 128, attention: 9 },
   ],
+  callsByStatus: [
+    { status: 'Aberto', label: 'Aberto', count: 4 },
+    { status: 'Em atendimento', label: 'Em atendimento', count: 2 },
+  ],
+  criticalCalls: 1,
+  pendingMovements: 3,
+  monitoredUnits: 2,
+  recentMovements: [
+    { id: 'mov-1', equipmentId: 'PAT-2026-004821', origin: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, destination: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }, status: 'Pendente', occurredAt: '2026-09-15T10:00:00.000Z' },
+  ],
   recentActivity: [],
 }
 
@@ -121,4 +131,36 @@ test('shows a retryable error without revealing protected dashboard data', async
 
   await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
   expect(refetch).toHaveBeenCalledOnce()
+})
+
+test('renders real call and movement indicators from the dashboard API', () => {
+  setQueryResult({ data: dashboard })
+
+  renderPage()
+
+  const metricsGrid = screen.getByLabelText('Indicadores estaduais')
+  expect(within(metricsGrid).getByText('1')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('3')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Chamados por status' })).toBeInTheDocument()
+  expect(screen.getByText('Aberto', { selector: 'li span' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Movimentações recentes' })).toBeInTheDocument()
+  expect(screen.getByText(/3º BPM → Unidade Norte/)).toBeInTheDocument()
+})
+
+test('shows empty states when there are no calls or movements', () => {
+  setQueryResult({ data: { ...dashboard, callsByStatus: [], recentMovements: [] } })
+
+  renderPage()
+
+  expect(screen.getByText('Nenhum chamado no escopo atual.')).toBeInTheDocument()
+  expect(screen.getByText('Nenhuma movimentação recente.')).toBeInTheDocument()
+})
+
+test('does not render protected data in empty or error states', async () => {
+  setQueryResult({})
+
+  renderPage()
+
+  expect(screen.queryByLabelText('Chamados por status')).not.toBeInTheDocument()
+  expect(screen.queryByText('Movimentações recentes')).not.toBeInTheDocument()
 })

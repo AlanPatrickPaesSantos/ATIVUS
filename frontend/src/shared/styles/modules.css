@@ -456,6 +456,21 @@
 .ditel-admin { background: rgb(255 183 77 / 7%); border-left: 3px solid var(--sigat-attention); margin-top: 1.2rem; padding: .7rem .75rem; }
 .ditel-admin span { color: var(--sigat-attention); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
 .ditel-admin p { font-size: .78rem; margin: .45rem 0 .75rem; }
+.ditel-dashboards { background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface)); margin-top: 1rem; padding: 1.15rem; }
+.ditel-dashboards + .ditel-dashboards { margin-top: .8rem; }
+.ditel-dashboards__header > div:first-child { margin-bottom: .9rem; }
+.ditel-status-list { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); list-style: none; margin: 0; padding: 0; }
+.ditel-status-list li { align-items: center; background: var(--sigat-night-raised); border: 1px solid var(--sigat-border); border-radius: var(--radius-sm); display: flex; justify-content: space-between; padding: .6rem .75rem; }
+.ditel-status-list span { color: var(--sigat-muted); font-size: .78rem; }
+.ditel-status-list strong { color: var(--sigat-text); font-family: var(--font-identifier); }
+.ditel-movement-list { display: grid; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+.ditel-movement-list li { align-items: center; border-bottom: 1px solid var(--sigat-border); display: flex; justify-content: space-between; padding: .62rem 0; }
+.ditel-movement-list li:last-child { border-bottom: 0; }
+.ditel-movement-list li > div { display: grid; gap: .1rem; }
+.ditel-movement-list li strong { color: var(--sigat-text); font-size: .8rem; }
+.ditel-movement-list li span { color: var(--sigat-muted); font-size: .74rem; }
+.ditel-dashboard-footnote { color: var(--sigat-muted); font-size: .74rem; margin: 1rem 0 0; }
+.ditel-dashboard-footnote strong { color: var(--sigat-operational-bright); font-family: var(--font-identifier); }
 @media (prefers-reduced-motion: no-preference) { .ditel-dashboard-page .module-page__header { animation: ditel-dashboard-enter .28s ease both; } .ditel-metric { animation: ditel-dashboard-enter .28s ease both; } .ditel-metric:nth-child(2) { animation-delay: 45ms; } .ditel-metric:nth-child(3) { animation-delay: 90ms; } .ditel-metric:nth-child(4) { animation-delay: 135ms; } .ditel-metric:nth-child(5) { animation-delay: 180ms; } .ditel-action-card { animation: ditel-dashboard-enter .3s 220ms ease both; } }
 @keyframes ditel-dashboard-enter { from { opacity: 0; transform: translateY(.35rem); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ditel-dashboard-page .module-page__header, .ditel-metric, .ditel-action-card { animation: none; } }

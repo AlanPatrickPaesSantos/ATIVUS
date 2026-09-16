@@ -27,6 +27,16 @@ describe('getUnitDashboard with the MSW API boundary', () => {
       recentActivity: [
         { id: 'activity-unit-centro-1', description: 'Inventário do 3º BPM atualizado.', occurredAt: 'Hoje, 09:30' },
       ],
+      unitSummaries: [
+        { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '100%', equipment: 428, attention: 1 },
+      ],
+      callsByStatus: [
+        { status: 'Aberto', label: 'Aberto', count: 1 },
+      ],
+      criticalCalls: 3,
+      pendingMovements: 0,
+      monitoredUnits: 1,
+      recentMovements: [],
     })
   })
 
