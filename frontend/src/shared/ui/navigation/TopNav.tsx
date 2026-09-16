@@ -142,7 +142,8 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
         <button ref={menuButtonRef} className="top-nav__toggle top-nav__mobile-toggle" type="button" hidden={layout !== 'mobile'} aria-expanded={isMobileMenuOpen} aria-controls="main-navigation" onClick={() => setIsMobileMenuOpen((open) => !open)}>
           Menu
         </button>
-        <ul id="main-navigation" className="top-nav__modules" data-alignment="page-center" data-open={isMobileMenuOpen}>
+      </div>
+      <ul id="main-navigation" className="top-nav__modules" data-alignment="page-center" data-open={isMobileMenuOpen}>
         <li className="top-nav__mobile-context" hidden={layout !== 'mobile'}>
           <span>Módulo atual</span>
           <strong>{activeItem?.label ?? 'Nenhum módulo'}</strong>
@@ -187,12 +188,11 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
           </li>
         )}
         </ul>
-      </div>
-      <label className="top-nav__search" data-alignment="available-center" data-actions-gap="comfortable" hidden={shouldHideSearch}>
-        <span>Buscar no sistema</span>
-        <input aria-label="Buscar no sistema" placeholder="Buscar no sistema" type="search" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && search.trim()) navigate(`/inventario?search=${encodeURIComponent(search.trim())}`) }} />
-      </label>
       <div className="top-nav__end" data-alignment="right">
+        <label className="top-nav__search" data-alignment="available-center" data-actions-gap="comfortable" hidden={shouldHideSearch}>
+          <span>Buscar no sistema</span>
+          <input aria-label="Buscar no sistema" placeholder="Buscar no sistema" type="search" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && search.trim()) navigate(`/inventario?search=${encodeURIComponent(search.trim())}`) }} />
+        </label>
         <button className="top-nav__notification-btn" type="button" aria-label="Notificações" aria-haspopup="dialog" aria-expanded={panel === 'notifications'} aria-controls="notifications-menu" hidden={layout === 'mobile'} onClick={() => setPanel(panel === 'notifications' ? null : 'notifications')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-nav__action-icon">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
