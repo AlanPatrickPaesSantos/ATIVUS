@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc -b --pretty false",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b --pretty false && tsc -p tsconfig.server.json && vite build",
     "preview": "vite preview",
+    "start:spa": "node spa-server-out/spaStaticServer.js",
     "test": "vitest --exclude e2e/** --exclude e2e-real/**",
     "test:watch": "vitest --watch",
     "test:e2e": "playwright test",
