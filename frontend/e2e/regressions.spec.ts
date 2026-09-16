@@ -10,33 +10,29 @@ async function signInDitel(page: import('@playwright/test').Page) {
 }
 
 test.describe('regressões visuais das páginas de governança', () => {
-  test('TopNav desktop não sobrepõe itens e usa Mais ações', async ({ page }) => {
+  test('TopNav desktop não sobrepõe itens e dispensa Mais ações (menu oficial cabe na barra)', async ({ page }) => {
     await signInDitel(page)
     await page.setViewportSize({ width: 1280, height: 800 })
 
-    // Layout desktop compacto: módulo excedente atrás de "Mais ações"
+    // Layout desktop compacto: os 6 módulos oficiais cabem; sem botão "Mais ações"
     const nav = page.locator('.top-nav')
     await expect(nav).toHaveAttribute('data-layout', 'desktop')
-    const moreButton = page.getByRole('button', { name: 'Mais ações' })
-    await expect(moreButton).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Mais ações' })).toHaveCount(0)
 
     // Sem overlap: o end (contexto + perfil) começa depois do último módulo visível
     const endBox = await page.locator('.top-nav__end').boundingBox()
     const lastLinkBox = await page.locator('.top-nav__modules li:not([hidden]) .top-nav__link').last().boundingBox()
     expect(endBox!.x).toBeGreaterThan(lastLinkBox!.x + lastLinkBox!.width)
 
-    // Menu oficial na barra; só Administração (excedente) fica atrás de "Mais"
-    for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Manutenção']) {
+    // Menu oficial na barra (Manutenção não é módulo oficial)
+    for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração']) {
       await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible()
     }
-    // Módulos não oficiais NÃO aparecem nem na barra nem no menu Mais
-    await moreButton.click()
-    const menu = page.getByRole('menu', { name: 'Mais ações' })
-    await expect(menu).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: 'Administração', exact: true })).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: /Missões técnicas/i })).toHaveCount(0)
-    await expect(page.getByRole('menuitem', { name: /Tipos de equipamento/i })).toHaveCount(0)
-    await expect(page.getByRole('menuitem', { name: /Auditoria/i })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Manutenção', exact: true })).toHaveCount(0)
+    // Módulos não oficiais NÃO aparecem
+    await expect(page.getByRole('link', { name: /Missões técnicas/i })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Tipos de equipamento/i })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Auditoria/i })).toHaveCount(0)
   })
 
   test('TopNav tablet usa Mais ações para os módulos excedentes', async ({ page }) => {

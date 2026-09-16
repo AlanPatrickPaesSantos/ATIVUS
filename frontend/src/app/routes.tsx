@@ -33,8 +33,6 @@ const routePermissions: Record<string, string> = {
   '/chamados': 'tickets',
   '/movimentacoes': 'movements',
   '/relatorios': 'reports',
-  '/manutencao': 'maintenance',
-  '/missoes-tecnicas': 'maintenance',
   '/administracao': 'administration',
   '/auditoria': 'administration',
   '/tipos-equipamento': 'administration',

@@ -85,8 +85,8 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
   const activeItem = items.find((item) => item.href === activePath)
 
   // Desktop/tablet overflow: desktop-wide keeps ALL official modules visible.
-  // Compact desktop keeps the 6 core modules (Painel… Manutenção) and moves
-  // the trailing module (Administração) to "Mais ações"; tablet shows 4.
+  // Compact desktop keeps the 6 official modules and moves the trailing one
+  // (Relatórios/Administração) to "Mais ações"; tablet shows the first 4.
   const showOverflow = layout === 'desktop' || layout === 'tablet'
   const barSize = layout === 'desktop' ? 6 : 4
   // desktop-wide (largest) shows every module; only compact/tablet overflow.

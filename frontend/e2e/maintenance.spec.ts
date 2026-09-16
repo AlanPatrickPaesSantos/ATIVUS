@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { spaNavigate } from './helpers'
 
 async function signIn(page: import('@playwright/test').Page, registration: string, password: string) {
   await page.goto('/dashboard')
@@ -12,8 +13,8 @@ async function signIn(page: import('@playwright/test').Page, registration: strin
 
 test('unit user opens a maintenance request and sees it in the equipment detail modal', async ({ page }) => {
   await signIn(page, '100001', 'sigat-unit')
-  await page.getByRole('link', { name: 'Manutenção', exact: true }).click()
-  await expect(page).toHaveURL(/\/manutencao$/)
+  // Manutenção não está no menu oficial; a rota permanece interna e protegida
+  await spaNavigate(page, '/manutencao')
   await expect(page.getByRole('heading', { name: 'Manutenção da Unidade' })).toBeVisible()
 
   await page.getByRole('button', { name: '+ Abrir manutenção' }).click()
@@ -38,7 +39,7 @@ test('unit user opens a maintenance request and sees it in the equipment detail 
 
 test('DITEL updates and completes a maintenance with diagnosis and service', async ({ page }) => {
   await signIn(page, '200001', 'sigat-ditel')
-  await page.getByRole('link', { name: 'Manutenção', exact: true }).click()
+  await spaNavigate(page, '/manutencao')
   await expect(page.getByRole('heading', { name: 'Manutenções DITEL' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Atualizar', exact: true }).first().click()

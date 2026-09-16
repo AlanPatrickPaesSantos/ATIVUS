@@ -1,8 +1,8 @@
 import type { NavigationItem, SessionContext } from './types'
 
 const permissionsByRole = {
-  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration', 'maintenance'],
-  unit_user: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'maintenance'],
+  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration'],
+  unit_user: ['dashboard', 'inventory', 'tickets', 'movements', 'reports'],
 } as const
 
 const navigation: NavigationItem[] = [
@@ -11,7 +11,6 @@ const navigation: NavigationItem[] = [
   { label: 'Chamados', href: '/chamados', icon: '◌', requires: 'tickets' },
   { label: 'Movimentações', href: '/movimentacoes', icon: '↔', requires: 'movements' },
   { label: 'Relatórios', href: '/relatorios', icon: '▤', requires: 'reports' },
-  { label: 'Manutenção', href: '/manutencao', icon: '⚒', requires: 'maintenance' },
   { label: 'Administração', href: '/administracao', icon: '⚙', requires: 'administration' },
 ]
 
