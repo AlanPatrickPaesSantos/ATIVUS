@@ -10,3 +10,5 @@ export function updateAdminUser(userId: string, input: AdminUserUpdateRequest) {
 export type AdminUserMutableSituation = 'active' | 'blocked'
 export type AdminUserSituationUpdateResponse = { id: string; situation: AdminUserMutableSituation }
 export function updateAdminUserSituation(userId: string, situation: AdminUserMutableSituation) { return httpClient<AdminUserSituationUpdateResponse>(`/admin/users/${encodeURIComponent(userId)}/situation`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ situation }) }) }
+export type AdminUserDeleteResponse = { id: string; situation: 'inactive' }
+export function deleteAdminUser(userId: string) { return httpClient<AdminUserDeleteResponse>(`/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }) }

@@ -28,6 +28,22 @@ const recentActivityByUnit = {
   'unit-norte': [{ id: 'activity-unit-norte-1', description: 'Inventário da Unidade Norte atualizado.', occurredAt: 'Hoje, 10:15' }],
 } as const
 
+type ReportCallItem = { id: string; protocol: string; subject: string; status: string; priority: string; unit: { id: string; name: string; acronym: string } }
+type ReportMovementItem = { id: string; equipmentId: string; status: string; origin: { id: string }; destination: { id: string } }
+
+const reportCalls: ReportCallItem[] = [
+  { id: 'call-001', protocol: 'CHM-001', subject: 'Rádio sem transmissão', status: 'Aberto', priority: 'Crítica', unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' } },
+  { id: 'call-002', protocol: 'CHM-002', subject: 'Notebook não liga', status: 'Em atendimento', priority: 'Alta', unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' } },
+  { id: 'call-003', protocol: 'CHM-003', subject: 'Impressora com atolamento', status: 'Resolvido', priority: 'Média', unit: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' } },
+  { id: 'call-004', protocol: 'CHM-004', subject: 'Atualização de sistema', status: 'Encerrado', priority: 'Baixa', unit: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' } },
+]
+
+const reportMovements: ReportMovementItem[] = [
+  { id: 'mov-001', equipmentId: 'eq-001', status: 'Pendente', origin: { id: 'unit-centro' }, destination: { id: 'unit-norte' } },
+  { id: 'mov-002', equipmentId: 'eq-101', status: 'Aprovada', origin: { id: 'unit-norte' }, destination: { id: 'unit-centro' } },
+  { id: 'mov-003', equipmentId: 'eq-002', status: 'Rejeitada', origin: { id: 'unit-centro' }, destination: { id: 'unit-norte' } },
+]
+
 type MswMaintenance = {
   id: string
   equipment: { id: string; patrimony: string; type: string; model: string; brand: string }
@@ -475,6 +491,18 @@ export const handlers = [
     user.updatedAt = new Date().toISOString()
     return HttpResponse.json({ id: user.id, situation: user.situation })
   }),
+  http.delete('*/api/v1/admin/users/:userId', ({ params }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    if (session.role !== 'ditel_admin') return HttpResponse.json({ code: 'FORBIDDEN', message: 'Acesso administrativo obrigatório.' }, { status: 403 })
+    if (session.userId === params.userId) return HttpResponse.json({ code: 'SELF_DEACTIVATION_FORBIDDEN', message: 'Um administrador não pode excluir a própria conta.' }, { status: 409 })
+    const user = adminUsers.find((item) => item.id === params.userId)
+    if (!user) return HttpResponse.json({ code: 'USER_NOT_FOUND', message: 'Usuário não encontrado.' }, { status: 404 })
+    if (user.situation === 'inactive') return HttpResponse.json({ code: 'INVALID_SITUATION_TRANSITION', message: 'Transição de situação inválida.' }, { status: 409 })
+    user.situation = 'inactive'
+    user.updatedAt = new Date().toISOString()
+    return HttpResponse.json({ id: user.id, situation: 'inactive' })
+  }),
   http.get('*/api/v1/inventory', ({ request }) => {
     const session = getSession()
     if (!session) return unauthorized()
@@ -576,6 +604,126 @@ export const handlers = [
     }
     return HttpResponse.json({ code: 'INVALID_EXPORT_FORMAT', message: 'Formato de exportação inválido.' }, { status: 400 })
   }),
+  http.get('*/api/v1/reports/calls-summary', ({ request }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    const url = new URL(request.url)
+    const unitId = url.searchParams.get('unitId')
+    const baseCalls = unitId ? reportCalls.filter((item) => item.unit.id === unitId) : reportCalls
+    const scoped = session.role === 'unit_user' ? baseCalls.filter((item) => item.unit.id === session.unit?.id) : baseCalls
+    const byStatus = new Map<string, number>()
+    const byPriority = new Map<string, number>()
+    for (const call of scoped) {
+      byStatus.set(call.status, (byStatus.get(call.status) ?? 0) + 1)
+      byPriority.set(call.priority, (byPriority.get(call.priority) ?? 0) + 1)
+    }
+    return HttpResponse.json({
+      report: {
+        id: 'calls-summary',
+        title: 'Chamados por status e prioridade',
+        generatedAt: new Date().toISOString(),
+        scope: session.role === 'ditel_admin' && !unitId ? { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' } : { id: session.unit?.id ?? unitId ?? 'statewide', name: session.unit?.name ?? 'Estado do Pará', acronym: session.unit?.acronym ?? 'DITEL' },
+        filters: {},
+      },
+      totals: {
+        total: scoped.length,
+        open: scoped.filter((item) => item.status === 'Aberto').length,
+        critical: scoped.filter((item) => item.priority === 'Crítica').length,
+        attention: scoped.filter((item) => item.status === 'Aberto' || item.status === 'Em atendimento' || item.status === 'Aguardando informação').length,
+        resolved: scoped.filter((item) => item.status === 'Resolvido' || item.status === 'Encerrado').length,
+      },
+      byStatus: [...byStatus.entries()].map(([status, count]) => ({ status, count })),
+      byPriority: [...byPriority.entries()].map(([priority, count]) => ({ priority, count })),
+      generatedBy: { name: session.name, role: session.role },
+    })
+  }),
+  http.get('*/api/v1/reports/movements-summary', ({ request }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    const url = new URL(request.url)
+    const unitId = url.searchParams.get('unitId')
+    const scoped = session.role === 'unit_user'
+      ? reportMovements.filter((item) => item.origin.id === session.unit?.id || item.destination.id === session.unit?.id)
+      : unitId ? reportMovements.filter((item) => item.origin.id === unitId || item.destination.id === unitId) : reportMovements
+    const byStatus = new Map<string, number>()
+    for (const movement of scoped) byStatus.set(movement.status, (byStatus.get(movement.status) ?? 0) + 1)
+    return HttpResponse.json({
+      report: {
+        id: 'movements-summary',
+        title: 'Movimentações por período',
+        generatedAt: new Date().toISOString(),
+        scope: session.role === 'ditel_admin' && !unitId ? { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' } : { id: session.unit?.id ?? unitId ?? 'statewide', name: session.unit?.name ?? 'Estado do Pará', acronym: session.unit?.acronym ?? 'DITEL' },
+        filters: {},
+      },
+      totals: {
+        total: scoped.length,
+        pending: scoped.filter((item) => item.status === 'Pendente').length,
+        approved: scoped.filter((item) => item.status === 'Aprovada').length,
+        rejected: scoped.filter((item) => item.status === 'Rejeitada').length,
+      },
+      byStatus: [...byStatus.entries()].map(([status, count]) => ({ status, count })),
+      generatedBy: { name: session.name, role: session.role },
+    })
+  }),
+  http.get('*/api/v1/reports/general', ({ request }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    const url = new URL(request.url)
+    const unitId = url.searchParams.get('unitId')
+    const scope = session.role === 'ditel_admin' && !unitId ? { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' } : { id: session.unit?.id ?? unitId ?? 'statewide', name: session.unit?.name ?? 'Estado do Pará', acronym: session.unit?.acronym ?? 'DITEL' }
+    const scopedEquipment = session.role === 'unit_user' ? equipment.filter((item) => item.unitId === session.unit?.id) : unitId ? equipment.filter((item) => item.unitId === unitId) : equipment
+    const scopedCalls = session.role === 'unit_user' ? reportCalls.filter((item) => item.unit.id === session.unit?.id) : unitId ? reportCalls.filter((item) => item.unit.id === unitId) : reportCalls
+    const scopedMovements = session.role === 'unit_user' ? reportMovements.filter((item) => item.origin.id === session.unit?.id || item.destination.id === session.unit?.id) : unitId ? reportMovements.filter((item) => item.origin.id === unitId || item.destination.id === unitId) : reportMovements
+    const situation = url.searchParams.get('situation')
+    const filteredEquipment = situation ? scopedEquipment.filter((item) => item.situation === situation) : scopedEquipment
+    const count = (items: FixtureEquipment[]) => ({
+      total: items.length,
+      active: items.filter((item) => item.situation === 'active').length,
+      maintenance: items.filter((item) => item.situation === 'maintenance').length,
+      inactive: items.filter((item) => item.situation === 'inactive').length,
+      lost: items.filter((item) => item.situation === 'lost').length,
+      writtenOff: items.filter((item) => item.situation === 'written_off').length,
+      attention: items.filter((item) => ['inactive', 'lost', 'written_off'].includes(item.situation)).length,
+    })
+    const unitsById = new Map<string, { id: string; name: string; acronym: string }>()
+    for (const item of filteredEquipment) {
+      if (!unitsById.has(item.unitId)) unitsById.set(item.unitId, { id: item.unitId, name: item.unitName, acronym: item.unitName })
+    }
+    return HttpResponse.json({
+      report: {
+        id: 'general',
+        title: 'Relatório geral DITEL',
+        generatedAt: new Date().toISOString(),
+        scope,
+        filters: { situation: situation ?? null },
+      },
+      inventory: {
+        totals: count(filteredEquipment),
+        units: [...unitsById.entries()].map(([id, unit]) => ({ unit, ...count(filteredEquipment.filter((item) => item.unitId === id)) })),
+      },
+      calls: {
+        totals: {
+          total: scopedCalls.length,
+          open: scopedCalls.filter((item) => item.status === 'Aberto').length,
+          critical: scopedCalls.filter((item) => item.priority === 'Crítica').length,
+          attention: scopedCalls.filter((item) => item.status === 'Aberto' || item.status === 'Em atendimento' || item.status === 'Aguardando informação').length,
+          resolved: scopedCalls.filter((item) => item.status === 'Resolvido' || item.status === 'Encerrado').length,
+        },
+        byStatus: [...new Map(scopedCalls.map((item) => [item.status, (scopedCalls.filter((c) => c.status === item.status).length)])).entries()].map(([status, count]) => ({ status, count })),
+        byPriority: [...new Map(scopedCalls.map((item) => [item.priority, (scopedCalls.filter((c) => c.priority === item.priority).length)])).entries()].map(([priority, count]) => ({ priority, count })),
+      },
+      movements: {
+        totals: {
+          total: scopedMovements.length,
+          pending: scopedMovements.filter((item) => item.status === 'Pendente').length,
+          approved: scopedMovements.filter((item) => item.status === 'Aprovada').length,
+          rejected: scopedMovements.filter((item) => item.status === 'Rejeitada').length,
+        },
+        byStatus: [...new Map(scopedMovements.map((item) => [item.status, (scopedMovements.filter((m) => m.status === item.status).length)])).entries()].map(([status, count]) => ({ status, count })),
+      },
+      generatedBy: { name: session.name, role: session.role },
+    })
+  }),
   http.get('*/api/v1/dashboard', () => {
     const session = getSession()
     if (!session) return unauthorized()
@@ -605,6 +753,23 @@ export const handlers = [
             attention: scopedAttention,
           }
         }),
+        callsByStatus: [
+          { status: 'Aberto', label: 'Aberto', count: 2 },
+          { status: 'Em atendimento', label: 'Em atendimento', count: 1 },
+        ],
+        criticalCalls: 1,
+        pendingMovements: 1,
+        monitoredUnits: [3, ...units].length,
+        recentMovements: [
+          {
+            id: 'mov-msw-001',
+            equipmentId: 'PAT-2026-004824',
+            origin: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' },
+            destination: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' },
+            status: 'Pendente',
+            occurredAt: '2026-09-15T10:00:00.000Z',
+          },
+        ],
         recentActivity: [],
       }
       return HttpResponse.json(response)
@@ -629,6 +794,14 @@ export const handlers = [
         { situation: 'attention', label: 'Requer atenção', count: attentionEquipment.length },
       ],
       recentActivity: recentActivityByUnit[unit.id as keyof typeof recentActivityByUnit] ?? [],
+      unitSummaries: [{ unit, coverage: '100%', equipment: inventoryTotal, attention: attentionEquipment.length }],
+      callsByStatus: [
+        { status: 'Aberto', label: 'Aberto', count: 1 },
+      ],
+      criticalCalls: criticalCalls.filter((call) => call.unitId === unit.id).length,
+      pendingMovements: 0,
+      monitoredUnits: 1,
+      recentMovements: [],
     }
     return HttpResponse.json(response)
   }),

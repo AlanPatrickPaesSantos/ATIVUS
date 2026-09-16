@@ -4,12 +4,13 @@ import { MemoryRouter } from 'react-router-dom'
 import { vi, beforeEach, afterEach, test, expect } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { AdministrationPage } from './AdministrationPage'
+import { setSession } from '../../../shared/auth/session'
 beforeEach(() => vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
   const url = new URL(String(input), 'http://localhost')
   if (url.pathname.endsWith('/units')) return new Response(JSON.stringify({ items: [{ id: 'unit-centro', name: 'Unidade Centro', acronym: 'CTR' }] }), { status: 200 })
   return new Response(JSON.stringify({ items: [{ id: '1', name: 'Ana Souza', registration: '123', role: 'unit_user', situation: 'active', unit: { id: 'unit-centro', name: 'Unidade Centro', acronym: 'CTR' }, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' }], total: 1, page: 1, pageSize: 100 }), { status: 200 })
 }))
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => { vi.restoreAllMocks(); setSession(null) })
 test('loads public administrative users and preserves links', async () => { render(<MemoryRouter><AdministrationPage /></MemoryRouter>); expect(await screen.findByText('Ana Souza')).toBeInTheDocument(); expect(screen.getByRole('link', { name: 'Consultar inventário estadual' })).toHaveAttribute('href', '/inventario'); expect(screen.queryByText('passwordHash')).not.toBeInTheDocument() })
 test('shows retry after an API failure', async () => { vi.restoreAllMocks(); const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline')); render(<MemoryRouter><AdministrationPage /></MemoryRouter>); expect(await screen.findByRole('alert')).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument(); expect(fetchMock).toHaveBeenCalled() })
 test('preserves the units tab and user details modal', async () => { render(<MemoryRouter><AdministrationPage /></MemoryRouter>); expect(await screen.findByText('Ana Souza')).toBeInTheDocument(); await userEvent.click(screen.getByRole('tab', { name: 'Unidades' })); expect(screen.getByRole('heading', { name: 'Unidades cadastradas' })).toBeInTheDocument(); await userEvent.click(screen.getByRole('tab', { name: 'Usuários' })); await userEvent.click(screen.getByRole('button', { name: /ver detalhes de ana souza/i })); expect(screen.getByRole('dialog', { name: 'Detalhes do usuário' })).toBeInTheDocument() })
@@ -245,6 +246,93 @@ test('does not offer a situation action for inactive users', async () => {
   const dialog = screen.getByRole('dialog', { name: 'Detalhes do usuário' })
   expect(within(dialog).queryByRole('button', { name: /Bloquear usuário|Desbloquear usuário/i })).not.toBeInTheDocument()
   expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/situation'), expect.anything())
+})
+
+test('offers a safe delete action and hides it for the own user and for inactive users', async () => {
+  vi.restoreAllMocks()
+  const session = { userId: 'me', role: 'ditel_admin' }
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = new URL(String(input), 'http://localhost')
+    if (url.pathname.endsWith('/units')) return new Response(JSON.stringify({ items: [] }), { status: 200 })
+    return new Response(JSON.stringify({ items: [
+      { id: 'me', name: 'Eu Mesmo', registration: '000', role: 'ditel_admin', situation: 'active', unit: null, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' },
+      { id: '4', name: 'Diana Alves', registration: '456', role: 'unit_user', situation: 'inactive', unit: null, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' },
+      { id: '7', name: 'Carla Nunes', registration: '789', role: 'unit_user', situation: 'active', unit: null, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' },
+    ], total: 3, page: 1, pageSize: 20 }), { status: 200 })
+  })
+  vi.spyOn(await import('../../../shared/auth/session'), 'getSession').mockReturnValue(session as never)
+  setSession(session as never)
+
+  render(<MemoryRouter><AdministrationPage /></MemoryRouter>)
+  await screen.findByText('Carla Nunes')
+
+  await userEvent.click(screen.getByRole('button', { name: /ver detalhes de eu mesmo/i }))
+  expect(within(screen.getByRole('dialog', { name: 'Detalhes do usuário' })).queryByRole('button', { name: 'Excluir usuário' })).not.toBeInTheDocument()
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'Detalhes do usuário' })).getAllByRole('button', { name: 'Fechar' })[1])
+
+  await userEvent.click(screen.getByRole('button', { name: /ver detalhes de diana alves/i }))
+  expect(within(screen.getByRole('dialog', { name: 'Detalhes do usuário' })).queryByRole('button', { name: 'Excluir usuário' })).not.toBeInTheDocument()
+  await userEvent.click(within(screen.getByRole('dialog', { name: 'Detalhes do usuário' })).getAllByRole('button', { name: 'Fechar' })[1])
+
+  await userEvent.click(screen.getByRole('button', { name: /ver detalhes de carla nunes/i }))
+  const dialog = screen.getByRole('dialog', { name: 'Detalhes do usuário' })
+  expect(within(dialog).getByRole('button', { name: 'Excluir usuário' })).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Excluir usuário' }))
+  expect(within(dialog).getByText(/Confirmar exclusão de Carla Nunes/)).toBeInTheDocument()
+})
+
+test('confirms a delete, sends the DELETE and refreshes the list', async () => {
+  vi.restoreAllMocks()
+  let deleted = false
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = new URL(String(input), 'http://localhost')
+    if (url.pathname.endsWith('/units')) return new Response(JSON.stringify({ items: [] }), { status: 200 })
+    if (init?.method === 'DELETE' && url.pathname === '/api/v1/admin/users/7') {
+      deleted = true
+      return new Response(JSON.stringify({ id: '7', situation: 'inactive' }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ items: deleted ? [] : [{ id: '7', name: 'Carla Nunes', registration: '789', role: 'unit_user', situation: 'active', unit: null, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' }], total: deleted ? 0 : 1, page: 1, pageSize: 20 }), { status: 200 })
+  })
+
+  render(<MemoryRouter><AdministrationPage /></MemoryRouter>)
+  await screen.findByText('Carla Nunes')
+  await userEvent.click(screen.getByRole('button', { name: /ver detalhes de carla nunes/i }))
+  const dialog = screen.getByRole('dialog', { name: 'Detalhes do usuário' })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Excluir usuário' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Confirmar exclusão' }))
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/admin/users/7'), expect.objectContaining({ method: 'DELETE', credentials: 'include' })))
+  expect(await screen.findByText('Nenhum usuário encontrado para os filtros informados.')).toBeInTheDocument()
+  expect(screen.queryByRole('dialog', { name: 'Detalhes do usuário' })).not.toBeInTheDocument()
+})
+
+test('keeps the delete confirmation open and offers retry after a delete error', async () => {
+  vi.restoreAllMocks()
+  let deleteAttempts = 0
+  let deleted = false
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = new URL(String(input), 'http://localhost')
+    if (url.pathname.endsWith('/units')) return new Response(JSON.stringify({ items: [] }), { status: 200 })
+    if (init?.method === 'DELETE' && url.pathname === '/api/v1/admin/users/7') {
+      deleteAttempts += 1
+      if (deleteAttempts === 1) return new Response(JSON.stringify({ code: 'INVALID_SITUATION_TRANSITION', message: 'Usuário já está inativo.' }), { status: 409 })
+      deleted = true
+      return new Response(JSON.stringify({ id: '7', situation: 'inactive' }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ items: deleted ? [] : [{ id: '7', name: 'Carla Nunes', registration: '789', role: 'unit_user', situation: 'active', unit: null, createdAt: '2026-08-30T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' }], total: deleted ? 0 : 1, page: 1, pageSize: 20 }), { status: 200 })
+  })
+
+  render(<MemoryRouter><AdministrationPage /></MemoryRouter>)
+  await screen.findByText('Carla Nunes')
+  await userEvent.click(screen.getByRole('button', { name: /ver detalhes de carla nunes/i }))
+  const dialog = screen.getByRole('dialog', { name: 'Detalhes do usuário' })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Excluir usuário' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Confirmar exclusão' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Usuário já está inativo.')
+  expect(within(dialog).getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Tentar novamente' }))
+  expect(await screen.findByText('Nenhum usuário encontrado para os filtros informados.')).toBeInTheDocument()
+  expect(deleteAttempts).toBe(2)
 })
 
 test('opens a read-only unit detail modal with the planned detail tabs', async () => {

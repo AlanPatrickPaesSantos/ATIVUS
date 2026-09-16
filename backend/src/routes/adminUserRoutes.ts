@@ -7,6 +7,7 @@ import type { UnitReference, UserRole, UserSituation } from '../models/User.js';
 import { isAuditPersistenceError, recordAuditEvent } from '../repositories/auditRepository.js';
 import {
   createAdminUser,
+  deactivateAdminUser,
   findAdminUserAuditRecord,
   listAdminUsers,
   resetAdminUserPassword,
@@ -28,6 +29,7 @@ const SITUATION_AUDIT_ACTION = 'admin.users.situation.update';
 const CREATE_AUDIT_ACTION = 'admin.users.create';
 const UPDATE_AUDIT_ACTION = 'admin.users.update';
 const PASSWORD_RESET_AUDIT_ACTION = 'admin.users.credential_reset';
+const DELETE_AUDIT_ACTION = 'admin.users.delete';
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -412,6 +414,58 @@ async function resetPasswordWithAudit(
   return { sessionsRevoked };
 }
 
+async function auditDeleteFailure(context: SessionContext | undefined) {
+  return recordAuditEvent({
+    action: DELETE_AUDIT_ACTION,
+    module: 'administration',
+    userId: context?.userId ?? null,
+    actor: actorFromContext(context),
+    result: 'failure',
+  });
+}
+
+async function deleteUserWithAudit(
+  user: AdminUserAuditRecord,
+  context: SessionContext,
+): Promise<{ sessionsRevoked: number }> {
+  const session = await mongoose.startSession();
+  let sessionsRevoked: number | null = null;
+
+  try {
+    await session.withTransaction(async () => {
+      const changed = await deactivateAdminUser(user.id, session);
+
+      if (!changed) {
+        return;
+      }
+
+      sessionsRevoked = await revokeSessionsForUser(user.id, new Date(), session);
+
+      await recordAuditEvent({
+        action: DELETE_AUDIT_ACTION,
+        module: 'administration',
+        userId: context.userId,
+        actor: actorFromContext(context),
+        entity: { type: 'user', id: user.id, label: user.name },
+        unit: user.unit,
+        result: 'success',
+        before: { situation: user.situation },
+        after: { situation: 'inactive' },
+        idempotencyKey: `${DELETE_AUDIT_ACTION}:${user.id}:${context.userId}`,
+        session,
+      });
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  if (sessionsRevoked === null) {
+    throw new AuthError(409, 'INVALID_SITUATION_TRANSITION', 'Transição de situação inválida.');
+  }
+
+  return { sessionsRevoked };
+}
+
 export function createAdminUserRoutes(requireSession: RequestHandler): Router {
   const router = express.Router();
 
@@ -608,6 +662,53 @@ export function createAdminUserRoutes(requireSession: RequestHandler): Router {
       }
 
       res.json({ id: req.params.userId, situation: nextSituation });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete('/admin/users/:userId', requireSession, async (req, res, next) => {
+    const context = req.sessionContext;
+
+    try {
+      if (context?.role !== 'ditel_admin') {
+        await auditDeleteFailure(context);
+        throw new AuthError(403, 'FORBIDDEN', 'Acesso administrativo obrigatório.');
+      }
+
+      if (!mongoose.isValidObjectId(req.params.userId)) {
+        await auditDeleteFailure(context);
+        throw new AuthError(400, 'INVALID_USER_ID', 'Usuário inválido.');
+      }
+
+      if (context.userId === req.params.userId) {
+        await auditDeleteFailure(context);
+        throw new AuthError(409, 'SELF_DEACTIVATION_FORBIDDEN', 'Um administrador não pode excluir a própria conta.');
+      }
+
+      const currentUser = await findAdminUserAuditRecord(req.params.userId);
+
+      if (!currentUser) {
+        await auditDeleteFailure(context);
+        throw new AuthError(404, 'USER_NOT_FOUND', 'Usuário não encontrado.');
+      }
+
+      if (currentUser.situation === 'inactive') {
+        await auditDeleteFailure(context);
+        throw new AuthError(409, 'INVALID_SITUATION_TRANSITION', 'Transição de situação inválida.');
+      }
+
+      try {
+        await deleteUserWithAudit(currentUser, context);
+      } catch (error) {
+        if (isAuditPersistenceError(error)) {
+          throw error;
+        }
+        await auditDeleteFailure(context);
+        throw error;
+      }
+
+      res.json({ id: req.params.userId, situation: 'inactive' });
     } catch (error) {
       next(error);
     }

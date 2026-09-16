@@ -200,6 +200,19 @@ export async function transitionAdminUserSituation(
   return Boolean(updated);
 }
 
+export async function deactivateAdminUser(
+  userId: string,
+  session?: ClientSession,
+): Promise<boolean> {
+  const updated = await UserModel.findOneAndUpdate(
+    { _id: userId, situation: { $ne: 'inactive' } },
+    { $set: { situation: 'inactive' } },
+    { new: true, runValidators: true, ...(session ? { session } : {}) },
+  ).select({ _id: 1 }).lean().exec();
+
+  return Boolean(updated);
+}
+
 export async function resetAdminUserPassword(
   userId: string,
   temporaryPassword: string,

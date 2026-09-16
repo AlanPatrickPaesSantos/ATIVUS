@@ -5,6 +5,7 @@ const createUser = (context: SessionContext, body: object) => request(createApp(
 const updateUser = (context: SessionContext, userId: string, body: object) => request(createApp({ sessionService: service(context) })).patch(`/api/v1/admin/users/${userId}`).set('Cookie', 'sigat_session=test').send(body);
 const updateBody = (user: { updatedAt: Date }, body: object) => ({ ...body, updatedAt: user.updatedAt.toISOString() });
 const resetPassword = (context: SessionContext, userId: string, body: object = {}) => request(createApp({ sessionService: service(context) })).post(`/api/v1/admin/users/${userId}/password-reset`).set('Cookie', 'sigat_session=test').send(body);
+const deactivateUser = (context: SessionContext, userId: string) => request(createApp({ sessionService: service(context) })).delete(`/api/v1/admin/users/${userId}`).set('Cookie', 'sigat_session=test');
 describe('admin user routes', () => { let server: MongoMemoryReplSet; beforeAll(async () => { server = await MongoMemoryReplSet.create({ replSet: { count: 1 } }); await connectToDatabase(server.getUri()); }); afterEach(async () => { vi.restoreAllMocks(); await Promise.all(Object.values(mongoose.connection.collections).map((c) => c.deleteMany({}))); }); afterAll(async () => { await disconnectFromDatabase(); await server.stop(); });
   it('requires a session', async () => { expect((await request(createApp()).get('/api/v1/admin/users')).status).toBe(401); });
   it('allows only DITEL admins', async () => { expect((await get(local)).status).toBe(403); });
@@ -40,4 +41,103 @@ describe('admin user routes', () => { let server: MongoMemoryReplSet; beforeAll(
   it('rejects password reset without DITEL permission or with invalid, missing, and inactive targets', async () => { const passwordHash = await hashPassword('senha-antiga'); const inactive = await UserModel.create({ name: 'Inativo Reset', registration: '40003', role: 'ditel_admin', situation: 'inactive', unit: null, passwordHash }); expect((await request(createApp()).post(`/api/v1/admin/users/${inactive.id}/password-reset`)).status).toBe(401); expect((await resetPassword(local, inactive.id)).status).toBe(403); expect((await resetPassword(admin, 'not-an-object-id')).status).toBe(400); expect((await resetPassword(admin, new mongoose.Types.ObjectId().toString())).status).toBe(404); const inactiveResponse = await resetPassword(admin, inactive.id); expect(inactiveResponse.status).toBe(409); expect(inactiveResponse.body.code).toBe('INVALID_PASSWORD_RESET_TARGET'); const stored = await UserModel.findById(inactive.id).select('situation mustChangePassword').lean().orFail(); expect(stored).toMatchObject({ situation: 'inactive' }); expect(stored.mustChangePassword ?? false).toBe(false); const events = await AuditEventModel.find({ action: 'admin.users.credential_reset' }).lean(); expect(events.map((event) => event.result)).toEqual(['failure', 'failure', 'failure', 'failure']); expect(JSON.stringify(events)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i); });
   it('handles concurrent password resets without reusing a temporary password', async () => { const passwordHash = await hashPassword('senha-antiga'); const user = await UserModel.create({ name: 'Reset Concorrente', registration: '40004', role: 'ditel_admin', situation: 'active', unit: null, passwordHash }); const responses = await Promise.all([resetPassword(admin, user.id), resetPassword(admin, user.id)]); expect(responses.map((response) => response.status)).toEqual([200, 200]); const temporaryPasswords = responses.map((response) => response.body.temporaryPassword as string); expect(new Set(temporaryPasswords).size).toBe(2); expect(temporaryPasswords.every((temporaryPassword) => typeof temporaryPassword === 'string' && temporaryPassword.length >= 20)).toBe(true); const stored = await UserModel.findById(user.id).select('+passwordHash mustChangePassword').lean().orFail(); await expect(Promise.all(temporaryPasswords.map((temporaryPassword) => verifyPassword(temporaryPassword, stored.passwordHash as string)))).resolves.toContain(true); expect(stored.mustChangePassword).toBe(true); const events = await AuditEventModel.find({ action: 'admin.users.credential_reset', result: 'success' }).lean(); expect(events).toHaveLength(2); expect(JSON.stringify(events)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i); for (const temporaryPassword of temporaryPasswords) expect(JSON.stringify(events)).not.toContain(temporaryPassword); });
   it('returns the must-change-password state on the next login after a reset', async () => { const passwordHash = await hashPassword('senha-antiga'); const user = await UserModel.create({ name: 'Login Resetado', registration: '40005', role: 'ditel_admin', situation: 'active', unit: null, passwordHash }); const reset = await resetPassword(admin, user.id); expect(reset.status).toBe(200); const login = await request(createApp()).post('/api/v1/auth/login').send({ registration: '40005', password: reset.body.temporaryPassword }); expect(login.status).toBe(200); expect(login.body).toMatchObject({ userId: user.id, registration: '40005', role: 'ditel_admin', unit: null, mustChangePassword: true }); });
+
+  it('deactivates an active user, revokes sessions, audits and returns { id, situation } without secrets', async () => {
+    const passwordHash = await hashPassword('senha');
+    const user = await UserModel.create({ name: 'Excluível', registration: '60001', role: 'unit_user', situation: 'active', unit: local.unit, passwordHash });
+    const future = new Date(Date.now() + 60_000);
+    await SessionModel.create({ tokenDigest: 'session-to-revoke', userId: user.id, lastActivityAt: new Date(), expiresAt: future });
+
+    const response = await deactivateUser(admin, user.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ id: user.id, situation: 'inactive' });
+    const stored = await UserModel.findById(user.id).select('situation').lean();
+    expect(stored?.situation).toBe('inactive');
+    const sessions = await SessionModel.find({ userId: user.id }).lean();
+    expect(sessions.every((session) => session.revokedAt instanceof Date)).toBe(true);
+    const event = await AuditEventModel.findOne({ action: 'admin.users.delete' }).lean();
+    expect(event).toMatchObject({
+      action: 'admin.users.delete',
+      module: 'administration',
+      userId: 'a',
+      actor: { id: 'a', name: 'Admin', registration: 'a', role: 'ditel_admin' },
+      entity: { type: 'user', id: user.id, label: 'Excluível' },
+      unit: local.unit,
+      result: 'success',
+      before: { situation: 'active' },
+      after: { situation: 'inactive' },
+    });
+    expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+    expect(JSON.stringify(event)).not.toMatch(/passwordHash|password|senha|token|tokenDigest|sessionId/i);
+  });
+
+  it('rejects deactivation of the authenticated user itself with 409 and audits failure', async () => {
+    const passwordHash = await hashPassword('senha');
+    const self = await UserModel.create({ name: 'Admin Próprio', registration: '60002', role: 'ditel_admin', situation: 'active', unit: null, passwordHash });
+    const selfContext: SessionContext = { userId: self.id, name: 'Admin Próprio', registration: '60002', role: 'ditel_admin', unit: null };
+
+    const response = await deactivateUser(selfContext, self.id);
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('SELF_DEACTIVATION_FORBIDDEN');
+    expect((await UserModel.findById(self.id).select('situation').lean())?.situation).toBe('active');
+    const event = await AuditEventModel.findOne({ action: 'admin.users.delete', result: 'failure' }).lean();
+    expect(event).toMatchObject({ action: 'admin.users.delete', userId: self.id, result: 'failure' });
+  });
+
+  it('rejects deactivation of an already inactive user with 409 and audits failure', async () => {
+    const passwordHash = await hashPassword('senha');
+    const user = await UserModel.create({ name: 'Já Inativo', registration: '60003', role: 'unit_user', situation: 'inactive', unit: local.unit, passwordHash });
+
+    const response = await deactivateUser(admin, user.id);
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('INVALID_SITUATION_TRANSITION');
+    const event = await AuditEventModel.findOne({ action: 'admin.users.delete', result: 'failure' }).lean();
+    expect(event).toMatchObject({ action: 'admin.users.delete', userId: 'a', result: 'failure' });
+  });
+
+  it('denies deactivation to unit users with 403 and audits failure', async () => {
+    const passwordHash = await hashPassword('senha');
+    const user = await UserModel.create({ name: 'Restrito', registration: '60004', role: 'unit_user', situation: 'active', unit: local.unit, passwordHash });
+
+    const response = await deactivateUser(local, user.id);
+
+    expect(response.status).toBe(403);
+    expect((await UserModel.findById(user.id).select('situation').lean())?.situation).toBe('active');
+    const event = await AuditEventModel.findOne({ action: 'admin.users.delete', result: 'failure' }).lean();
+    expect(event).toMatchObject({ action: 'admin.users.delete', userId: 'u', result: 'failure' });
+  });
+
+  it('rejects deactivation of missing or invalid users with 404/400 and audits failure', async () => {
+    expect((await deactivateUser(admin, 'not-an-object-id')).status).toBe(400);
+    expect((await deactivateUser(admin, new mongoose.Types.ObjectId().toString())).status).toBe(404);
+    const events = await AuditEventModel.find({ action: 'admin.users.delete' }).lean();
+    expect(events).toHaveLength(2);
+    expect(events.every((event) => event.result === 'failure')).toBe(true);
+    expect(JSON.stringify(events)).not.toMatch(/passwordHash|password|senha|token|tokenDigest|sessionId/i);
+  });
+
+  it('rolls back deactivation and returns 503 when the success audit fails', async () => {
+    const passwordHash = await hashPassword('senha');
+    const user = await UserModel.create({ name: 'Rollback Delete', registration: '60005', role: 'unit_user', situation: 'active', unit: local.unit, passwordHash });
+    vi.spyOn(AuditEventModel, 'create').mockRejectedValueOnce(new Error('simulated audit outage') as never);
+
+    const response = await deactivateUser(admin, user.id);
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({ code: 'AUDIT_UNAVAILABLE', message: 'Não foi possível registrar auditoria.' });
+    expect((await UserModel.findById(user.id).select('situation').lean())?.situation).toBe('active');
+  });
+
+  it('deactivated users cannot log in', async () => {
+    const passwordHash = await hashPassword('senha-excluida');
+    const user = await UserModel.create({ name: 'Sem Acesso', registration: '60006', role: 'unit_user', situation: 'active', unit: local.unit, passwordHash, mustChangePassword: false });
+    await deactivateUser(admin, user.id);
+
+    const login = await request(createApp()).post('/api/v1/auth/login').send({ registration: '60006', password: 'senha-excluida' });
+    expect(login.status).toBe(401);
+    expect(login.body.code).toBe('INVALID_CREDENTIALS');
+  });
 });
