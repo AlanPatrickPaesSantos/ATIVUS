@@ -9,6 +9,7 @@ import { connectToDatabase, disconnectFromDatabase } from '../database/mongoose.
 import { AuditEventModel } from '../models/AuditEvent.js';
 import { CallModel } from '../models/Call.js';
 import { EquipmentModel } from '../models/Equipment.js';
+import { MovementModel } from '../models/Movement.js';
 import { SessionModel } from '../models/Session.js';
 import { UnitModel } from '../models/Unit.js';
 import { UserModel } from '../models/User.js';
@@ -50,7 +51,21 @@ async function seed() {
     { patrimony: 'PAT-004', type: 'Tablet', model: 'Tab Active', brand: 'Samsung', situation: 'lost', location: 'Reserva', unit: unit2, createdAt: new Date('2026-08-23') },
     { patrimony: 'PAT-005', type: 'Rádio', model: 'APX 8000', brand: 'Motorola', situation: 'written_off', location: 'Reserva', unit: unit2, createdAt: new Date('2026-08-24') },
   ]);
+  await CallModel.create([
+    { protocol: 'CALL-001', problem: 'radio', priority: 'Crítica', subject: 'Rádio sem transmissão', description: 'Falha total', section: 'Telecom', status: 'Aberto', unit: unit1, createdBy: 'u', createdAt: new Date('2026-08-25') },
+    { protocol: 'CALL-002', problem: 'hardware', priority: 'Alta', subject: 'Notebook não liga', description: 'Sem energia', section: 'Suporte', status: 'Em atendimento', unit: unit1, createdBy: 'u', createdAt: new Date('2026-08-26') },
+    { protocol: 'CALL-003', problem: 'printer', priority: 'Média', subject: 'Impressora com atolamento', description: 'Papel preso', section: 'Suporte', status: 'Resolvido', unit: unit2, createdBy: 'd', createdAt: new Date('2026-08-27') },
+    { protocol: 'CALL-004', problem: 'software', priority: 'Baixa', subject: 'Atualização de sistema', description: 'Agendada', section: 'Suporte', status: 'Encerrado', unit: unit2, createdBy: 'd', createdAt: new Date('2026-08-28') },
+  ]);
+  await MovementModel.create([
+    { type: 'Transferência definitiva', equipmentId: 'PAT-001', origin: unit1, destination: unit2, requestedBy: 'u', status: 'Pendente', createdAt: new Date('2026-08-25') },
+    { type: 'Transferência definitiva', equipmentId: 'PAT-002', origin: unit1, destination: unit2, requestedBy: 'u', status: 'Aprovada', decidedBy: 'd', createdAt: new Date('2026-08-26') },
+    { type: 'Transferência definitiva', equipmentId: 'PAT-003', origin: unit2, destination: unit1, requestedBy: 'd', status: 'Rejeitada', decidedBy: 'd', decisionReason: 'Sem justificativa', createdAt: new Date('2026-08-27') },
+  ]);
 }
+
+const ditel = { userId: 'd', name: 'Carlos', registration: '2', role: 'ditel_admin' as const, unit: null };
+const unitAgent = { userId: 'u', name: 'Ana', registration: '1', role: 'unit_user' as const, unit: unit1 };
 
 function serialized(body: unknown) {
   return JSON.stringify(body);
@@ -196,5 +211,98 @@ describe('report routes', () => {
 
     expect((await exportRequest(context, 'xlsx')).status).toBe(400);
     expect((await reportsRequest(context).query({ situation: 'retired' })).status).toBe(400);
+  });
+
+  it('returns a calls report grouped by status and priority scoped to the unit', async () => {
+    await seed();
+
+    const response = await request(createApp({ sessionService: sessionServiceFor(unitAgent) }))
+      .get('/api/v1/reports/calls-summary')
+      .set('Cookie', 'sigat_session=test');
+
+    expect(response.status).toBe(200);
+    expect(response.body.report).toMatchObject({
+      id: 'calls-summary',
+      title: 'Chamados por status e prioridade',
+      scope: unit1,
+    });
+    expect(response.body.totals).toMatchObject({ total: 2, open: 1, critical: 1, attention: 2 });
+    expect(response.body.byStatus).toEqual([
+      { status: 'Aberto', count: 1 },
+      { status: 'Em atendimento', count: 1 },
+    ]);
+    expect(response.body.byPriority).toEqual([
+      { priority: 'Alta', count: 1 },
+      { priority: 'Crítica', count: 1 },
+    ]);
+    expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+  });
+
+  it('lets DITEL see statewide calls and requests a unit scope', async () => {
+    await seed();
+
+    const statewide = await request(createApp({ sessionService: sessionServiceFor(ditel) }))
+      .get('/api/v1/reports/calls-summary')
+      .set('Cookie', 'sigat_session=test');
+    const unitOnly = await request(createApp({ sessionService: sessionServiceFor(ditel) }))
+      .get('/api/v1/reports/calls-summary')
+      .query({ unitId: unit2.id })
+      .set('Cookie', 'sigat_session=test');
+
+    expect(statewide.body.report.scope).toEqual({ id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' });
+    expect(statewide.body.totals).toMatchObject({ total: 4, open: 1, critical: 1 });
+    expect(unitOnly.body.report.scope).toEqual(unit2);
+    expect(unitOnly.body.totals).toMatchObject({ total: 2, open: 0, critical: 0 });
+  });
+
+  it('returns a movements report scoped to the unit with status counts', async () => {
+    await seed();
+
+    const response = await request(createApp({ sessionService: sessionServiceFor(unitAgent) }))
+      .get('/api/v1/reports/movements-summary')
+      .set('Cookie', 'sigat_session=test');
+
+    expect(response.status).toBe(200);
+    expect(response.body.report).toMatchObject({
+      id: 'movements-summary',
+      title: 'Movimentações por período',
+      scope: unit1,
+    });
+    expect(response.body.totals).toMatchObject({ total: 3, pending: 1, approved: 1, rejected: 1 });
+    expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+  });
+
+  it('returns a consolidated DITEL report with inventory, calls and movements for admins', async () => {
+    await seed();
+
+    const response = await request(createApp({ sessionService: sessionServiceFor(ditel) }))
+      .get('/api/v1/reports/general')
+      .set('Cookie', 'sigat_session=test');
+
+    expect(response.status).toBe(200);
+    expect(response.body.report).toMatchObject({
+      id: 'general',
+      title: 'Relatório geral DITEL',
+      scope: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
+    });
+    expect(response.body.inventory.totals).toMatchObject({ total: 5, active: 1, maintenance: 1, attention: 3 });
+    expect(response.body.calls.totals).toMatchObject({ total: 4, open: 1, critical: 1 });
+    expect(response.body.movements.totals).toMatchObject({ total: 3, pending: 1, approved: 1, rejected: 1 });
+    expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+  });
+
+  it('keeps the general report scoped to the authenticated unit for unit users', async () => {
+    await seed();
+
+    const response = await request(createApp({ sessionService: sessionServiceFor(unitAgent) }))
+      .get('/api/v1/reports/general')
+      .set('Cookie', 'sigat_session=test');
+
+    expect(response.status).toBe(200);
+    expect(response.body.report.scope).toEqual(unit1);
+    expect(response.body.inventory.totals).toMatchObject({ total: 2 });
+    expect(response.body.calls.totals).toMatchObject({ total: 2 });
+    expect(response.body.movements.totals).toMatchObject({ total: 3 });
+    expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
   });
 });

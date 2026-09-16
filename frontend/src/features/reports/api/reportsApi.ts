@@ -1,5 +1,5 @@
 import { httpClient, httpDownload } from '../../../shared/api/httpClient'
-import type { InventoryReportResponse, InventoryReportSituation } from '../../../shared/api/contracts'
+import type { CallsSummaryReportResponse, GeneralReportResponse, InventoryReportResponse, InventoryReportSituation, MovementsSummaryReportResponse } from '../../../shared/api/contracts'
 
 export type InventoryReportQuery = {
   unitId?: string
@@ -23,6 +23,21 @@ function reportParameters(query: InventoryReportQuery & { format?: InventoryRepo
 export function getInventoryReport(query: InventoryReportQuery) {
   const queryString = reportParameters(query)
   return httpClient<InventoryReportResponse>(`/reports/inventory-summary${queryString ? `?${queryString}` : ''}`)
+}
+
+export function getCallsSummaryReport(query: InventoryReportQuery) {
+  const queryString = reportParameters(query)
+  return httpClient<CallsSummaryReportResponse>(`/reports/calls-summary${queryString ? `?${queryString}` : ''}`)
+}
+
+export function getMovementsSummaryReport(query: InventoryReportQuery) {
+  const queryString = reportParameters(query)
+  return httpClient<MovementsSummaryReportResponse>(`/reports/movements-summary${queryString ? `?${queryString}` : ''}`)
+}
+
+export function getGeneralReport(query: InventoryReportQuery) {
+  const queryString = reportParameters(query)
+  return httpClient<GeneralReportResponse>(`/reports/general${queryString ? `?${queryString}` : ''}`)
 }
 
 export function downloadInventoryReportExport(query: InventoryReportQuery & { format: InventoryReportExportFormat }) {

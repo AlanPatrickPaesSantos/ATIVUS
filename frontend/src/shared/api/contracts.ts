@@ -114,3 +114,69 @@ export type InventoryReportResponse = {
     role: 'ditel_admin' | 'unit_user'
   }
 }
+
+export type ReportGeneratedBy = { name: string; role: 'ditel_admin' | 'unit_user' }
+
+export type CallsSummaryReportResponse = {
+  report: {
+    id: 'calls-summary'
+    title: string
+    generatedAt: string
+    scope: UnitContext
+    filters: Record<string, never>
+  }
+  totals: {
+    total: number
+    open: number
+    critical: number
+    attention: number
+    resolved: number
+  }
+  byStatus: Array<{ status: string; count: number }>
+  byPriority: Array<{ priority: string; count: number }>
+  generatedBy: ReportGeneratedBy
+}
+
+export type MovementsSummaryReportResponse = {
+  report: {
+    id: 'movements-summary'
+    title: string
+    generatedAt: string
+    scope: UnitContext
+    filters: Record<string, never>
+  }
+  totals: {
+    total: number
+    pending: number
+    approved: number
+    rejected: number
+  }
+  byStatus: Array<{ status: string; count: number }>
+  generatedBy: ReportGeneratedBy
+}
+
+export type GeneralReportResponse = {
+  report: {
+    id: 'general'
+    title: string
+    generatedAt: string
+    scope: UnitContext
+    filters: {
+      situation: InventoryReportSituation | null
+    }
+  }
+  inventory: {
+    totals: InventoryReportCounters
+    units: Array<InventoryReportCounters & { unit: UnitContext }>
+  }
+  calls: {
+    totals: CallsSummaryReportResponse['totals']
+    byStatus: CallsSummaryReportResponse['byStatus']
+    byPriority: CallsSummaryReportResponse['byPriority']
+  }
+  movements: {
+    totals: MovementsSummaryReportResponse['totals']
+    byStatus: MovementsSummaryReportResponse['byStatus']
+  }
+  generatedBy: ReportGeneratedBy
+}

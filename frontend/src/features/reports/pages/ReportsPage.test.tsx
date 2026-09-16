@@ -173,8 +173,93 @@ test('exports the loaded report as CSV and PDF through the authenticated API', a
   expect(exportedFormats).toEqual(['csv', 'pdf'])
   expect(createdUrls).toEqual(['blob:report-1', 'blob:report-2'])
   expect(revokedUrls).toEqual(createdUrls)
-  expect(clickedDownloads).toEqual(['inventory-summary.csv', 'inventory-summary.pdf'])
+expect(clickedDownloads).toEqual(['inventory-summary.csv', 'inventory-summary.pdf'])
   createObjectUrl.mockRestore()
   revokeObjectUrl.mockRestore()
   click.mockRestore()
+})
+
+test('switches to the calls summary report and renders status and priority counters', async () => {
+  const user = userEvent.setup()
+  const callsResponse = {
+    report: {
+      id: 'calls-summary',
+      title: 'Chamados por status e prioridade',
+      generatedAt: '2026-09-10T12:00:00.000Z',
+      scope: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
+      filters: {},
+    },
+    totals: { total: 4, open: 1, critical: 1, attention: 2, resolved: 2 },
+    byStatus: [{ status: 'Aberto', count: 1 }, { status: 'Resolvido', count: 2 }],
+    byPriority: [{ priority: 'Crítica', count: 1 }, { priority: 'Baixa', count: 1 }],
+    generatedBy: { name: 'Carlos Lima', role: 'ditel_admin' },
+  }
+  server.use(http.get('*/api/v1/reports/calls-summary', () => HttpResponse.json(callsResponse)))
+
+  renderReports(ditelSession)
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Modelo de relatório' }), 'calls')
+  await user.click(screen.getByRole('button', { name: 'Atualizar prévia' }))
+
+  expect(await screen.findByText('Chamados por status e prioridade')).toBeInTheDocument()
+    const callsHeading = await screen.findByText('Chamados no período')
+    expect(callsHeading.nextElementSibling).toHaveTextContent('4')
+    expect(screen.getAllByText('Crítica: 1').length).toBeGreaterThan(0)
+    expect(screen.getByText('Aberto: 1')).toBeInTheDocument()
+})
+
+test('renders the movements summary report with pending and approved counters', async () => {
+  const user = userEvent.setup()
+  const movementsResponse = {
+    report: {
+      id: 'movements-summary',
+      title: 'Movimentações por período',
+      generatedAt: '2026-09-10T12:00:00.000Z',
+      scope: { id: 'unit-centro', name: 'Unidade Centro', acronym: 'UC' },
+      filters: {},
+    },
+    totals: { total: 3, pending: 1, approved: 1, rejected: 1 },
+    byStatus: [{ status: 'Pendente', count: 1 }, { status: 'Aprovada', count: 1 }, { status: 'Rejeitada', count: 1 }],
+    generatedBy: { name: 'Ana Souza', role: 'unit_user' },
+  }
+  server.use(http.get('*/api/v1/reports/movements-summary', () => HttpResponse.json(movementsResponse)))
+
+  renderReports(unitSession)
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Modelo de relatório' }), 'movements')
+  await user.click(screen.getByRole('button', { name: 'Atualizar prévia' }))
+
+  expect(await screen.findByRole('heading', { name: 'Movimentações por período' })).toBeInTheDocument()
+    const movementsHeading = await screen.findByText('Movimentações')
+    expect(movementsHeading.nextElementSibling).toHaveTextContent('3')
+    expect(screen.getByText('Pendente: 1')).toBeInTheDocument()
+    expect(screen.getByText('Aprovada: 1')).toBeInTheDocument()
+})
+
+test('renders the general DITEL report consolidating inventory, calls and movements', async () => {
+  const user = userEvent.setup()
+  const generalResponse = {
+    report: {
+      id: 'general',
+      title: 'Relatório geral DITEL',
+      generatedAt: '2026-09-10T12:00:00.000Z',
+      scope: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
+      filters: { situation: null },
+    },
+    inventory: {
+      totals: { total: 5, active: 1, maintenance: 1, inactive: 1, lost: 1, writtenOff: 1, attention: 3 },
+      units: [],
+    },
+    calls: { totals: { total: 4, open: 1, critical: 1, attention: 2, resolved: 2 }, byStatus: [], byPriority: [] },
+    movements: { totals: { total: 3, pending: 1, approved: 1, rejected: 1 }, byStatus: [] },
+    generatedBy: { name: 'Carlos Lima', role: 'ditel_admin' },
+  }
+  server.use(http.get('*/api/v1/reports/general', () => HttpResponse.json(generalResponse)))
+
+  renderReports(ditelSession)
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Modelo de relatório' }), 'general')
+  await user.click(screen.getByRole('button', { name: 'Atualizar prévia' }))
+
+  expect(await screen.findByRole('heading', { name: 'Relatório geral DITEL' })).toBeInTheDocument()
+    expect(await screen.findByText('1 em operação')).toBeInTheDocument()
+    const callsSection = screen.getByText('Chamados')
+    expect(callsSection.parentElement).toHaveTextContent('4 no período')
 })

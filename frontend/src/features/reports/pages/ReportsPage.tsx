@@ -7,7 +7,7 @@ import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { getUnits } from '../../movements/api/unitsApi'
 import { downloadInventoryReportExport, type InventoryReportExportFormat, type InventoryReportQuery } from '../api/reportsApi'
-import { useInventoryReportQuery } from '../api/reportsQueries'
+import { useCallsSummaryReportQuery, useGeneralReportQuery, useInventoryReportQuery, useMovementsSummaryReportQuery } from '../api/reportsQueries'
 
 const situationOptions: Array<{ value: '' | InventoryReportSituation; label: string }> = [
   { value: '', label: 'Todas as situações' },
@@ -24,9 +24,20 @@ const periodOptions: Array<{ value: string; label: string }> = [
   { value: 'q2_2026', label: '2º trimestre de 2026' },
 ]
 
+type ReportKind = 'inventory' | 'calls' | 'movements' | 'general'
+
+const reportKindOptions: Array<{ value: ReportKind; label: string }> = [
+  { value: 'inventory', label: 'Inventário consolidado' },
+  { value: 'calls', label: 'Chamados por status/prioridade' },
+  { value: 'movements', label: 'Movimentações por período' },
+  { value: 'general', label: 'Relatório geral DITEL' },
+]
+
 function equipmentLabel(total: number) {
   return `${total} ${total === 1 ? 'equipamento' : 'equipamentos'}`
 }
+
+const periodLabel = (period: string) => periodOptions.find((option) => option.value === period)?.label ?? 'Agosto de 2026'
 
 function buildQuery(isDitel: boolean, selectedScope: string, situation: '' | InventoryReportSituation, period: string): InventoryReportQuery {
   return {
@@ -46,6 +57,8 @@ export function ReportsPage({ session }: { session: SessionContext }) {
 
 function ReportsContent({ session }: { session: SessionContext }) {
   const isDitel = session.role === 'ditel_admin'
+  const [reportKind, setReportKind] = useState<ReportKind>('inventory')
+  const [draftKind, setDraftKind] = useState<ReportKind>('inventory')
   const [selectedScope, setSelectedScope] = useState('statewide')
   const [draftScope, setDraftScope] = useState('statewide')
   const [period, setPeriod] = useState(periodOptions[0].value)
@@ -56,20 +69,27 @@ function ReportsContent({ session }: { session: SessionContext }) {
   const [exportStatus, setExportStatus] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportingFormat, setExportingFormat] = useState<InventoryReportExportFormat | null>(null)
-  const reportQuery = useInventoryReportQuery(buildQuery(isDitel, selectedScope, situation, period))
+
+  const reportQuery = buildQuery(isDitel, selectedScope, situation, period)
+  const inventoryQuery = useInventoryReportQuery(reportQuery)
+  const callsQuery = useCallsSummaryReportQuery(reportQuery)
+  const movementsQuery = useMovementsSummaryReportQuery(reportQuery)
+  const generalQuery = useGeneralReportQuery(reportQuery)
+  const currentQuery = reportKind === 'calls' ? callsQuery : reportKind === 'movements' ? movementsQuery : reportKind === 'general' ? generalQuery : inventoryQuery
   const unitsQuery = useQuery({
     queryKey: ['reports', 'units'],
     queryFn: getUnits,
     enabled: isDitel,
   })
 
-  const report = reportQuery.data
-  const scopeLabel = report?.report.scope.name ?? session.unit?.name ?? 'Todo o estado'
+  const report = currentQuery.data?.report
+  const scopeLabel = report?.scope.name ?? session.unit?.name ?? 'Todo o estado'
   const selectedSituationLabel = situationOptions.find((option) => option.value === situation)?.label ?? 'Todas as situações'
-  const canExport = Boolean(report) && !reportQuery.isFetching && !exportingFormat
+  const canExport = reportKind === 'inventory' && Boolean(inventoryQuery.data) && !inventoryQuery.isFetching && !exportingFormat
 
   function submitPreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setReportKind(draftKind)
     setSelectedScope(draftScope)
     setSituation(draftSituation)
     setPeriod(draftPeriod)
@@ -78,8 +98,8 @@ function ReportsContent({ session }: { session: SessionContext }) {
     setExportError(null)
   }
 
-async function exportReport(format: InventoryReportExportFormat) {
-    if (!report) return
+  async function exportReport(format: InventoryReportExportFormat) {
+    if (!inventoryQuery.data) return
 
     setExportingFormat(format)
     setExportStatus(null)
@@ -119,15 +139,19 @@ async function exportReport(format: InventoryReportExportFormat) {
           <h2>Seleção do relatório</h2>
           <p>Defina o recorte antes de atualizar a prévia para conferência.</p>
         </div>
-        <label>Modelo<select aria-label="Modelo de relatório" value="inventario" onChange={() => undefined}>
-          <option value="inventario">Inventário consolidado</option>
+        <label>Modelo<select aria-label="Modelo de relatório" value={draftKind} onChange={(event) => { setDraftKind(event.target.value as ReportKind); setExportStatus(null); setExportError(null) }}>
+          {reportKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select></label>
-        <label>Situação<select aria-label="Situação" value={draftSituation} onChange={(event) => { setDraftSituation(event.target.value as '' | InventoryReportSituation); setExportStatus(null); setExportError(null) }}>
-          {situationOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
-        </select></label>
-        <label>Período<select aria-label="Período" value={draftPeriod} onChange={(event) => { setDraftPeriod(event.target.value); setExportStatus(null); setExportError(null) }}>
+        {reportKind !== 'calls' && reportKind !== 'movements' ? <>
+          <label>Situação<select aria-label="Situação" value={draftSituation} onChange={(event) => { setDraftSituation(event.target.value as '' | InventoryReportSituation); setExportStatus(null); setExportError(null) }}>
+            {situationOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
+          </select></label>
+          <label>Período<select aria-label="Período" value={draftPeriod} onChange={(event) => { setDraftPeriod(event.target.value); setExportStatus(null); setExportError(null) }}>
+            {periodOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
+          </select></label>
+        </> : <label>Período<select aria-label="Período" value={draftPeriod} onChange={(event) => { setDraftPeriod(event.target.value); setExportStatus(null); setExportError(null) }}>
           {periodOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
-        </select></label>
+        </select></label>}
         {isDitel
           ? <label>Escopo<select aria-label="Escopo" value={draftScope} onChange={(event) => { setDraftScope(event.target.value); setExportStatus(null); setExportError(null) }}>
               <option value="statewide">Todo o estado</option>
@@ -135,28 +159,80 @@ async function exportReport(format: InventoryReportExportFormat) {
             </select></label>
           : <p className="report-scope-lock"><strong>Escopo fixo</strong><span>{session.unit?.name ?? 'Unidade autenticada'}</span></p>}
         <button type="submit" className="button-link">Atualizar prévia</button>
-        <button type="button" className="button-link" disabled={!canExport} onClick={() => { void exportReport('csv') }}>Exportar CSV</button>
-        <button type="button" className="button-link button-link--primary" disabled={!canExport} onClick={() => { void exportReport('pdf') }}>Exportar PDF</button>
+        {reportKind === 'inventory' && <button type="button" className="button-link" disabled={!canExport} onClick={() => { void exportReport('csv') }}>Exportar CSV</button>}
+        {reportKind === 'inventory' && <button type="button" className="button-link button-link--primary" disabled={!canExport} onClick={() => { void exportReport('pdf') }}>Exportar PDF</button>}
         {exportingFormat && <p className="module-export-status" role="status">Preparando exportação {exportingFormat.toUpperCase()}...</p>}
         {exportStatus && <p className="module-export-status" role="status">{exportStatus}</p>}
         {exportError && <p className="module-export-status" role="alert">{exportError}</p>}
       </form>
       <article className="module-panel report-preview" aria-labelledby="report-preview-title">
-        {reportQuery.isLoading ? <LoadingState label="Carregando relatório" /> : null}
-        {reportQuery.isError ? <ErrorState message="Não foi possível carregar o relatório." onRetry={() => { void reportQuery.refetch() }} /> : null}
-        {report ? <div className="report-preview__paper" data-ready="true">
-          <header className="report-preview__masthead"><img src="/images/brasao-pmpa.png" alt="Brasão da Polícia Militar do Pará" /><div><p className="page-eyebrow">SIGAT · PMPA / DITEL</p><span>Documento para conferência</span></div><strong>PDF</strong></header><h2 id="report-preview-title">Pré-visualização</h2>
-          <h3>{report.report.title}</h3><p>Posição patrimonial por unidade e situação.</p>
-          <dl><div><dt>Período</dt><dd>{periodOptions.find((option) => option.value === period)?.label ?? 'Agosto de 2026'}</dd></div><div><dt>Escopo</dt><dd>{scopeLabel}</dd></div><div><dt>Registros incluídos</dt><dd>{equipmentLabel(report.totals.total)}</dd></div><div><dt>Gerado por</dt><dd>{report.generatedBy.name}</dd></div></dl>
-          <section className="report-preview__filters"><strong>Filtros aplicados</strong><span>Situação: {selectedSituationLabel}</span></section>
-          <section className="report-preview__filters" aria-label="Resumo do inventário">
-            <strong>{report.totals.active} em operação</strong>
-            <span>{report.totals.maintenance} em manutenção</span>
-            <span>{report.totals.attention} requerem atenção</span>
-          </section>
-          <footer className="report-preview__footer"><span>Prévia atualizada para conferência.</span><span>Emissão: {new Date(report.report.generatedAt).toLocaleDateString('pt-BR')}</span></footer>
-        </div> : null}
+        {currentQuery.isLoading ? <LoadingState label="Carregando relatório" /> : null}
+        {currentQuery.isError ? <ErrorState message="Não foi possível carregar o relatório." onRetry={() => { void currentQuery.refetch() }} /> : null}
+        {reportKind === 'inventory' && inventoryQuery.data ? <InventoryPreview response={inventoryQuery.data} periodLabel={periodLabel(period)} scopeLabel={scopeLabel} selectedSituationLabel={selectedSituationLabel} /> : null}
+        {reportKind === 'calls' && callsQuery.data ? <CallsPreview response={callsQuery.data} scopeLabel={scopeLabel} /> : null}
+        {reportKind === 'movements' && movementsQuery.data ? <MovementsPreview response={movementsQuery.data} scopeLabel={scopeLabel} /> : null}
+        {reportKind === 'general' && generalQuery.data ? <GeneralPreview response={generalQuery.data} scopeLabel={scopeLabel} selectedSituationLabel={selectedSituationLabel} /> : null}
       </article>
     </div>
   </section>
+}
+
+function PreviewMasthead({ generatedByName }: { generatedByName: string }) {
+  return <header className="report-preview__masthead"><img src="/images/brasao-pmpa.png" alt="Brasão da Polícia Militar do Pará" /><div><p className="page-eyebrow">SIGAT · PMPA / DITEL</p><span>Documento para conferência</span></div><strong>{generatedByName}</strong></header>
+}
+
+function InventoryPreview({ response, periodLabel: label, scopeLabel, selectedSituationLabel }: { response: import('../../../shared/api/contracts').InventoryReportResponse; periodLabel: string; scopeLabel: string; selectedSituationLabel: string }) {
+  return <div className="report-preview__paper" data-ready="true">
+    <PreviewMasthead generatedByName={response.generatedBy.name} />
+    <h2 id="report-preview-title">Pré-visualização</h2>
+    <h3>{response.report.title}</h3><p>Posição patrimonial por unidade e situação.</p>
+    <dl><div><dt>Período</dt><dd>{label}</dd></div><div><dt>Escopo</dt><dd>{scopeLabel}</dd></div><div><dt>Registros incluídos</dt><dd>{equipmentLabel(response.totals.total)}</dd></div><div><dt>Gerado por</dt><dd>{response.generatedBy.name}</dd></div></dl>
+    <section className="report-preview__filters"><strong>Filtros aplicados</strong><span>Situação: {selectedSituationLabel}</span></section>
+    <section className="report-preview__counters">
+      <strong>{response.totals.active} em operação</strong>
+      <span>{response.totals.maintenance} em manutenção</span>
+      <span>{response.totals.attention} requerem atenção</span>
+    </section>
+    <footer className="report-preview__footer"><span>Prévia atualizada para conferência.</span><span>Emissão: {new Date(response.report.generatedAt).toLocaleDateString('pt-BR')}</span></footer>
+  </div>
+}
+
+function CallsPreview({ response, scopeLabel }: { response: import('../../../shared/api/contracts').CallsSummaryReportResponse; scopeLabel: string }) {
+  return <div className="report-preview__paper" data-ready="true">
+    <PreviewMasthead generatedByName={response.generatedBy.name} />
+    <h2 id="report-preview-title">Pré-visualização</h2>
+    <h3>{response.report.title}</h3><p>Distribuição de chamados por status e prioridade.</p>
+    <dl><div><dt>Escopo</dt><dd>{scopeLabel}</dd></div><div><dt>Chamados no período</dt><dd>{response.totals.total}</dd></div><div><dt>Críticos</dt><dd>{response.totals.critical}</dd></div><div><dt>Abertos</dt><dd>{response.totals.open}</dd></div><div><dt>Em atenção</dt><dd>{response.totals.attention}</dd></div><div><dt>Resolvidos</dt><dd>{response.totals.resolved}</dd></div></dl>
+    <section className="report-preview__filters"><strong>Por status</strong>{response.byStatus.length ? response.byStatus.map((item) => <span key={item.status}>{item.status}: {item.count}</span>) : <span>Sem registros</span>}</section>
+    <section className="report-preview__filters"><strong>Por prioridade</strong>{response.byPriority.length ? response.byPriority.map((item) => <span key={item.priority}>{item.priority}: {item.count}</span>) : <span>Sem registros</span>}</section>
+    <footer className="report-preview__footer"><span>Prévia atualizada para conferência.</span><span>Emissão: {new Date(response.report.generatedAt).toLocaleDateString('pt-BR')}</span></footer>
+  </div>
+}
+
+function MovementsPreview({ response, scopeLabel }: { response: import('../../../shared/api/contracts').MovementsSummaryReportResponse; scopeLabel: string }) {
+  return <div className="report-preview__paper" data-ready="true">
+    <PreviewMasthead generatedByName={response.generatedBy.name} />
+    <h2 id="report-preview-title">Pré-visualização</h2>
+    <h3>{response.report.title}</h3><p>Movimentações de equipamentos envolvendo a unidade no período.</p>
+    <dl><div><dt>Escopo</dt><dd>{scopeLabel}</dd></div><div><dt>Movimentações</dt><dd>{response.totals.total}</dd></div><div><dt>Pendentes</dt><dd>{response.totals.pending}</dd></div><div><dt>Aprovadas</dt><dd>{response.totals.approved}</dd></div><div><dt>Rejeitadas</dt><dd>{response.totals.rejected}</dd></div></dl>
+    <section className="report-preview__filters"><strong>Por situação</strong>{response.byStatus.length ? response.byStatus.map((item) => <span key={item.status}>{item.status}: {item.count}</span>) : <span>Sem registros</span>}</section>
+    <footer className="report-preview__footer"><span>Prévia atualizada para conferência.</span><span>Emissão: {new Date(response.report.generatedAt).toLocaleDateString('pt-BR')}</span></footer>
+  </div>
+}
+
+function GeneralPreview({ response, scopeLabel, selectedSituationLabel }: { response: import('../../../shared/api/contracts').GeneralReportResponse; scopeLabel: string; selectedSituationLabel: string }) {
+  return <div className="report-preview__paper" data-ready="true">
+    <PreviewMasthead generatedByName={response.generatedBy.name} />
+    <h2 id="report-preview-title">Pré-visualização</h2>
+    <h3>{response.report.title}</h3><p>Consolidação de inventário, chamados e movimentações no escopo autenticado.</p>
+    <dl><div><dt>Escopo</dt><dd>{scopeLabel}</dd></div><div><dt>Situação</dt><dd>{selectedSituationLabel}</dd></div></dl>
+    <section className="report-preview__counters">
+      <strong>{response.inventory.totals.active} em operação</strong>
+      <span>{response.inventory.totals.maintenance} em manutenção</span>
+      <span>{response.inventory.totals.attention} requerem atenção</span>
+    </section>
+    <section className="report-preview__filters"><strong>Chamados</strong><span>{response.calls.totals.total} no período</span><span>{response.calls.totals.critical} críticos</span><span>{response.calls.totals.open} abertos</span></section>
+    <section className="report-preview__filters"><strong>Movimentações</strong><span>{response.movements.totals.total} no período</span><span>{response.movements.totals.pending} pendentes</span></section>
+    <footer className="report-preview__footer"><span>Prévia atualizada para conferência.</span><span>Emissão: {new Date(response.report.generatedAt).toLocaleDateString('pt-BR')}</span></footer>
+  </div>
 }

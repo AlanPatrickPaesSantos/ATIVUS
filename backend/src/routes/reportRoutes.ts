@@ -5,7 +5,10 @@ import { AuthError, type SessionContext } from '../auth/sessionService.js';
 import { STATEWIDE_DASHBOARD_UNIT } from '../middlewares/authorization.js';
 import { findActiveUnitReference } from '../repositories/unitsRepository.js';
 import {
+  readCallsReport,
+  readGeneralReport,
   readInventoryReport,
+  readMovementsReport,
   REPORT_PERIODS,
   REPORT_SITUATIONS,
   type InventoryReport,
@@ -181,6 +184,71 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   return buildPdf(lines);
 }
 
+async function buildCallsReportResponse(context: SessionContext, query: Record<string, unknown>) {
+  const access = await scope(context);
+  const filters = parseFilters(query);
+  const requestedScope = await resolveReportScope(access, filters);
+  const report = await readCallsReport(filters, { role: access.role, unitId: access.unitId });
+
+  return {
+    report: {
+      id: 'calls-summary',
+      title: 'Chamados por status e prioridade',
+      generatedAt: new Date().toISOString(),
+      scope: requestedScope,
+      filters: {},
+    },
+    totals: report.totals,
+    byStatus: report.byStatus,
+    byPriority: report.byPriority,
+    generatedBy: { name: context.name, role: context.role },
+  };
+}
+
+async function buildMovementsReportResponse(context: SessionContext, query: Record<string, unknown>) {
+  const access = await scope(context);
+  const filters = parseFilters(query);
+  const requestedScope = await resolveReportScope(access, filters);
+  const report = await readMovementsReport(filters, { role: access.role, unitId: access.unitId });
+
+  return {
+    report: {
+      id: 'movements-summary',
+      title: 'Movimentações por período',
+      generatedAt: new Date().toISOString(),
+      scope: requestedScope,
+      filters: {},
+    },
+    totals: report.totals,
+    byStatus: report.byStatus,
+    generatedBy: { name: context.name, role: context.role },
+  };
+}
+
+async function buildGeneralReportResponse(context: SessionContext, query: Record<string, unknown>) {
+  const access = await scope(context);
+  const filters = parseFilters(query);
+  const requestedScope = await resolveReportScope(access, filters);
+  const report = await readGeneralReport(filters, { role: access.role, unitId: access.unitId });
+
+  return {
+    report: {
+      id: 'general',
+      title: 'Relatório geral DITEL',
+      generatedAt: new Date().toISOString(),
+      scope: requestedScope,
+      filters: {
+        situation: filters.situation ?? null,
+        ...(filters.period ? { period: filters.period } : {}),
+      },
+    },
+    inventory: report.inventory,
+    calls: report.calls,
+    movements: report.movements,
+    generatedBy: { name: context.name, role: context.role },
+  };
+}
+
 export function createReportRoutes(requireSession: RequestHandler) {
   const router = Router();
 
@@ -216,6 +284,30 @@ export function createReportRoutes(requireSession: RequestHandler) {
       }
 
       throw new AuthError(400, 'INVALID_EXPORT_FORMAT', 'Formato de exportação inválido.');
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/reports/calls-summary', requireSession, async (req, res, next) => {
+    try {
+      res.status(200).json(await buildCallsReportResponse(req.sessionContext as SessionContext, req.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/reports/movements-summary', requireSession, async (req, res, next) => {
+    try {
+      res.status(200).json(await buildMovementsReportResponse(req.sessionContext as SessionContext, req.query));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/reports/general', requireSession, async (req, res, next) => {
+    try {
+      res.status(200).json(await buildGeneralReportResponse(req.sessionContext as SessionContext, req.query));
     } catch (error) {
       next(error);
     }
