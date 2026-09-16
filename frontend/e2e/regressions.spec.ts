@@ -10,7 +10,7 @@ async function signInDitel(page: import('@playwright/test').Page) {
 }
 
 test.describe('regressões visuais das páginas de governança', () => {
-  test('TopNav desktop não sobrepõe itens e dispensa Mais ações (menu oficial cabe na barra)', async ({ page }) => {
+  test('TopNav desktop não sobrepõe itens e centraliza os módulos (sem texto de contexto)', async ({ page }) => {
     await signInDitel(page)
     await page.setViewportSize({ width: 1280, height: 800 })
 
@@ -19,20 +19,24 @@ test.describe('regressões visuais das páginas de governança', () => {
     await expect(nav).toHaveAttribute('data-layout', 'desktop')
     await expect(page.getByRole('button', { name: 'Mais ações' })).toHaveCount(0)
 
-    // Sem overlap: o end (contexto + perfil) começa depois do último módulo visível
-    const endBox = await page.locator('.top-nav__end').boundingBox()
-    const lastLinkBox = await page.locator('.top-nav__modules li:not([hidden]) .top-nav__link').last().boundingBox()
-    expect(endBox!.x).toBeGreaterThan(lastLinkBox!.x + lastLinkBox!.width)
-
-    // Menu oficial na barra (Manutenção não é módulo oficial)
+    // Módulos oficiais na barra (Manutenção não é módulo oficial)
     for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração']) {
       await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible()
     }
+    // Manutenção e módulos não oficiais nunca aparecem
     await expect(page.getByRole('link', { name: 'Manutenção', exact: true })).toHaveCount(0)
-    // Módulos não oficiais NÃO aparecem
     await expect(page.getByRole('link', { name: /Missões técnicas/i })).toHaveCount(0)
     await expect(page.getByRole('link', { name: /Tipos de equipamento/i })).toHaveCount(0)
     await expect(page.getByRole('link', { name: /Auditoria/i })).toHaveCount(0)
+
+    // Sem texto de contexto (DITEL / Escopo estadual) na barra — apenas nos elementos do TopNav
+    await expect(page.locator('.top-nav__context')).toHaveCount(0)
+    await expect(page.locator('.top-nav .top-nav__link, .top-nav .top-nav__toggle, .top-nav .top-nav__profile').getByText(/DITEL|Escopo estadual/)).toHaveCount(0)
+
+    // Sem overlap: o end (ícones + avatar) começa depois do último módulo visível
+    const endBox = await page.locator('.top-nav__end').boundingBox()
+    const lastLinkBox = await page.locator('.top-nav__modules li:not([hidden]) .top-nav__link').last().boundingBox()
+    expect(endBox!.x).toBeGreaterThan(lastLinkBox!.x + lastLinkBox!.width)
   })
 
   test('TopNav tablet usa Mais ações para os módulos excedentes', async ({ page }) => {

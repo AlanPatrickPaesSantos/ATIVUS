@@ -51,7 +51,15 @@ test('marks the active module and shows the unit context', () => {
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' }).closest('.top-nav__search')).toHaveAttribute('data-actions-gap', 'comfortable')
   expect(screen.getByRole('link', { name: /inventário/i })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' })).toBeInTheDocument()
-  expect(screen.getByText('Unidade Centro', { selector: '.top-nav__context strong' })).toBeInTheDocument()
+})
+
+test('does not render the textual session context (unit name / scope) in the top bar', () => {
+  renderTopNav('/painel')
+
+  expect(screen.queryByText('Unidade Centro', { selector: '.top-nav__context strong' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/Escopo regional/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Escopo estadual/i)).not.toBeInTheDocument()
+  expect(screen.queryByLabelText(/contexto da sessão/i)).not.toBeInTheDocument()
 })
 
 test('keeps the brand corner free of decorative symbols', () => {

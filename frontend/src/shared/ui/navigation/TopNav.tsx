@@ -55,7 +55,7 @@ function NavigationIcon({ href }: { href: string }) {
   return <svg className="top-nav__icon" viewBox="0 0 24 24" aria-hidden="true">{navigationIconPaths()[href] ?? <circle cx="12" cy="12" r="7"/>}</svg>
 }
 
-const OVERFLOW_MAX = 1450
+const OVERFLOW_MAX = 1720
 
 function computeLayout(isMobile: boolean, isTablet: boolean, isCompact: boolean): Layout {
   if (isMobile) return 'mobile'
@@ -76,7 +76,7 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
   const profileMenuRef = useRef<HTMLElement>(null)
 
   const isMobile = useMediaQuery('(max-width: 640px)')
-  const isTablet = useMediaQuery('(max-width: 900px)')
+  const isTablet = useMediaQuery('(max-width: 1050px)')
   const isCompact = useMediaQuery(`(max-width: ${OVERFLOW_MAX}px)`)
   const layout = computeLayout(isMobile, isTablet, isCompact)
   const navigate = useNavigate()
@@ -84,9 +84,9 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
   const shouldHideSearch = layout !== 'desktop-wide'
   const activeItem = items.find((item) => item.href === activePath)
 
-  // Desktop/tablet overflow: desktop-wide keeps ALL official modules visible.
-  // Compact desktop keeps the 6 official modules and moves the trailing one
-  // (Relatórios/Administração) to "Mais ações"; tablet shows the first 4.
+  // Desktop/tablet overflow: desktop-wide (largest) keeps ALL official modules
+  // visible with search; compact desktop keeps the 6 official modules and moves
+  // the trailing one (Relatórios/Administração) to "Mais ações"; tablet shows 4.
   const showOverflow = layout === 'desktop' || layout === 'tablet'
   const barSize = layout === 'desktop' ? 6 : 4
   // desktop-wide (largest) shows every module; only compact/tablet overflow.
@@ -193,10 +193,6 @@ export function TopNav({ items, activePath, context, onLogout }: TopNavProps) {
         <input aria-label="Buscar no sistema" placeholder="Buscar no sistema" type="search" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && search.trim()) navigate(`/inventario?search=${encodeURIComponent(search.trim())}`) }} />
       </label>
       <div className="top-nav__end" data-alignment="right">
-        <div className="top-nav__context" aria-label="Contexto da sessão" hidden={layout === 'mobile'}>
-          <strong>{context.unitName}</strong>
-          <span>{context.scopeLabel}</span>
-        </div>
         <button className="top-nav__notification-btn" type="button" aria-label="Notificações" aria-haspopup="dialog" aria-expanded={panel === 'notifications'} aria-controls="notifications-menu" hidden={layout === 'mobile'} onClick={() => setPanel(panel === 'notifications' ? null : 'notifications')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-nav__action-icon">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
