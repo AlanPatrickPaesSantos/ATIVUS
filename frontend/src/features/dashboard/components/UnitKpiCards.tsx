@@ -28,7 +28,7 @@ export function UnitKpiCards({ metrics, inactive }: UnitKpiCardsProps) {
     {
       label: 'Inativos',
       value: inactive,
-      color: 'var(--sigat-muted)',
+      color: 'var(--sigat-danger)',
       testId: 'kpi-inativos',
     },
   ]

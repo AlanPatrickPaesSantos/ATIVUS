@@ -378,6 +378,7 @@ describe('dashboard routes', () => {
       situations: [
         { situation: 'active', label: 'Em operação', count: 1 },
         { situation: 'maintenance', label: 'Em manutenção', count: 1 },
+        { situation: 'inactive', label: 'Inativos', count: 0 },
         { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
       recentActivity: [],
@@ -422,17 +423,18 @@ describe('dashboard routes', () => {
         total: 4,
         active: 1,
         maintenance: 1,
-        attention: 2,
+        attention: 1,
       },
       situations: [
         { situation: 'active', label: 'Em operação', count: 1 },
         { situation: 'maintenance', label: 'Em manutenção', count: 1 },
-        { situation: 'attention', label: 'Requer atenção', count: 2 },
+        { situation: 'inactive', label: 'Inativos', count: 1 },
+        { situation: 'attention', label: 'Requer atenção', count: 1 },
       ],
       recentActivity: [],
       unitSummaries: [
         { unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' }, coverage: '50%', equipment: 2, attention: 0 },
-        { unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' }, coverage: '50%', equipment: 2, attention: 2 },
+        { unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' }, coverage: '50%', equipment: 2, attention: 1 },
       ],
       callsByStatus: [
         { status: 'Aberto', label: 'Aberto', count: 1 },
@@ -490,13 +492,10 @@ describe('dashboard routes', () => {
       total: 5,
       active: 1,
       maintenance: 1,
-      attention: 3,
+      attention: 2,
     });
-    expect(response.body.situations).toContainEqual({
-      situation: 'attention',
-      label: 'Requer atenção',
-      count: 3,
-    });
+    expect(response.body.situations).toContainEqual({ situation: 'inactive', label: 'Inativos', count: 1 });
+    expect(response.body.situations).toContainEqual({ situation: 'attention', label: 'Requer atenção', count: 2 });
   });
 
   it('returns statewide unit summaries, call indicators, pending movements and recent activity for DITEL without secrets', async () => {
@@ -517,7 +516,7 @@ describe('dashboard routes', () => {
         unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' },
         coverage: '50%',
         equipment: 2,
-        attention: 2,
+        attention: 1,
       },
     ]);
     expect(response.body.callsByStatus).toEqual([

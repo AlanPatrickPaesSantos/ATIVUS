@@ -64,7 +64,7 @@ export interface DashboardMetrics {
 }
 
 export interface DashboardSituationSummary {
-  situation: 'active' | 'maintenance' | 'attention';
+  situation: 'active' | 'maintenance' | 'inactive' | 'attention';
   label: string;
   count: number;
 }
@@ -126,12 +126,14 @@ function labelForSituation(situation: DashboardSituationSummary['situation']): s
       return 'Em operação';
     case 'maintenance':
       return 'Em manutenção';
+    case 'inactive':
+      return 'Inativos';
     case 'attention':
       return 'Requer atenção';
   }
 }
 
-const ATTENTION_SITUATIONS = ['inactive', 'lost', 'written_off'] as const;
+const ATTENTION_SITUATIONS = ['lost', 'written_off'] as const;
 
 function isAttentionSituation(situation: string): boolean {
   return (ATTENTION_SITUATIONS as readonly string[]).includes(situation);
@@ -326,7 +328,7 @@ export async function readDashboardByScope(scope: DashboardReadScope): Promise<D
     countBySituation(filter, 'written_off'),
   ]);
 
-  const attention = inactive + lost + writtenOff;
+  const attention = lost + writtenOff;
 
   return {
     unit: scope.unit,
@@ -346,6 +348,11 @@ export async function readDashboardByScope(scope: DashboardReadScope): Promise<D
         situation: 'maintenance',
         label: labelForSituation('maintenance'),
         count: maintenance,
+      },
+      {
+        situation: 'inactive',
+        label: labelForSituation('inactive'),
+        count: inactive,
       },
       {
         situation: 'attention',

@@ -18,17 +18,18 @@ describe('getUnitDashboard with the MSW API boundary', () => {
 
     await expect(getUnitDashboard()).resolves.toEqual({
       unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' },
-      metrics: { total: 428, active: 7, maintenance: 1, attention: 1 },
+      metrics: { total: 428, active: 7, maintenance: 1, attention: 0 },
       situations: [
         { situation: 'active', label: 'Em operação', count: 7 },
         { situation: 'maintenance', label: 'Em manutenção', count: 1 },
-        { situation: 'attention', label: 'Requer atenção', count: 1 },
+        { situation: 'inactive', label: 'Inativos', count: 1 },
+        { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
       recentActivity: [
         { id: 'activity-unit-centro-1', description: 'Inventário do 3º BPM atualizado.', occurredAt: 'Hoje, 09:30' },
       ],
       unitSummaries: [
-        { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '100%', equipment: 428, attention: 1 },
+        { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '100%', equipment: 428, attention: 0 },
       ],
       callsByStatus: [
         { status: 'Aberto', label: 'Aberto', count: 1 },
@@ -67,6 +68,7 @@ describe('getUnitDashboard with the MSW API boundary', () => {
       situations: expect.arrayContaining([
         expect.objectContaining({ situation: 'active', label: 'Em operação' }),
         expect.objectContaining({ situation: 'maintenance', label: 'Em manutenção' }),
+        expect.objectContaining({ situation: 'inactive', label: 'Inativos' }),
         expect.objectContaining({ situation: 'attention', label: 'Requer atenção' }),
       ]),
       unitSummaries: expect.arrayContaining([

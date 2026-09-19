@@ -49,12 +49,12 @@ const unitSession: SessionContext = {
 
 const dashboard = {
   unit: unitSession.unit,
-  metrics: { total: 4, active: 2, maintenance: 1, attention: 1 },
+  metrics: { total: 4, active: 2, maintenance: 1, attention: 0 },
   situations: [
     { situation: 'active', label: 'Em operação', count: 2 },
     { situation: 'maintenance', label: 'Em manutenção', count: 1 },
-    { situation: 'attention', label: 'Requer atenção', count: 1 },
-    { situation: 'inactive', label: 'Inativo', count: 1 },
+    { situation: 'inactive', label: 'Inativos', count: 1 },
+    { situation: 'attention', label: 'Requer atenção', count: 0 },
   ],
   callsByStatus: [
     { status: 'open', label: 'Aberto', count: 2 },
@@ -102,14 +102,18 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByRole('heading', { name: 'Dashboards da Unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('kpi-inativos')).toBeInTheDocument()
   expect(within(screen.getByTestId('kpi-inativos')).getByText('Inativos')).toBeInTheDocument()
+  expect(screen.getByTestId('kpi-inativos')).toHaveAttribute('style', expect.stringContaining('var(--sigat-danger)'))
   expect(screen.queryByTestId('kpi-requer-atencao')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Distribuição da unidade' })).toBeInTheDocument()
   expect(screen.getByRole('figure', { name: 'Gráfico circular da distribuição da unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-park-donut')).toBeInTheDocument()
   expect(screen.getByText('Equipamentos agrupados por situação nesta unidade.')).toBeInTheDocument()
-  expect(screen.getAllByText('Inativos').length).toBeGreaterThan(1)
+  expect(within(screen.getByTestId('unit-park-donut')).getByText('Inativos')).toBeInTheDocument()
+  expect(within(screen.getByTestId('unit-park-donut')).queryByText('Requer atenção')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-calls-chart')).toBeInTheDocument()
+  expect(screen.getByText('6 chamados')).toBeInTheDocument()
+  expect(screen.getByText('Distribuição dos chamados por status de atendimento.')).toBeInTheDocument()
   expect(screen.getByLabelText('Abertos: 2 (33.3%)')).toBeInTheDocument()
   expect(screen.getByLabelText('Resolvidos: 3 (50.0%)')).toBeInTheDocument()
   expect(screen.getByTestId('unit-operations-center')).toBeInTheDocument()

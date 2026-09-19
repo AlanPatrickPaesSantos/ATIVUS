@@ -1776,14 +1776,17 @@ components:
             total: { type: integer, minimum: 0 }
             active: { type: integer, minimum: 0 }
             maintenance: { type: integer, minimum: 0 }
-            attention: { type: integer, minimum: 0 }
+            attention:
+              type: integer
+              minimum: 0
+              description: Equipamentos perdidos ou baixados que exigem acompanhamento; inativos são informados separadamente em situations.
         situations:
           type: array
           items:
             type: object
             required: [situation, label, count]
             properties:
-              situation: { type: string }
+              situation: { type: string, enum: [active, maintenance, inactive, attention] }
               label: { type: string }
               count: { type: integer, minimum: 0 }
         recentActivity: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }

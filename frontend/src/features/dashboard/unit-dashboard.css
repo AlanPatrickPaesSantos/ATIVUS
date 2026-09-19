@@ -326,9 +326,12 @@
 .unit-operations-center__gauge span {
   align-self: end;
   color: var(--sigat-muted);
-  font-size: .72rem;
+  font-size: .62rem;
   font-weight: 700;
   letter-spacing: .05em;
+  line-height: 1.15;
+  max-width: 4.6rem;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -336,8 +339,9 @@
   align-self: start;
   color: var(--sigat-success);
   font-family: var(--font-title);
-  font-size: 2.1rem;
+  font-size: 1.88rem;
   line-height: 1;
+  margin-top: .15rem;
 }
 
 .unit-operations-center__insights {
@@ -422,6 +426,30 @@
   padding: 1.1rem;
 }
 
+.unit-calls-bar-chart__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.unit-calls-bar-chart__header p {
+  color: var(--sigat-muted);
+  font-size: .82rem;
+  margin: .2rem 0 0;
+}
+
+.unit-calls-bar-chart__header > strong {
+  background: rgb(37 99 235 / 14%);
+  border: 1px solid rgb(59 130 246 / 36%);
+  border-radius: 999px;
+  color: #bfdbfe;
+  font-family: var(--font-identifier);
+  font-size: .75rem;
+  padding: .35rem .55rem;
+  white-space: nowrap;
+}
+
 .unit-calls-bar-chart__empty {
   background: var(--sigat-night-raised);
   border-radius: var(--radius-xs);
@@ -445,10 +473,12 @@
 .unit-calls-bar-chart__bar-wrapper {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .5rem;
-  height: 8.5rem;
-  padding: .75rem .75rem 0;
-  background: rgb(3 7 18 / 55%);
+  gap: .75rem;
+  min-height: 10rem;
+  padding: 1rem;
+  background:
+    linear-gradient(to top, rgb(148 163 184 / 12%) 1px, transparent 1px) 0 0 / 100% 25%,
+    rgb(3 7 18 / 55%);
   border-radius: var(--radius-xs);
   border: 1px solid var(--sigat-border);
   align-items: flex-end;
@@ -459,13 +489,31 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  gap: .45rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.unit-calls-bar-chart__bar-item strong {
+  color: var(--sigat-text);
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.unit-calls-bar-chart__bar-item span {
+  color: var(--sigat-muted);
+  font-size: .72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .unit-calls-bar-chart__bar {
   width: 100%;
-  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 18px rgb(37 99 235 / 22%);
   transition: height var(--motion-fast);
-  min-height: .3rem;
+  min-height: 1rem;
 }
 
 .unit-calls-bar-chart__legend {

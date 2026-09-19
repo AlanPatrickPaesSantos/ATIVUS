@@ -80,6 +80,8 @@ export function getUnitDashboard(): Promise<UnitDashboard> {
       situations: [
         { situation: 'active', label: 'Em operação', count: response.activeEquipmentTotal },
         { situation: 'maintenance', label: 'Em manutenção', count: response.maintenanceEquipmentTotal },
+        { situation: 'inactive', label: 'Inativos', count: 0 },
+        { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
       recentActivity: [],
     }

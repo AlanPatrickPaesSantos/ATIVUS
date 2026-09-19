@@ -729,7 +729,8 @@ export const handlers = [
     if (!session) return unauthorized()
 
     if (session.role === 'ditel_admin') {
-      const attentionEquipment = equipment.filter((item) => ['inactive', 'lost', 'written_off'].includes(item.situation))
+      const inactiveEquipment = equipment.filter((item) => item.situation === 'inactive')
+      const attentionEquipment = equipment.filter((item) => ['lost', 'written_off'].includes(item.situation))
       const response = {
         unit: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
         metrics: {
@@ -741,11 +742,12 @@ export const handlers = [
         situations: [
           { situation: 'active', label: 'Em operação', count: equipment.filter((item) => item.situation === 'active').length },
           { situation: 'maintenance', label: 'Em manutenção', count: equipment.filter((item) => item.situation === 'maintenance').length },
+          { situation: 'inactive', label: 'Inativos', count: inactiveEquipment.length },
           { situation: 'attention', label: 'Requer atenção', count: attentionEquipment.length },
         ],
         unitSummaries: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units].map((unit) => {
           const scopedEquipment = equipment.filter((item) => item.unitId === unit.id)
-          const scopedAttention = scopedEquipment.filter((item) => ['inactive', 'lost', 'written_off'].includes(item.situation)).length
+          const scopedAttention = scopedEquipment.filter((item) => ['lost', 'written_off'].includes(item.situation)).length
           return {
             unit,
             coverage: scopedEquipment.length ? '100%' : '0%',
@@ -779,7 +781,8 @@ export const handlers = [
     if (!unit) return unauthorized()
     const scopedEquipment = equipment.filter((item) => item.unitId === unit.id)
     const inventoryTotal = unit.id === 'unit-centro' ? 428 : scopedEquipment.length
-    const attentionEquipment = scopedEquipment.filter((item) => ['inactive', 'lost', 'written_off'].includes(item.situation))
+    const inactiveEquipment = scopedEquipment.filter((item) => item.situation === 'inactive')
+    const attentionEquipment = scopedEquipment.filter((item) => ['lost', 'written_off'].includes(item.situation))
     const response = {
       unit,
       metrics: {
@@ -791,6 +794,7 @@ export const handlers = [
       situations: [
         { situation: 'active', label: 'Em operação', count: scopedEquipment.filter((item) => item.situation === 'active').length },
         { situation: 'maintenance', label: 'Em manutenção', count: scopedEquipment.filter((item) => item.situation === 'maintenance').length },
+        { situation: 'inactive', label: 'Inativos', count: inactiveEquipment.length },
         { situation: 'attention', label: 'Requer atenção', count: attentionEquipment.length },
       ],
       recentActivity: recentActivityByUnit[unit.id as keyof typeof recentActivityByUnit] ?? [],

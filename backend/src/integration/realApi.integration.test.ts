@@ -68,6 +68,7 @@ describe('real API integration', () => {
       situations: [
         { situation: 'active', label: 'Em operação', count: 1 },
         { situation: 'maintenance', label: 'Em manutenção', count: 0 },
+        { situation: 'inactive', label: 'Inativos', count: 0 },
         { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
       recentActivity: [],

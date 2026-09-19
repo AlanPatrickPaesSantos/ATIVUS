@@ -17,8 +17,8 @@ const situationLabels: Record<string, string> = {
 const situationColors: Record<string, string> = {
   active: 'var(--sigat-success, #22c55e)',
   maintenance: 'var(--sigat-warning, #f59e0b)',
-  attention: 'var(--sigat-danger, #ef4444)',
-  inactive: 'var(--sigat-muted, #64748b)',
+  attention: 'var(--sigat-border, #94a3b8)',
+  inactive: 'var(--sigat-danger, #ef4444)',
   lost: 'var(--sigat-border, #94a3b8)',
   writtenOff: 'var(--sigat-border, #94a3b8)',
 }

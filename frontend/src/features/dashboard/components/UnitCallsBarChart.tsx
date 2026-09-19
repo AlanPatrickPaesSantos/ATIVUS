@@ -38,7 +38,17 @@ export function UnitCallsBarChart({ callsByStatus }: UnitCallsBarChartProps) {
 
   return (
     <section className="unit-calls-bar-chart" data-testid="unit-calls-chart">
-      <h3 className="unit-calls-bar-chart__title">Chamados da unidade</h3>
+      <div className="unit-calls-bar-chart__header">
+        <div>
+          <h3 className="unit-calls-bar-chart__title">Chamados da unidade</h3>
+          <p>Distribuição dos chamados por status de atendimento.</p>
+        </div>
+        <strong>
+          {total}
+          {' '}
+          {total === 1 ? 'chamado' : 'chamados'}
+        </strong>
+      </div>
 
       {!chartSegments.length ? (
         <div className="unit-calls-bar-chart__empty">
@@ -54,11 +64,13 @@ export function UnitCallsBarChart({ callsByStatus }: UnitCallsBarChartProps) {
                 className="unit-calls-bar-chart__bar-item"
                 aria-label={`${segment.label}: ${segment.count} (${segment.percent}%)`}
               >
+                <strong>{segment.count}</strong>
                 <div
                   className="unit-calls-bar-chart__bar"
                   style={{ height: `${segment.percent}%`, backgroundColor: segment.color }}
                   title={`${segment.label}: ${segment.count} (${segment.percent}%)`}
                 />
+                <span>{segment.label}</span>
               </article>
             ))}
           </div>
