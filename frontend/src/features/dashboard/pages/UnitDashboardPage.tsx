@@ -9,8 +9,7 @@ import { useDashboardQuery } from '../api/dashboardQueries'
 import { UnitOperationalWorkspace } from '../components/UnitOperationalWorkspace'
 import { UnitMetricCards } from '../components/UnitMetricCards'
 import { SituationDistributionChart } from '../components/SituationDistributionChart'
-import { OperationalAlertCards } from '../components/OperationalAlertCards'
-import { EquipmentSituationSummary } from '../components/EquipmentSituationSummary'
+import { UnitCallsDashboard } from '../components/UnitCallsDashboard'
 import { OperationalAlertCards } from '../components/OperationalAlertCards'
 
 type UnitDashboardPageProps = { session: SessionContext }
