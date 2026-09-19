@@ -24,8 +24,17 @@ const situationColors: Record<string, string> = {
 }
 
 export function UnitParkDonutChart({ situations, total }: UnitParkDonutChartProps) {
-  const percentageOfTotal = total > 0 ? (situations.reduce((sum, s) => sum + s.count, 0) / total) * 100 : 0
   const isAnyData = situations.length > 0 && total > 0
+  let cursor = 0
+  const gradientStops = situations
+    .filter((item) => item.count > 0)
+    .map((item) => {
+      const start = cursor
+      const end = cursor + (item.count / total) * 360
+      cursor = end
+      return `${situationColors[item.situation] ?? 'var(--sigat-muted)'} ${start}deg ${end}deg`
+    })
+    .join(', ')
 
   return (
     <section
@@ -47,7 +56,7 @@ export function UnitParkDonutChart({ situations, total }: UnitParkDonutChartProp
           <div className="unit-park-donut-chart__donut">
             <div
               className="unit-park-donut-chart__donut-segment"
-              style={{ opacity: Math.max(0.4, percentageOfTotal / 100) }}
+              style={{ background: `conic-gradient(${gradientStops})` }}
             />
             <div className="unit-park-donut-chart__donut-inner-wrapper">
               <strong className="unit-park-donut-chart__donut-total">

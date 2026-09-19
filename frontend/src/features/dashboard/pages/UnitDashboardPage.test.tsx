@@ -55,6 +55,13 @@ const dashboard = {
     { situation: 'maintenance', label: 'Em manutenção', count: 1 },
     { situation: 'attention', label: 'Requer atenção', count: 1 },
   ],
+  callsByStatus: [
+    { status: 'open', label: 'Aberto', count: 2 },
+    { status: 'in_progress', label: 'Em andamento', count: 1 },
+    { status: 'resolved', label: 'Resolvido', count: 3 },
+  ],
+  criticalCalls: 1,
+  pendingMovements: 2,
   recentActivity: [
     { id: 'activity-1', description: 'Notebook UC-001 teve situação atualizada.', occurredAt: 'Hoje, 09:30' },
   ],
@@ -96,10 +103,17 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByRole('figure', { name: 'Gráfico circular da distribuição do parque' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-park-donut')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
-  expect(screen.getByText('Nenhum chamado registrado')).toBeInTheDocument()
   expect(screen.getByTestId('unit-calls-chart')).toBeInTheDocument()
-  expect(screen.getByTestId('unit-alerts-panel')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Alertas operacionais' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Abertos: 2 (33.3%)')).toBeInTheDocument()
+  expect(screen.getByLabelText('Resolvidos: 3 (50.0%)')).toBeInTheDocument()
+  expect(screen.getByTestId('unit-operations-center')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Centro operacional' })).toBeInTheDocument()
+  expect(screen.getByText('50.0%')).toBeInTheDocument()
+  expect(screen.getByText('Saúde do parque')).toBeInTheDocument()
+  expect(screen.getByText('1 chamado crítico')).toBeInTheDocument()
+  expect(screen.getByText('2 movimentações pendentes')).toBeInTheDocument()
+  expect(screen.queryByTestId('alert-manutencao')).not.toBeInTheDocument()
+  expect(screen.queryByTestId('alert-requer-atencao')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Evolução operacional' })).toBeInTheDocument()
   expect(screen.getByRole('figure', { name: 'Barras de evolução operacional' })).toBeInTheDocument()
   expect(within(screen.getByTestId('kpi-total-equipamentos')).getByText('4')).toBeInTheDocument()
@@ -110,8 +124,7 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByLabelText('Mai: 1 manutenção')).toBeInTheDocument()
   expect(screen.getByLabelText('Jul: 3 manutenções')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Filtrar por situação' })).toHaveClass('unit-inventory-snapshot__situation-trigger')
-  expect(screen.getByTestId('alert-manutencao')).toBeInTheDocument()
-  expect(screen.getByTestId('alert-requer-atencao')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
   expect(screen.getByText('Notebook UC-001 teve situação atualizada.')).toBeInTheDocument()
   expect(screen.queryByRole('combobox', { name: /unidade/i })).not.toBeInTheDocument()
 })

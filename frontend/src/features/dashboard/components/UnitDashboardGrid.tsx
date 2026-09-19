@@ -1,8 +1,8 @@
 import type { Activity, SituationCount } from '../api/dashboardApi'
-import { UnitAlertsPanel } from './UnitAlertsPanel'
 import { UnitCallsBarChart } from './UnitCallsBarChart'
 import { UnitEvolutionChart } from './UnitEvolutionChart'
 import { UnitKpiCards } from './UnitKpiCards'
+import { UnitOperationsCenter } from './UnitOperationsCenter'
 import { UnitParkDonutChart } from './UnitParkDonutChart'
 
 export type UnitDashboardGridProps = {
@@ -32,11 +32,14 @@ export function UnitDashboardGrid({
       <UnitKpiCards metrics={metrics} />
       <div className="unit-dashboard-grid__main">
         <UnitParkDonutChart situations={situations} total={metrics.total} />
-        <UnitAlertsPanel
-          maintenanceCount={metrics.maintenance}
-          attentionCount={metrics.attention}
+        <UnitOperationsCenter
+          total={metrics.total}
+          active={metrics.active}
+          maintenance={metrics.maintenance}
+          attention={metrics.attention}
           criticalCalls={criticalCalls}
           pendingMovements={pendingMovements}
+          recentActivityCount={recentActivity.length}
         />
       </div>
       <div className="unit-dashboard-grid__bottom">
