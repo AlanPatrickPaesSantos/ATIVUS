@@ -41,10 +41,10 @@ export function UnitParkDonutChart({ situations, total }: UnitParkDonutChartProp
       className="unit-park-donut-chart"
       data-testid="unit-park-donut"
       role="figure"
-      aria-label="Gráfico circular da distribuição do parque"
+      aria-label="Gráfico circular da distribuição da unidade"
     >
-      <h3 className="unit-park-donut-chart__title">Distribuição do parque</h3>
-      <p className="unit-park-donut-chart__subtitle">Proporção dos equipamentos por situação atual.</p>
+      <h3 className="unit-park-donut-chart__title">Distribuição da unidade</h3>
+      <p className="unit-park-donut-chart__subtitle">Equipamentos agrupados por situação nesta unidade.</p>
 
       {!isAnyData ? (
         <div className="unit-park-donut-chart__empty">
@@ -62,9 +62,14 @@ export function UnitParkDonutChart({ situations, total }: UnitParkDonutChartProp
               <strong className="unit-park-donut-chart__donut-total">
                 {total}
                 {' '}
-                <span className="unit-park-donut-chart__donut-text">total</span>
+                <span className="unit-park-donut-chart__donut-text">equipamentos</span>
               </strong>
             </div>
+          </div>
+
+          <div className="unit-park-donut-chart__summary">
+            <span>Situações exibidas</span>
+            <strong>{situations.filter((item) => item.count > 0).length}</strong>
           </div>
 
           <div className="unit-park-donut-chart__legend" role="list" aria-label="Legenda da distribuição">

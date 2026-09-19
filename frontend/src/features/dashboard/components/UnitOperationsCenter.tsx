@@ -56,7 +56,11 @@ export function UnitOperationsCenter({
       <div className="unit-operations-center__header">
         <div>
           <h3 className="unit-operations-center__title">Centro operacional</h3>
-          <p>Leitura consolidada sem repetir os indicadores do topo.</p>
+          <p>
+            <strong>Como funciona:</strong>
+            {' '}
+            combina equipamentos ativos, pendências e movimentações para indicar se a unidade exige ação.
+          </p>
         </div>
         <strong className="unit-operations-center__status">{operationalStatus}</strong>
       </div>
@@ -68,9 +72,9 @@ export function UnitOperationsCenter({
             background: `conic-gradient(var(--sigat-success) 0deg ${healthScore * 3.6}deg, rgb(15 23 42 / 92%) ${healthScore * 3.6}deg 360deg)`,
           }}
           role="figure"
-          aria-label={`Saúde do parque: ${formatPercent(healthScore)}`}
+          aria-label={`Saúde da unidade: ${formatPercent(healthScore)}`}
         >
-          <span>Saúde do parque</span>
+          <span>Saúde da unidade</span>
           <strong>{formatPercent(healthScore)}</strong>
         </div>
 

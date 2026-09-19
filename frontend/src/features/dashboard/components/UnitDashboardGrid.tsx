@@ -27,9 +27,11 @@ export function UnitDashboardGrid({
   pendingMovements = 0,
   recentActivity = [],
 }: UnitDashboardGridProps) {
+  const inactive = situations.find((item) => item.situation === 'inactive')?.count ?? 0
+
   return (
     <section className="unit-dashboard-grid" aria-labelledby="unit-dashboards-section-title">
-      <UnitKpiCards metrics={metrics} />
+      <UnitKpiCards metrics={metrics} inactive={inactive} />
       <div className="unit-dashboard-grid__main">
         <UnitParkDonutChart situations={situations} total={metrics.total} />
         <UnitOperationsCenter

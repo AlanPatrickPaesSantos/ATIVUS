@@ -2,9 +2,10 @@ import type { UnitDashboardGridProps } from './UnitDashboardGrid'
 
 type UnitKpiCardsProps = {
   metrics: UnitDashboardGridProps['metrics']
+  inactive: number
 }
 
-export function UnitKpiCards({ metrics }: UnitKpiCardsProps) {
+export function UnitKpiCards({ metrics, inactive }: UnitKpiCardsProps) {
   const kpis = [
     {
       label: 'Total de equipamentos',
@@ -25,10 +26,10 @@ export function UnitKpiCards({ metrics }: UnitKpiCardsProps) {
       testId: 'kpi-manutencao',
     },
     {
-      label: 'Requer atenção',
-      value: metrics.attention,
-      color: 'var(--sigat-danger)',
-      testId: 'kpi-requer-atencao',
+      label: 'Inativos',
+      value: inactive,
+      color: 'var(--sigat-muted)',
+      testId: 'kpi-inativos',
     },
   ]
 

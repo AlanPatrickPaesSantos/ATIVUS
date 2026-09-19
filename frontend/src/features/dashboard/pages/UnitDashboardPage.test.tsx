@@ -54,6 +54,7 @@ const dashboard = {
     { situation: 'active', label: 'Em operação', count: 2 },
     { situation: 'maintenance', label: 'Em manutenção', count: 1 },
     { situation: 'attention', label: 'Requer atenção', count: 1 },
+    { situation: 'inactive', label: 'Inativo', count: 1 },
   ],
   callsByStatus: [
     { status: 'open', label: 'Aberto', count: 2 },
@@ -99,17 +100,24 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
   expect(screen.getByText(/Unidade Centro · visão atualizada/i)).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Dashboards da Unidade' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Distribuição do parque' })).toBeInTheDocument()
-  expect(screen.getByRole('figure', { name: 'Gráfico circular da distribuição do parque' })).toBeInTheDocument()
+  expect(screen.getByTestId('kpi-inativos')).toBeInTheDocument()
+  expect(within(screen.getByTestId('kpi-inativos')).getByText('Inativos')).toBeInTheDocument()
+  expect(screen.queryByTestId('kpi-requer-atencao')).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Distribuição da unidade' })).toBeInTheDocument()
+  expect(screen.getByRole('figure', { name: 'Gráfico circular da distribuição da unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-park-donut')).toBeInTheDocument()
+  expect(screen.getByText('Equipamentos agrupados por situação nesta unidade.')).toBeInTheDocument()
+  expect(screen.getAllByText('Inativos').length).toBeGreaterThan(1)
   expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-calls-chart')).toBeInTheDocument()
   expect(screen.getByLabelText('Abertos: 2 (33.3%)')).toBeInTheDocument()
   expect(screen.getByLabelText('Resolvidos: 3 (50.0%)')).toBeInTheDocument()
   expect(screen.getByTestId('unit-operations-center')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Centro operacional' })).toBeInTheDocument()
+  expect(screen.getByText(/Como funciona/)).toBeInTheDocument()
+  expect(screen.getByText(/combina equipamentos ativos, pendências e movimentações/i)).toBeInTheDocument()
   expect(screen.getByText('50.0%')).toBeInTheDocument()
-  expect(screen.getByText('Saúde do parque')).toBeInTheDocument()
+  expect(screen.getByText('Saúde da unidade')).toBeInTheDocument()
   expect(screen.getByText('1 chamado crítico')).toBeInTheDocument()
   expect(screen.getByText('2 movimentações pendentes')).toBeInTheDocument()
   expect(screen.queryByTestId('alert-manutencao')).not.toBeInTheDocument()
