@@ -91,6 +91,13 @@ test('renders equipment metrics, situation summary and recent activity for the a
 
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
   expect(screen.getByText(/Unidade Centro · visão atualizada/i)).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Dashboards da Unidade' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Distribuição do parque' })).toBeInTheDocument()
+  expect(screen.getByRole('figure', { name: 'Gráfico de barra empilhada da distribuição do parque' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
+  expect(screen.getByText('Nenhum chamado registrado')).toBeInTheDocument()
+  expect(screen.getByTestId('operational-alert-cards')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Alertas operacionais' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Total de equipamentos' })).toBeInTheDocument()
   expect(screen.getByLabelText('Métricas de equipamentos')).toHaveAttribute('data-visual-variant', 'operational-metrics')
   expect(screen.getByText('4')).toBeInTheDocument()

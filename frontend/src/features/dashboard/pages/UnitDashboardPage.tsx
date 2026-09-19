@@ -8,7 +8,10 @@ import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { useDashboardQuery } from '../api/dashboardQueries'
 import { UnitOperationalWorkspace } from '../components/UnitOperationalWorkspace'
 import { UnitMetricCards } from '../components/UnitMetricCards'
+import { SituationDistributionChart } from '../components/SituationDistributionChart'
+import { OperationalAlertCards } from '../components/OperationalAlertCards'
 import { EquipmentSituationSummary } from '../components/EquipmentSituationSummary'
+import { OperationalAlertCards } from '../components/OperationalAlertCards'
 
 type UnitDashboardPageProps = { session: SessionContext }
 
@@ -47,7 +50,14 @@ function UnitDashboardContent({ session }: UnitDashboardPageProps) {
               <h2 id="unit-dashboards-section-title">Dashboards da Unidade</h2>
               <p>Indicadores de equipamentos, situação do parque e acompanhamento operacional.</p>
               <UnitMetricCards metrics={dashboardQuery.data.metrics} inactive={dashboardQuery.data.situations.find((item) => item.situation === 'inactive')?.count} />
-              <EquipmentSituationSummary situations={dashboardQuery.data.situations} />
+              <SituationDistributionChart situations={dashboardQuery.data.situations} total={dashboardQuery.data.metrics.total} />
+              <UnitCallsDashboard callsByStatus={dashboardQuery.data.callsByStatus ?? []} />
+              <OperationalAlertCards
+                maintenanceCount={dashboardQuery.data.situations.find((s) => s.situation === 'maintenance')?.count ?? 0}
+                attentionCount={dashboardQuery.data.situations.find((s) => s.situation === 'attention')?.count ?? 0}
+                pendingCallsCount={dashboardQuery.data.criticalCalls ?? 0}
+                pendingMovementsCount={dashboardQuery.data.pendingMovements ?? 0}
+              />
             </section>
 
           <UnitOperationalWorkspace situations={dashboardQuery.data.situations} activity={dashboardQuery.data.recentActivity} />

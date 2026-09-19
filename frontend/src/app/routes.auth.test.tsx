@@ -44,7 +44,7 @@ describe('real login route integration', () => {
   }
 
   it.each([
-    ['DITEL', '200001', 'sigat-ditel', 'Painel estadual DITEL'],
+    ['DITEL', '200001', 'sigat-ditel', 'Painel estadual'],
     ['Unidade', '100001', 'sigat-unit', 'Painel da Unidade'],
   ])('sends credentials to the API and navigates a valid %s user', async (_label, registration, password, dashboard) => {
     const user = userEvent.setup()
@@ -95,6 +95,7 @@ describe('real login route integration', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByRole('heading', { name: 'Defina uma nova senha' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Painel estadual DITEL' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
   })
 })
+

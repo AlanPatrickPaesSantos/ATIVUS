@@ -41,7 +41,7 @@ test('restores an authenticated session before rendering protected content', asy
 
   render(<App />)
 
-  expect(await screen.findByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
 })
 
 test('keeps the loading state until the session endpoint validates the cookie', async () => {
@@ -64,7 +64,7 @@ test('keeps the loading state until the session endpoint validates the cookie', 
     unit: null,
   }))
 
-  expect(await screen.findByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
 })
 
 test('ignores a cached context when the session cookie is absent', async () => {
@@ -74,7 +74,7 @@ test('ignores a cached context when the session cookie is absent', async () => {
   render(<App />)
 
   expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Painel estadual DITEL' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
 })
 
 test('redirects to login when the session belongs to a blocked user', async () => {
@@ -83,7 +83,7 @@ test('redirects to login when the session belongs to a blocked user', async () =
   render(<App />)
 
   expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Painel estadual DITEL' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
 })
 
 test('rehydrates a valid session after reload from the session cookie', async () => {
@@ -93,11 +93,12 @@ test('rehydrates a valid session after reload from the session cookie', async ()
   await user.type(await screen.findByLabelText('Matrícula'), '200001')
   await user.type(screen.getByLabelText('Senha'), 'sigat-ditel')
   await user.click(screen.getByRole('button', { name: 'Entrar' }))
-  expect(await screen.findByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
 
   firstRender.unmount()
   clearSession()
   render(<App />)
 
-  expect(await screen.findByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
 })
+

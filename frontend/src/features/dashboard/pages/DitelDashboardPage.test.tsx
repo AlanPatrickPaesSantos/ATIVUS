@@ -65,7 +65,7 @@ test('renders the statewide operations console with filters and API-backed metri
   renderPage()
 
   expect(screen.getByTestId('ditel-operations-console')).toHaveAttribute('data-visual-variant', 'statewide-operations-console')
-  expect(screen.getByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(screen.getByLabelText('Unidade monitorada')).toHaveValue('statewide')
   expect(screen.getByLabelText('Situação do parque')).toHaveValue('all')
   expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
@@ -164,3 +164,4 @@ test('does not render protected data in empty or error states', async () => {
   expect(screen.queryByLabelText('Chamados por status')).not.toBeInTheDocument()
   expect(screen.queryByText('Movimentações recentes')).not.toBeInTheDocument()
 })
+

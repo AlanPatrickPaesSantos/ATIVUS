@@ -119,7 +119,7 @@ test('renders statewide inventory and calls consultation for DITEL', async () =>
 
 test('renders the statewide dashboard and Administration for a DITEL user', async () => {
   renderRoutes('/dashboard', ditelSession)
-  expect(screen.getByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
   expect(screen.getByText('Administração patrimonial')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Administração' })).toBeInTheDocument()
@@ -152,7 +152,7 @@ test('renders a filterable movement history without exposing Administration to a
 
 test.each([
   ['100001', 'sigat-unit', 'Painel da Unidade', /3º BPM · visão atualizada/i],
-  ['200001', 'sigat-ditel', 'Painel estadual DITEL', undefined],
+  ['200001', 'sigat-ditel', 'Painel estadual', undefined],
 ])('logs in with API credentials and lands on the expected dashboard', async (registration, password, dashboard, unitSubheading) => {
   const user = userEvent.setup()
   renderRoutes('/login', null)
@@ -192,7 +192,7 @@ test('blocks protected modules while a mandatory password change is pending', ()
 
   expect(screen.getByRole('heading', { name: 'Defina uma nova senha' })).toBeInTheDocument()
   expect(screen.getByText(/troca obrigatória/i)).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Painel estadual DITEL' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Administração' })).not.toBeInTheDocument()
 })
 
@@ -221,7 +221,7 @@ test('submits mandatory password change, updates the session, and releases the a
   await user.type(screen.getByLabelText('Confirmar nova senha'), 'nova-senha-segura')
   await user.click(screen.getByRole('button', { name: 'Atualizar senha' }))
 
-  expect(await screen.findByRole('heading', { name: 'Painel estadual DITEL' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Defina uma nova senha' })).not.toBeInTheDocument()
   expect(fetchSpy).toHaveBeenCalledWith(
     'http://localhost/api/v1/auth/password-change',
@@ -250,3 +250,4 @@ test('keeps the mandatory password form available after an API failure', async (
   expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível atualizar a senha. Tente novamente.')
   expect(screen.getByRole('button', { name: 'Atualizar senha' })).toBeEnabled()
 })
+
