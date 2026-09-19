@@ -10,7 +10,7 @@ export async function spaNavigate(page: Page, path: string) {
     window.history.pushState({}, '', route)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }, path)
-  await page.waitForTimeout(300)
+  await page.waitForTimeout(1500)
 }
 
 /** Navega para um módulo secundário via o menu "Mais ações" (acessível em desktop/tablet). */

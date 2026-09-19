@@ -1,66 +1,28 @@
-# Environment & secrets
-.env
-.env.*
-!.env.example
-
-# Dependencies
+# Node modules
 node_modules/
-
-# Build output
 dist/
-*.tsbuildinfo
-
-# Coverage & test artifacts
-coverage/
-playwright-report/
-test-results/
-
-# Backend runtime & data
-backend/var/
-*.bson
-*.wt
-
-# Temporary files & generated output
-tmp/
-output/
-
-# Local databases
-*.db
-*.sqlite
-
-# Graphify cache (re-generable via `graphify update .`)
-graphify-out/
-
-# Orchestration local state (not project code)
-.claude-flow/data/
-.claude-flow/logs/
-.claude-flow/sessions/
-.claude-flow/metrics/
-.claude-flow/policy/
-.claude-flow/security/
-.claude-flow/daemon-state.json
-.claude-flow/memory-package.json
-.claude-flow/harness-active-policy.json
-.swarm/
-.worktrees/
-
-# Local tooling state (not project source/config)
-.claude-flow/
-.superpowers/
-mongod.cfg.sigat-backup
-
-# IDE & editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-Thumbs.db
-.DS_Store
-Desktop.ini
+.vite/
 
 # Logs
-*.log
 logs/
+*.log
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Screenshots e artefatos de teste
+screenshots/
+__tests__/
+
+# Playwright
+.playwright/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache

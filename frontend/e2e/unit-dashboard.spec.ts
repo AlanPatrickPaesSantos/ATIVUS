@@ -70,10 +70,7 @@ test('DITEL admin creates a unit user with an active unit', async ({ page }) => 
 test('Unit user is denied DITEL administration without rendering protected data', async ({ page }) => {
   await signIn(page, '100001', 'sigat-unit')
 
-  await page.evaluate(() => {
-    window.history.pushState({}, '', '/administracao')
-    window.dispatchEvent(new Event('popstate'))
-  })
+  await spaNavigate(page, '/administracao')
 
   await expect(page.getByRole('heading', { name: 'Acesso não autorizado' })).toBeVisible({ timeout: 8000 })
   await expect(page.getByTestId('protected-module-data')).toHaveCount(0)
