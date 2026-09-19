@@ -2,15 +2,12 @@ import type { SessionContext } from '../../../shared/auth/types'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { queryClient } from '../../../app/providers'
-// import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 import { useDashboardQuery } from '../api/dashboardQueries'
 import { UnitOperationalWorkspace } from '../components/UnitOperationalWorkspace'
-import { UnitMetricCards } from '../components/UnitMetricCards'
-import { SituationDistributionChart } from '../components/SituationDistributionChart'
-import { UnitCallsDashboard } from '../components/UnitCallsDashboard'
-import { OperationalAlertCards } from '../components/OperationalAlertCards'
+import { UnitDashboardGrid } from '../components/UnitDashboardGrid'
+import '../unit-dashboard.css'
 
 type UnitDashboardPageProps = { session: SessionContext }
 
@@ -39,26 +36,29 @@ function UnitDashboardContent({ session }: UnitDashboardPageProps) {
           <h1 id="unit-dashboard-title">Painel da Unidade</h1>
           <p>{unitName} · visão atualizada do inventário e das pendências operacionais.</p>
         </div>
-        <div className="unit-dashboard-page__actions"><Link className="button-link" to="/relatorios">Gerar relatório</Link><Link className="button-link button-link--primary" to="/inventario">Cadastrar equipamento</Link></div>
+        <div className="unit-dashboard-page__actions">
+          <Link className="button-link" to="/relatorios">Gerar relatório</Link>
+          <Link className="button-link button-link--primary" to="/inventario">Cadastrar equipamento</Link>
+        </div>
       </header>
-      {dashboardQuery.isLoading ? <LoadingState label="Carregando painel da Unidade" /> : null}
+
+      {dashboardQuery.isLoading ? (
+        <LoadingState label="Carregando painel da Unidade" />
+      ) : null}
+
       {dashboardQuery.data ? (
         <>
-          {/* Seção de dashboards da Unidade */}
-            <section className="module-panel unit-dashboard-section" aria-labelledby="unit-dashboards-section-title">
-              <h2 id="unit-dashboards-section-title">Dashboards da Unidade</h2>
-              <p>Indicadores de equipamentos, situação do parque e acompanhamento operacional.</p>
-              <UnitMetricCards metrics={dashboardQuery.data.metrics} inactive={dashboardQuery.data.situations.find((item) => item.situation === 'inactive')?.count} />
-              <SituationDistributionChart situations={dashboardQuery.data.situations} total={dashboardQuery.data.metrics.total} />
-              <UnitCallsDashboard callsByStatus={dashboardQuery.data.callsByStatus ?? []} />
-              <OperationalAlertCards
-                maintenanceCount={dashboardQuery.data.situations.find((s) => s.situation === 'maintenance')?.count ?? 0}
-                attentionCount={dashboardQuery.data.situations.find((s) => s.situation === 'attention')?.count ?? 0}
-                pendingCallsCount={dashboardQuery.data.criticalCalls ?? 0}
-                pendingMovementsCount={dashboardQuery.data.pendingMovements ?? 0}
-              />
-            </section>
+          {/* Seção de dashboards visual real */}
+          <UnitDashboardGrid
+            metrics={dashboardQuery.data.metrics}
+            situations={dashboardQuery.data.situations}
+            callsByStatus={dashboardQuery.data.callsByStatus ?? []}
+            criticalCalls={dashboardQuery.data.criticalCalls ?? 0}
+            pendingMovements={dashboardQuery.data.pendingMovements ?? 0}
+            recentActivity={dashboardQuery.data.recentActivity}
+          />
 
+          {/* Área operacional secundária: Equipamentos da Unidade */}
           <UnitOperationalWorkspace situations={dashboardQuery.data.situations} activity={dashboardQuery.data.recentActivity} />
         </>
       ) : null}
