@@ -100,6 +100,7 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
   expect(screen.getByText(/Unidade Centro · visão atualizada/i)).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Dashboards da Unidade' })).toBeInTheDocument()
+  expect(within(screen.getByTestId('kpi-ativos')).queryByLabelText('2 equipamentos ativos')).not.toBeInTheDocument()
   expect(screen.getByTestId('kpi-inativos')).toBeInTheDocument()
   expect(within(screen.getByTestId('kpi-inativos')).getByText('Inativos')).toBeInTheDocument()
   expect(screen.getByTestId('kpi-inativos')).toHaveAttribute('style', expect.stringContaining('var(--sigat-danger)'))

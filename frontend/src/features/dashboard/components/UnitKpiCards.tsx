@@ -52,11 +52,6 @@ export function UnitKpiCards({ metrics, inactive }: UnitKpiCardsProps) {
                 {kpi.value}
               </strong>
             </div>
-            {kpi.label === 'Ativos' && metrics.active > 0 && (
-              <div className="unit-kpi-card__trend" aria-label={`${metrics.active} equipamentos ativos`}>
-                <span className="unit-kpi-card__trend-dot" aria-hidden="true" />
-              </div>
-            )}
           </article>
         ))}
       </div>
