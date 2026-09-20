@@ -451,6 +451,63 @@
 @media (max-width: 900px) { .ditel-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ditel-dashboard-page__grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .ditel-filters__primary, .ditel-filters__advanced { grid-template-columns: 1fr; } .ditel-filters__actions { justify-content: stretch; } .ditel-filters__actions .button-link { flex: 1; } .ditel-filter-summary { align-items: start; flex-direction: column; } .ditel-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ditel-metric:last-child { grid-column: 1 / -1; } }
 
+/* DITEL dashboard: leitura estadual com painéis visuais e dados reais. */
+.ditel-dashboard-page[data-visual-variant='statewide-operations-console'] { max-width: 102rem; }
+.ditel-dashboard-page .dashboards-title { color: var(--sigat-text); font-family: var(--font-title); font-size: 1.18rem; margin: 1rem 0 .75rem; }
+.ditel-dashboard-page .module-panel { border-color: rgb(148 163 184 / 32%); }
+.ditel-dashboard-page .module-panel h2 { color: var(--sigat-text); font-family: var(--font-title); font-size: clamp(1rem, 1.4vw, 1.22rem); margin: 0 0 .18rem; }
+.ditel-dashboard-page .module-panel p { color: var(--sigat-muted); font-size: .82rem; line-height: 1.45; margin: 0; }
+.ditel-metric-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.ditel-metric { background: linear-gradient(145deg, rgb(43 60 82 / 88%), rgb(30 43 61 / 96%)); min-height: 6rem; padding: .9rem 1rem; }
+.ditel-metric--available::before { background: var(--sigat-available); }
+.ditel-metric--operational::before { background: var(--sigat-operational-bright); }
+.ditel-metric--attention::before { background: var(--sigat-attention); }
+.ditel-metric--critical::before { background: var(--sigat-critical); }
+.ditel-metric strong { font-size: 1.65rem; margin-top: .8rem; }
+.ditel-state-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1.2fr) minmax(24rem, .8fr); margin-bottom: 1rem; }
+.ditel-state-health, .ditel-park-distribution, .ditel-coverage-dashboard, .ditel-calls-dashboard, .ditel-flow-dashboard, .ditel-ranking { background: linear-gradient(145deg, rgb(45 64 88 / 92%), rgb(30 43 61 / 98%)); padding: 1.15rem; }
+.ditel-state-health { overflow: hidden; position: relative; }
+.ditel-state-health::after { background: radial-gradient(circle, rgb(56 189 248 / 16%), transparent 58%); content: ''; height: 14rem; position: absolute; right: -5rem; top: -5rem; width: 14rem; }
+.ditel-state-health__body { align-items: center; display: grid; gap: 1.3rem; grid-template-columns: auto 1fr; margin-top: 1rem; position: relative; z-index: 1; }
+.ditel-state-health__ring { --health: 0%; align-items: center; background: conic-gradient(var(--sigat-available) var(--health), rgb(17 24 39 / 88%) 0); border-radius: 999px; display: grid; height: 8.5rem; justify-items: center; place-content: center; position: relative; width: 8.5rem; }
+.ditel-state-health__ring::after { background: rgb(24 34 49); border: 1px solid rgb(148 163 184 / 22%); border-radius: inherit; content: ''; inset: 1rem; position: absolute; }
+.ditel-state-health__ring span, .ditel-state-health__ring strong { position: relative; z-index: 1; }
+.ditel-state-health__ring span { color: var(--sigat-muted); font-size: .66rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+.ditel-state-health__ring strong { color: var(--sigat-available); font-family: var(--font-identifier); font-size: 1.65rem; line-height: 1; }
+.ditel-state-health__readout { display: grid; gap: .55rem; min-width: 0; }
+.ditel-state-health__readout > div:first-child { align-items: end; display: flex; gap: 1rem; justify-content: space-between; }
+.ditel-state-health__readout span { color: var(--sigat-muted); font-size: .76rem; }
+.ditel-state-health__readout strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: 1.6rem; }
+.ditel-state-health__track, .ditel-bar-list__track, .ditel-ranking__track, .ditel-coverage-dashboard__track { background: rgb(15 23 42 / 70%); border: 1px solid rgb(96 165 250 / 14%); border-radius: 999px; height: .62rem; overflow: hidden; }
+.ditel-state-health__track span { background: linear-gradient(90deg, var(--sigat-available), var(--sigat-attention), var(--sigat-critical)); display: block; height: 100%; }
+.ditel-state-health__signals { display: grid; gap: .6rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 1rem; position: relative; z-index: 1; }
+.ditel-state-health__signals span { background: rgb(13 22 35 / 54%); border: 1px solid rgb(96 165 250 / 13%); color: var(--sigat-text); font-family: var(--font-identifier); font-size: .72rem; padding: .68rem; }
+.ditel-park-distribution__stack { border-radius: 999px; display: flex; height: 1.15rem; margin: 1.25rem 0 1rem; overflow: hidden; outline: 1px solid rgb(148 163 184 / 18%); }
+.ditel-park-distribution__segment { min-width: .25rem; }
+.ditel-park-distribution__segment--available { background: var(--sigat-available); }
+.ditel-park-distribution__segment--attention { background: var(--sigat-attention); }
+.ditel-park-distribution__segment--critical { background: var(--sigat-critical); }
+.ditel-park-distribution__segment--operational { background: var(--sigat-operational-bright); }
+.ditel-park-distribution__list, .ditel-coverage-dashboard__list, .ditel-bar-list, .ditel-ranking__list { display: grid; gap: .62rem; list-style: none; margin: 0; padding: 0; }
+.ditel-park-distribution__list li { align-items: center; background: rgb(15 23 42 / 42%); display: flex; justify-content: space-between; padding: .65rem .75rem; }
+.ditel-park-distribution__list span, .ditel-coverage-dashboard__list span, .ditel-bar-list span, .ditel-ranking__list span { color: var(--sigat-muted); font-size: .78rem; }
+.ditel-park-distribution__list strong, .ditel-coverage-dashboard__list strong, .ditel-bar-list strong, .ditel-ranking__list strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: .82rem; }
+.ditel-dashboard-page__grid { align-items: stretch; grid-template-columns: minmax(0, 1.15fr) minmax(22rem, .85fr); margin-bottom: 1rem; }
+.ditel-coverage-dashboard__list li, .ditel-bar-list li, .ditel-ranking__list li { display: grid; gap: .42rem; }
+.ditel-coverage-dashboard__list li > div:first-child, .ditel-bar-list li > div:first-child, .ditel-ranking__list li > div:first-child { align-items: center; display: flex; justify-content: space-between; }
+.ditel-coverage-dashboard__track span { background: linear-gradient(90deg, var(--sigat-operational-bright), var(--sigat-available)); display: block; height: 100%; }
+.ditel-analysis-grid { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ditel-panel-heading { align-items: start; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; }
+.ditel-panel-heading > strong { background: rgb(37 99 235 / 20%); border: 1px solid rgb(96 165 250 / 35%); border-radius: 999px; color: rgb(191 219 254); font-family: var(--font-identifier); font-size: .72rem; padding: .38rem .62rem; white-space: nowrap; }
+.ditel-bar-list__track span { background: linear-gradient(90deg, var(--sigat-operational-bright), rgb(191 219 254)); display: block; height: 100%; }
+.ditel-ranking__track span { background: linear-gradient(90deg, var(--sigat-critical), var(--sigat-attention)); display: block; height: 100%; }
+.ditel-flow-dashboard .ditel-movement-list { max-height: 14rem; overflow: auto; }
+.ditel-flow-dashboard .ditel-movement-list li { gap: .75rem; }
+.ditel-ranking { border-left: 3px solid var(--sigat-critical); }
+.ditel-admin { margin: 0; }
+@media (max-width: 1100px) { .ditel-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ditel-state-grid, .ditel-analysis-grid { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .ditel-state-health__body, .ditel-state-health__signals { grid-template-columns: 1fr; } .ditel-state-health__ring { height: 7rem; width: 7rem; } }
+
 /* Administração DITEL: acesso institucional e cobertura estadual. */
 .administration-page[data-visual-variant='statewide-governance-console'] .module-page__header { background: linear-gradient(90deg, rgb(255 183 77 / 8%), transparent 58%); border-left: 3px solid var(--sigat-attention); padding-left: 1rem; }
 .administration-page__notice { background: rgb(255 183 77 / 8%); border: 1px solid rgb(255 183 77 / 22%); border-left: 3px solid var(--sigat-attention); color: var(--sigat-muted); font-size: .76rem; margin-bottom: 1rem; padding: .68rem .8rem; }

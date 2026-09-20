@@ -69,7 +69,10 @@ test('renders the statewide operations console with filters and API-backed metri
   expect(screen.getByLabelText('Unidade monitorada')).toHaveValue('statewide')
   expect(screen.getByLabelText('Situação do parque')).toHaveValue('all')
   expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Situação do parque' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Distribuição estadual do parque' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Centro estadual DITEL' })).toBeInTheDocument()
+  expect(screen.getByTestId('ditel-state-health')).toHaveTextContent('84%')
+  expect(screen.getByTestId('ditel-park-distribution')).toHaveTextContent('Em operação')
 })
 
 test('renders API-backed metrics when the dashboard query has data', () => {
@@ -82,7 +85,28 @@ test('renders API-backed metrics when the dashboard query has data', () => {
   expect(within(metricsGrid).getByText('47')).toBeInTheDocument()
   expect(within(metricsGrid).getByText('21')).toBeInTheDocument()
   expect(within(metricsGrid).queryByText('1.248')).not.toBeInTheDocument()
-  expect(within(metricsGrid).getByText('Equipamentos em manutenção')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('Em manutenção')).toBeInTheDocument()
+})
+
+test('renders detailed statewide dashboard panels from real API data', () => {
+  setQueryResult({ data: dashboard })
+
+  renderPage()
+
+  expect(screen.getByRole('heading', { name: 'Cobertura por unidade' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Ranking de atenção' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()
+
+  const ranking = screen.getByTestId('ditel-unit-ranking')
+  expect(within(ranking).getByText('3º BPM')).toBeInTheDocument()
+  expect(within(ranking).getByText('9 pendências')).toBeInTheDocument()
+
+  const calls = screen.getByTestId('ditel-calls-dashboard')
+  expect(within(calls).getByText('Aberto')).toBeInTheDocument()
+  expect(within(calls).getByText('4')).toBeInTheDocument()
+  expect(within(calls).getByText('Em atendimento')).toBeInTheDocument()
+  expect(within(calls).getByText('2')).toBeInTheDocument()
 })
 
 test('does not render simulated operational data when the dashboard query has no data', () => {
@@ -104,7 +128,7 @@ test('renders unit coverage table from the dashboard API contract', () => {
   expect(screen.getByRole('columnheader', { name: 'Unidade' })).toBeInTheDocument()
   expect(screen.getByRole('row', { name: /3º BPM/ })).toBeInTheDocument()
   expect(screen.getByText('128')).toBeInTheDocument()
-  expect(screen.getByText('84%')).toBeInTheDocument()
+  expect(screen.getByRole('row', { name: /3º BPM84%1289/ })).toBeInTheDocument()
   expect(screen.queryByText('184')).not.toBeInTheDocument()
   expect(screen.queryByText('98%')).not.toBeInTheDocument()
 })
@@ -141,9 +165,9 @@ test('renders real call and movement indicators from the dashboard API', () => {
   const metricsGrid = screen.getByLabelText('Indicadores estaduais')
   expect(within(metricsGrid).getByText('1')).toBeInTheDocument()
   expect(within(metricsGrid).getByText('3')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Chamados por status' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
   expect(screen.getByText('Aberto', { selector: 'li span' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Movimentações recentes' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()
   expect(screen.getByText(/3º BPM → Unidade Norte/)).toBeInTheDocument()
 })
 
