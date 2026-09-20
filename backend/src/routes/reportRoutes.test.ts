@@ -201,7 +201,14 @@ describe('report routes', () => {
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toContain('application/pdf');
     expect(response.headers['content-disposition']).toContain('inventory-summary.pdf');
-    expect(response.body.toString('utf8')).toMatch(/^%PDF-/);
+    const pdf = response.body.toString('latin1');
+    expect(pdf).toMatch(/^%PDF-/);
+    expect(pdf).toContain('/F2 20 Tf');
+    expect(pdf).toContain('/F3 9 Tf');
+    expect(pdf).toContain('0.945 0.969 1 rg');
+    expect(pdf).toContain('0.137 0.388 0.922 RG');
+    expect(pdf).toContain('<FEFF');
+    expect(pdf).not.toMatch(/Invent.rio|opera..o|manuten..o/);
   });
 
   it('rejects unsupported export formats and invalid situation filters', async () => {

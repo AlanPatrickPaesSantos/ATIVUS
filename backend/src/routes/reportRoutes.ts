@@ -129,28 +129,37 @@ function reportToCsv(report: InventoryReport) {
   ].map((row) => row.map(csvCell).join(',')).join('\r\n');
 }
 
-function pdfEscape(value: string) {
-  return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+function pdfText(value: string) {
+  return `<${Buffer.from(`\uFEFF${value}`, 'utf16le').swap16().toString('hex').toUpperCase()}>`;
 }
 
-function buildPdf(lines: string[]) {
-  const content = [
-    'BT',
-    '/F1 11 Tf',
-    '50 790 Td',
-    ...lines.flatMap((line, index) => [
-      index === 0 ? '' : '0 -16 Td',
-      `(${pdfEscape(line)}) Tj`,
-    ]).filter(Boolean),
-    'ET',
-  ].join('\n');
+function textAt(value: string, x: number, y: number, size = 10, font = 'F1') {
+  return `BT /${font} ${size} Tf ${x} ${y} Td ${pdfText(value)} Tj ET`;
+}
+
+function fillRect(x: number, y: number, width: number, height: number, color: string) {
+  return `q ${color} rg ${x} ${y} ${width} ${height} re f Q`;
+}
+
+function strokeRect(x: number, y: number, width: number, height: number, color: string, lineWidth = 1) {
+  return `q ${color} RG ${lineWidth} w ${x} ${y} ${width} ${height} re S Q`;
+}
+
+function horizontalLine(x1: number, y: number, x2: number, color = '0.800 0.835 0.878', lineWidth = 1) {
+  return `q ${color} RG ${lineWidth} w ${x1} ${y} m ${x2} ${y} l S Q`;
+}
+
+function buildPdf(commands: string[]) {
+  const content = commands.join('\n');
 
   const objects = [
     '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
     '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R /F3 6 0 R >> >> /Contents 7 0 R >>\nendobj\n',
     '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
-    `5 0 obj\n<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream\nendobj\n`,
+    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n',
+    '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n',
+    `7 0 obj\n<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream\nendobj\n`,
   ];
   let output = '%PDF-1.4\n';
   const offsets = [0];
@@ -170,18 +179,65 @@ function buildPdf(lines: string[]) {
 }
 
 function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportResponse>>) {
-  const lines = [
-    'ATIVUS - Inventário consolidado',
-    `Escopo: ${response.report.scope.name}`,
-    `Gerado por: ${response.generatedBy.name}`,
-    `Total: ${response.totals.total}`,
-    `Em operação: ${response.totals.active}`,
-    `Em manutenção: ${response.totals.maintenance}`,
-    `Atenção: ${response.totals.attention}`,
-    ...response.units.map((item) => `${item.unit.name}: ${item.total} equipamento(s)`),
+  const generatedAt = new Date(response.report.generatedAt).toLocaleDateString('pt-BR');
+  const situationFilter = response.report.filters.situation ?? 'Todas as situações';
+  const period = response.report.filters.period ?? 'Agosto de 2026';
+  const commands = [
+    fillRect(0, 0, 595, 842, '0.945 0.969 1'),
+    fillRect(42, 44, 511, 754, '1 1 1'),
+    strokeRect(42, 44, 511, 754, '0.800 0.835 0.878'),
+    textAt('ATIVUS · PMPA / DITEL', 94, 746, 10, 'F2'),
+    textAt('DOCUMENTO PARA CONFERÊNCIA', 94, 732, 7, 'F1'),
+    strokeRect(431, 733, 78, 22, '0.137 0.388 0.922'),
+    textAt(response.report.scope.acronym || response.report.scope.name, 443, 741, 8, 'F3'),
+    horizontalLine(74, 712, 521),
+    textAt('Pré-visualização', 74, 686, 20, 'F2'),
+    horizontalLine(74, 670, 521, '0.137 0.388 0.922', 2),
+    textAt(response.report.title, 74, 646, 14, 'F2'),
+    textAt('Posição patrimonial por unidade e situação.', 74, 625, 10, 'F1'),
+    horizontalLine(74, 602, 521),
+    textAt('PERÍODO', 74, 581, 8, 'F2'),
+    textAt(period, 74, 566, 9, 'F3'),
+    textAt('ESCOPO', 312, 581, 8, 'F2'),
+    textAt(response.report.scope.name, 312, 566, 9, 'F3'),
+    textAt('REGISTROS INCLUÍDOS', 74, 544, 8, 'F2'),
+    textAt(`${response.totals.total} equipamentos`, 74, 529, 9, 'F3'),
+    textAt('GERADO POR', 312, 544, 8, 'F2'),
+    textAt(response.generatedBy.name, 312, 529, 9, 'F3'),
+    horizontalLine(74, 508, 521),
+    textAt('FILTROS APLICADOS', 74, 489, 8, 'F2'),
+    textAt(`Situação: ${situationFilter}`, 74, 474, 9, 'F1'),
+    horizontalLine(74, 455, 521),
+    textAt(`${response.totals.active} em operação`, 74, 433, 12, 'F2'),
+    textAt(`${response.totals.maintenance} em manutenção`, 186, 433, 12, 'F2'),
+    textAt(`${response.totals.inactive} inativos`, 316, 433, 12, 'F2'),
+    textAt(`${response.totals.attention} requerem atenção`, 414, 433, 12, 'F2'),
+    textAt('Resumo por unidade', 74, 398, 12, 'F2'),
+    fillRect(74, 370, 447, 20, '0.137 0.388 0.922'),
+    textAt('UNIDADE', 84, 377, 8, 'F2'),
+    textAt('TOTAL', 298, 377, 8, 'F2'),
+    textAt('OPERAÇÃO', 346, 377, 8, 'F2'),
+    textAt('MANUT.', 412, 377, 8, 'F2'),
+    textAt('ATENÇÃO', 466, 377, 8, 'F2'),
   ];
 
-  return buildPdf(lines);
+  response.units.slice(0, 10).forEach((item, index) => {
+    const y = 349 - (index * 22);
+    if (index % 2 === 0) {
+      commands.push(fillRect(74, y - 5, 447, 20, '0.965 0.976 0.988'));
+    }
+    commands.push(textAt(item.unit.name, 84, y, 8, 'F1'));
+    commands.push(textAt(String(item.total), 304, y, 8, 'F3'));
+    commands.push(textAt(String(item.active), 360, y, 8, 'F3'));
+    commands.push(textAt(String(item.maintenance), 430, y, 8, 'F3'));
+    commands.push(textAt(String(item.attention), 486, y, 8, 'F3'));
+  });
+
+  commands.push(horizontalLine(74, 92, 521));
+  commands.push(textAt('Prévia atualizada para conferência.', 74, 74, 8, 'F1'));
+  commands.push(textAt(`Emissão: ${generatedAt}`, 426, 74, 8, 'F1'));
+
+  return buildPdf(commands);
 }
 
 async function buildCallsReportResponse(context: SessionContext, query: Record<string, unknown>) {
