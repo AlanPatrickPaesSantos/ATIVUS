@@ -327,8 +327,8 @@
 .unit-metric-cards__card--critical::after { background: var(--sigat-critical); }
 .unit-metric-cards__card h2 { color: var(--sigat-muted); font-family: var(--font-interface); font-size: .62rem; font-weight: 700; letter-spacing: .075em; margin: 0; text-transform: uppercase; }
 .unit-metric-cards__card p { color: var(--sigat-text); font-family: var(--font-title); font-size: 1.45rem; line-height: 1; margin: .48rem 0 .6rem; }
-.unit-operations-grid { display: grid; gap: .8rem; grid-template-columns: minmax(0, 1.85fr) minmax(19rem, 1fr); }
-.unit-inventory-snapshot, .unit-attention-panel, .unit-maintenance-chart { background: #111a2a; border: 1px solid var(--sigat-border); padding: 1rem; }
+.unit-operations-grid { display: grid; gap: .8rem; grid-template-columns: minmax(0, 1fr); }
+.unit-inventory-snapshot { background: #111a2a; border: 1px solid var(--sigat-border); padding: 1rem; }
 .unit-operations-panel__header { align-items: start; display: flex; gap: .8rem; justify-content: space-between; }
 .unit-operations-panel__header h2 { color: var(--sigat-text); font-family: var(--font-title); font-size: .95rem; margin: 0; }
 .unit-operations-panel__header p { color: var(--sigat-muted); font-size: .72rem; margin: .35rem 0 0; }
@@ -355,25 +355,6 @@
 .unit-status--active { background: rgb(39 193 139 / 14%); color: var(--sigat-available); }
 .unit-status--maintenance { background: rgb(242 201 76 / 14%); color: var(--sigat-attention); }
 .unit-status--inactive, .unit-status--lost, .unit-status--written_off { background: rgb(228 101 80 / 14%); color: var(--sigat-critical); }
-.unit-operations-side { display: grid; gap: .8rem; }
-.unit-attention-panel__count { background: rgb(242 201 76 / 12%); color: var(--sigat-attention); font-family: var(--font-identifier); font-size: .6rem; padding: .28rem .4rem; white-space: nowrap; }
-.unit-attention-panel ul { list-style: none; margin: .8rem 0 0; padding: 0; }
-.unit-attention-panel li { border-left: 2px solid var(--sigat-attention); border-top: 1px solid #233047; display: grid; gap: .18rem; padding: .55rem 0 .55rem .6rem; }
-.unit-attention-panel li:last-child { border-bottom: 1px solid #233047; }
-.unit-attention-panel__item--inactive, .unit-attention-panel__item--lost, .unit-attention-panel__item--written_off { border-left-color: var(--sigat-critical); }
-.unit-attention-panel__item--recent { border-left-color: var(--sigat-operational); }
-.unit-attention-panel li strong { color: var(--sigat-text); font-size: .7rem; }
-.unit-attention-panel li span { color: var(--sigat-muted); font-size: .65rem; line-height: 1.35; }
-.unit-maintenance-chart figure { margin: .8rem 0 0; }
-.unit-maintenance-chart__bars { display: flex; gap: 1rem; height: 5.9rem; padding: 0 .75rem; }
-.unit-maintenance-chart__bars span { display: grid; flex: 1; grid-template-rows: .8rem 1fr .75rem; height: 100%; justify-items: center; }
-.unit-maintenance-chart__bars b { align-self: start; color: var(--sigat-text); font-family: var(--font-identifier); font-size: .58rem; font-weight: 700; line-height: 1; }
-.unit-maintenance-chart__bars i { align-self: end; background: var(--sigat-operational); display: block; height: var(--bar-height); max-width: 2.15rem; width: 100%; }
-.unit-maintenance-chart__bars span:nth-child(2) i { background: var(--sigat-available); }
-.unit-maintenance-chart__bars span:nth-child(3) i { background: var(--sigat-attention); }
-.unit-maintenance-chart__bars span:nth-child(4) i { background: var(--sigat-critical); }
-.unit-maintenance-chart__bars small { align-self: end; color: var(--sigat-muted); font-family: var(--font-identifier); font-size: .55rem; }
-.unit-maintenance-chart figcaption { color: var(--sigat-muted); font-size: .65rem; margin-top: .65rem; }
 @media (max-width: 900px) { .unit-metric-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .unit-metric-cards__card:nth-child(3) { border-right: 0; } .unit-operations-grid { grid-template-columns: 1fr; } }
 @media (max-width: 620px) { .unit-dashboard-page__header { align-items: start; flex-direction: column; } .unit-dashboard-page__actions { width: 100%; } .unit-dashboard-page__actions .button-link { flex: 1; } .unit-metric-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .unit-metric-cards__card:nth-child(2n) { border-right: 0; } .unit-metric-cards__card:last-child { grid-column: 1 / -1; } .unit-inventory-snapshot__filters { grid-template-columns: 1fr; } }
 
@@ -381,17 +362,9 @@
   .unit-dashboard-page__header { animation: unit-dashboard-enter var(--motion-standard) ease-out both; }
   .unit-metric-cards { animation: unit-dashboard-enter 260ms 70ms ease-out both; }
   .unit-operations-grid { animation: unit-dashboard-enter 300ms 130ms ease-out both; }
-  .unit-attention-panel__item { animation: unit-dashboard-enter 220ms ease-out both; }
-  .unit-attention-panel__item:nth-child(2) { animation-delay: 45ms; }
-  .unit-attention-panel__item:nth-child(3) { animation-delay: 90ms; }
-  .unit-maintenance-chart__bars i { animation: unit-chart-bar-grow 420ms cubic-bezier(.2, .8, .2, 1) both; transform-origin: bottom; }
-  .unit-maintenance-chart__bars span:nth-child(2) i { animation-delay: 45ms; }
-  .unit-maintenance-chart__bars span:nth-child(3) i { animation-delay: 90ms; }
-  .unit-maintenance-chart__bars span:nth-child(4) i { animation-delay: 135ms; }
 }
 @keyframes unit-dashboard-enter { from { opacity: 0; transform: translateY(.45rem); } to { opacity: 1; transform: translateY(0); } }
-@keyframes unit-chart-bar-grow { from { transform: scaleY(.12); } to { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) { .top-nav__link, .top-nav__toggle, .top-nav__profile, .unit-metric-cards__card, .unit-inventory-snapshot__row { transition: none; } .unit-metric-cards__card:hover { transform: none; } .unit-dashboard-page__header, .unit-metric-cards, .unit-operations-grid, .unit-attention-panel__item, .unit-maintenance-chart__bars i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .top-nav__link, .top-nav__toggle, .top-nav__profile, .unit-metric-cards__card, .unit-inventory-snapshot__row { transition: none; } .unit-metric-cards__card:hover { transform: none; } .unit-dashboard-page__header, .unit-metric-cards, .unit-operations-grid { animation: none; } }
 
 /* DITEL, relatórios e movimentações — camada visual institucional. */
 .module-page { color: var(--sigat-text); margin: 0 auto; max-width: 100rem; }

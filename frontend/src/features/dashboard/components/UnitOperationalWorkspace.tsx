@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { Activity, SituationCount } from '../api/dashboardApi'
 import { useInventoryQuery } from '../../inventory/api/inventoryQueries'
-
-type UnitOperationalWorkspaceProps = {
-  activity: Activity[]
-  situations: SituationCount[]
-}
 
 const statusLabel = {
   active: 'Ativo',
@@ -23,12 +17,7 @@ const situationOptions = [
   { value: 'inactive', label: 'Inativo' },
 ]
 
-function maintenanceBars(maintenance: number) {
-  const baseline = Math.max(maintenance, 1)
-  return [Math.max(1, baseline - 1), baseline + 1, baseline + 2, baseline]
-}
-
-export function UnitOperationalWorkspace({ activity, situations }: UnitOperationalWorkspaceProps) {
+export function UnitOperationalWorkspace() {
   const [search, setSearch] = useState('')
   const [situation, setSituation] = useState('all')
   const [isSituationOpen, setIsSituationOpen] = useState(false)
@@ -41,10 +30,6 @@ export function UnitOperationalWorkspace({ activity, situations }: UnitOperation
     const searchable = `${item.patrimony} ${item.type} ${item.brand} ${item.model}`.toLocaleLowerCase()
     return (!search || searchable.includes(search.toLocaleLowerCase())) && (situation === 'all' || item.situation === situation)
   })
-  const maintenance = situations.find((item) => item.situation === 'maintenance')?.count ?? 0
-  const attentionItems = situations.filter((item) => item.situation !== 'active')
-  const maintenanceTrend = maintenanceBars(maintenance)
-  const cycleLabels = ['Mai', 'Jun', 'Jul', 'Ago']
   const selectedSituation = situationOptions.find((option) => option.value === situation) ?? situationOptions[0]
 
   useEffect(() => {
@@ -123,29 +108,6 @@ export function UnitOperationalWorkspace({ activity, situations }: UnitOperation
           {!inventoryQuery.isLoading && visibleItems.length === 0 ? <p className="unit-inventory-snapshot__message">Nenhum equipamento encontrado para este filtro.</p> : null}
         </div>
       </section>
-      <aside className="unit-operations-side" aria-label="Acompanhamento operacional">
-        <section className="unit-attention-panel" aria-labelledby="operational-attention-title">
-          <header className="unit-operations-panel__header">
-            <div><h2 id="operational-attention-title">Atenção operacional</h2><p>Itens que pedem acompanhamento.</p></div>
-            <span className="unit-attention-panel__count">{attentionItems.reduce((total, item) => total + item.count, 0)} alertas</span>
-          </header>
-          <ul>
-            {attentionItems.map((item) => <li key={item.situation} className={`unit-attention-panel__item unit-attention-panel__item--${item.situation}`}><strong>{item.count} {item.label.toLocaleLowerCase()}</strong><span>Revise a situação e defina o próximo encaminhamento.</span></li>)}
-            {activity.slice(0, 1).map((item) => <li key={item.id} className="unit-attention-panel__item unit-attention-panel__item--recent"><strong>Atualização recente</strong><span>{item.description}</span></li>)}
-          </ul>
-        </section>
-        <section className="unit-maintenance-chart" aria-labelledby="maintenance-evolution-title">
-          <header className="unit-operations-panel__header"><div><h2 id="maintenance-evolution-title">Evolução das manutenções</h2><p>Últimos quatro ciclos de acompanhamento.</p></div></header>
-          <figure aria-label="Gráfico de barras da evolução das manutenções">
-            <div className="unit-maintenance-chart__bars">{maintenanceTrend.map((value, index) => {
-              const cycle = cycleLabels[index]
-              const quantity = `${value} ${value === 1 ? 'manutenção' : 'manutenções'}`
-              return <span key={cycle} aria-label={`${cycle}: ${quantity}`} style={{ '--bar-height': `${Math.max(28, value * 22)}%` } as React.CSSProperties}><b aria-hidden="true">{value}</b><i /><small aria-hidden="true">{cycle}</small></span>
-            })}</div>
-            <figcaption>{maintenance} equipamento{maintenance === 1 ? '' : 's'} em manutenção no ciclo atual.</figcaption>
-          </figure>
-        </section>
-      </aside>
     </div>
   )
 }

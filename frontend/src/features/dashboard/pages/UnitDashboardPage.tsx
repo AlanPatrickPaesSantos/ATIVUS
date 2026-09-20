@@ -59,7 +59,7 @@ function UnitDashboardContent({ session }: UnitDashboardPageProps) {
           />
 
           {/* Área operacional secundária: Equipamentos da Unidade */}
-          <UnitOperationalWorkspace situations={dashboardQuery.data.situations} activity={dashboardQuery.data.recentActivity} />
+          <UnitOperationalWorkspace />
         </>
       ) : null}
     </section>
