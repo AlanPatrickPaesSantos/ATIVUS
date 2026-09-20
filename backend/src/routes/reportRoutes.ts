@@ -332,16 +332,16 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   const images = logo ? [logo] : [];
   const commands = [
     fillRect(0, 0, 595, 842, '1 1 1'),
-    ...(logo ? [imageAt(logo.name, 44, 750, 38, 46), imageAt(logo.name, 513, 750, 38, 46)] : [
+    ...(logo ? [imageAt(logo.name, 38, 746, 52, 52), imageAt(logo.name, 505, 746, 52, 52)] : [
       strokeRect(42, 748, 40, 48, '0.137 0.388 0.922', 1),
       textAt('PMPA', 50, 770, 8, 'F2'),
       strokeRect(513, 748, 40, 48, '0.137 0.388 0.922', 1),
       textAt('ATIVUS', 518, 770, 7, 'F2'),
     ]),
-    textAt('GOVERNO DO ESTADO DO PARÁ', 224, 790, 7, 'F2'),
-    textAt('SECRETARIA DE SEGURANÇA PÚBLICA E DEFESA SOCIAL', 188, 779, 7, 'F2'),
-    textAt('POLÍCIA MILITAR DO PARÁ', 232, 768, 7, 'F2'),
-    textAt('DIRETORIA DE TELEMÁTICA', 236, 757, 8, 'F2'),
+    textAt('GOVERNO DO ESTADO DO PARÁ', 247, 790, 7, 'F2'),
+    textAt('SECRETARIA DE SEGURANÇA PÚBLICA E DEFESA SOCIAL', 203, 779, 7, 'F2'),
+    textAt('POLÍCIA MILITAR DO PARÁ', 254, 768, 7, 'F2'),
+    textAt('DIRETORIA DE TELEMÁTICA', 250, 757, 8, 'F2'),
     horizontalLine(42, 736, 553, '0 0 0', 1),
     textAt('RELATÓRIO PATRIMONIAL', 206, 706, 14, 'F2'),
     horizontalLine(60, 684, 535, '0.137 0.388 0.922', 1.5),
@@ -411,10 +411,9 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
 
   commands.push(horizontalLine(70, 74, 260, '0 0 0', 1));
   commands.push(horizontalLine(335, 74, 525, '0 0 0', 1));
-  commands.push(textAt('RESPONSÁVEL TÉCNICO', 116, 58, 7, 'F2'));
-  commands.push(textAt('DIRETORIA DE TELEMÁTICA - PMPA', 99, 47, 6, 'F2'));
-  commands.push(textAt('ASSINATURA DO RECEPTOR / SOLICITANTE', 374, 58, 7, 'F2'));
-  commands.push(textAt(response.report.scope.name.toUpperCase(), 397, 47, 6, 'F2'));
+  commands.push(textAt('RESPONSÁVEL TÉCNICO', 130, 58, 7, 'F2'));
+  commands.push(textAt('ASSINATURA DO RECEPTOR / SOLICITANTE', 366, 58, 7, 'F2'));
+  commands.push(textAt(response.report.scope.name.toUpperCase(), 402, 47, 6, 'F2'));
   commands.push(textAt(`Emissão: ${generatedAt}`, 450, 28, 7, 'F1'));
 
   return buildPdf(commands, images);

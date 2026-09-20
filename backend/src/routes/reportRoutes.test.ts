@@ -230,6 +230,7 @@ describe('report routes', () => {
     expect(pdf).not.toContain('(Invent\\341rio consolidado)');
     expect(pdf).not.toContain('(Documento oficial para confer\\352ncia administrativa do invent\\341rio institucional.)');
     expect(pdf).not.toContain('(Escopo autorizado:');
+    expect(pdf).not.toContain('(DIRETORIA DE TELEM\\301TICA - PMPA)');
     expect(pdf).not.toContain('54 40 487 762 re');
     expect(pdf).not.toContain('0.945 0.969 1 rg');
     expect(pdf).not.toContain('<FEFF');
