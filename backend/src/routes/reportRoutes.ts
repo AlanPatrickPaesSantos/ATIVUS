@@ -130,7 +130,20 @@ function reportToCsv(report: InventoryReport) {
 }
 
 function pdfText(value: string) {
-  return `<${Buffer.from(`\uFEFF${value}`, 'utf16le').swap16().toString('hex').toUpperCase()}>`;
+  const bytes = Buffer.from(value, 'latin1');
+  let escaped = '';
+
+  for (const byte of bytes) {
+    if (byte === 0x28 || byte === 0x29 || byte === 0x5c) {
+      escaped += `\\${String.fromCharCode(byte)}`;
+    } else if (byte < 0x20 || byte > 0x7e) {
+      escaped += `\\${byte.toString(8).padStart(3, '0')}`;
+    } else {
+      escaped += String.fromCharCode(byte);
+    }
+  }
+
+  return `(${escaped})`;
 }
 
 function textAt(value: string, x: number, y: number, size = 10, font = 'F1') {
@@ -159,23 +172,23 @@ function buildPdf(commands: string[]) {
     '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
     '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n',
     '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n',
-    `7 0 obj\n<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream\nendobj\n`,
+    `7 0 obj\n<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream\nendobj\n`,
   ];
   let output = '%PDF-1.4\n';
   const offsets = [0];
 
   for (const object of objects) {
-    offsets.push(Buffer.byteLength(output));
+    offsets.push(Buffer.byteLength(output, 'latin1'));
     output += object;
   }
 
-  const xrefOffset = Buffer.byteLength(output);
+  const xrefOffset = Buffer.byteLength(output, 'latin1');
   output += `xref\n0 ${objects.length + 1}\n`;
   output += '0000000000 65535 f \n';
   output += offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`).join('');
   output += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
 
-  return Buffer.from(output, 'utf8');
+  return Buffer.from(output, 'latin1');
 }
 
 function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportResponse>>) {

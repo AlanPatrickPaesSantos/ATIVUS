@@ -207,8 +207,11 @@ describe('report routes', () => {
     expect(pdf).toContain('/F3 9 Tf');
     expect(pdf).toContain('0.945 0.969 1 rg');
     expect(pdf).toContain('0.137 0.388 0.922 RG');
-    expect(pdf).toContain('<FEFF');
-    expect(pdf).not.toMatch(/Invent.rio|opera..o|manuten..o/);
+    expect(pdf).toContain('(Invent\\341rio consolidado)');
+    expect(pdf).toContain('(1 em opera\\347\\343o)');
+    expect(pdf).toContain('(1 em manuten\\347\\343o)');
+    expect(pdf).not.toContain('<FEFF');
+    expect(pdf).not.toContain('þÿ');
   });
 
   it('rejects unsupported export formats and invalid situation filters', async () => {
