@@ -129,6 +129,8 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.queryByTestId('alert-requer-atencao')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Evolução operacional' })).toBeInTheDocument()
   expect(screen.getByRole('figure', { name: 'Barras de evolução operacional' })).toBeInTheDocument()
+  expect(within(screen.getByLabelText('Linha do tempo operacional')).getByText('Notebook UC-001 teve situação atualizada.')).toBeInTheDocument()
+  expect(within(screen.getByLabelText('Linha do tempo operacional')).getByText('Hoje, 09:30')).toBeInTheDocument()
   expect(within(screen.getByTestId('kpi-total-equipamentos')).getByText('4')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Cadastrar equipamento' })).toHaveAttribute('href', '/inventario')
   expect(screen.getByRole('heading', { name: 'Equipamentos da Unidade' })).toBeInTheDocument()
@@ -138,7 +140,7 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByLabelText('Resumo de equipamentos da Unidade')).toHaveClass('unit-inventory-snapshot__table')
   expect(screen.getByRole('button', { name: 'Filtrar por situação' })).toHaveClass('unit-inventory-snapshot__situation-trigger')
   expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
-  expect(screen.queryByText('Notebook UC-001 teve situação atualizada.')).not.toBeInTheDocument()
+  expect(screen.getByText('Notebook UC-001 teve situação atualizada.')).toBeInTheDocument()
   expect(screen.queryByRole('combobox', { name: /unidade/i })).not.toBeInTheDocument()
 })
 

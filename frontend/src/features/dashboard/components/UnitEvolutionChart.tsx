@@ -51,6 +51,14 @@ export function UnitEvolutionChart({ recentActivity = [] }: UnitEvolutionChartPr
             )
           })}
         </div>
+        <ol className="unit-evolution-chart__timeline" aria-label="Linha do tempo operacional">
+          {recentActivity.slice(0, 4).map((item) => (
+            <li key={item.id}>
+              <span>{formatDate(item)}</span>
+              <strong>{item.description}</strong>
+            </li>
+          ))}
+        </ol>
         <p className="unit-evolution-chart__hint">Renderizado a partir de atividade de manutenção/movimentação recente.</p>
       </div>
     </section>

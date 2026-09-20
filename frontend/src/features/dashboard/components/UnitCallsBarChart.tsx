@@ -4,15 +4,23 @@ type UnitCallsBarChartProps = {
 
 const statusConfig = {
   Aberto: { label: 'Aberto', color: 'var(--sigat-operational, #2563eb)' },
+  'Em análise': { label: 'Em análise', color: '#38bdf8' },
+  'Em atendimento': { label: 'Em atendimento', color: 'var(--sigat-warning, #f59e0b)' },
   'Em andamento': { label: 'Em andamento', color: 'var(--sigat-warning, #f59e0b)' },
+  'Aguardando informação': { label: 'Aguardando informação', color: '#a78bfa' },
   Resolvido: { label: 'Resolvido', color: 'var(--sigat-success, #22c55e)' },
+  Encerrado: { label: 'Encerrado', color: 'var(--sigat-success, #22c55e)' },
   Cancelado: { label: 'Cancelado', color: 'var(--sigat-muted, #64748b)' },
 }
 
 const callLabels: Record<string, string> = {
   Aberto: 'Abertos',
+  'Em análise': 'Em análise',
+  'Em atendimento': 'Em atendimento',
   'Em andamento': 'Em andamento',
+  'Aguardando informação': 'Aguardando informação',
   Resolvido: 'Resolvidos',
+  Encerrado: 'Encerrados',
   Cancelado: 'Cancelados',
 }
 

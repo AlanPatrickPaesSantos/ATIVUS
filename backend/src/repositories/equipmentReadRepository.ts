@@ -205,6 +205,22 @@ async function readCriticalCalls(unitId?: string | null): Promise<number> {
   return CallModel.countDocuments(filter).exec();
 }
 
+async function readRecentActivity(unitId?: string | null): Promise<DashboardActivity[]> {
+  const filter = unitId ? { 'unit.id': unitId } : {};
+  const documents = await CallModel.find(filter)
+    .select({ protocol: 1, status: 1, updatedAt: 1, createdAt: 1 })
+    .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
+    .limit(6)
+    .lean()
+    .exec();
+
+  return documents.map((document) => ({
+    id: String(document._id),
+    description: `Chamado ${document.status}: ${document.protocol}`,
+    occurredAt: new Date(document.updatedAt ?? document.createdAt).toISOString(),
+  }));
+}
+
 async function readPendingMovements(unitId?: string | null): Promise<number> {
   const filter: Record<string, unknown> = { status: 'Pendente' };
   if (unitId) {
@@ -360,7 +376,7 @@ export async function readDashboardByScope(scope: DashboardReadScope): Promise<D
         count: attention,
       },
     ],
-    recentActivity: [],
+    recentActivity: await readRecentActivity(scope.unitId),
     ...(scope.role === 'ditel_admin' ? { unitSummaries: await readUnitSummaries() } : { unitSummaries: await readUnitSummaries(scope.unitId) }),
     callsByStatus: await readCallsByStatus(scope.unitId),
     criticalCalls: await readCriticalCalls(scope.unitId),

@@ -381,7 +381,14 @@ describe('dashboard routes', () => {
         { situation: 'inactive', label: 'Inativos', count: 0 },
         { situation: 'attention', label: 'Requer atenção', count: 0 },
       ],
-      recentActivity: [],
+      recentActivity: [
+        expect.objectContaining({
+          description: 'Chamado Resolvido: ATIVUS-2026-0003',
+        }),
+        expect.objectContaining({
+          description: 'Chamado Aberto: ATIVUS-2026-0001',
+        }),
+      ],
       unitSummaries: [
         { unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' }, coverage: '100%', equipment: 2, attention: 0 },
       ],
@@ -431,7 +438,17 @@ describe('dashboard routes', () => {
         { situation: 'inactive', label: 'Inativos', count: 1 },
         { situation: 'attention', label: 'Requer atenção', count: 1 },
       ],
-      recentActivity: [],
+      recentActivity: [
+        expect.objectContaining({
+          description: 'Chamado Resolvido: ATIVUS-2026-0003',
+        }),
+        expect.objectContaining({
+          description: 'Chamado Em atendimento: ATIVUS-2026-0002',
+        }),
+        expect.objectContaining({
+          description: 'Chamado Aberto: ATIVUS-2026-0001',
+        }),
+      ],
       unitSummaries: [
         { unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' }, coverage: '50%', equipment: 2, attention: 0 },
         { unit: { id: 'unit-2', name: '2ª Companhia', acronym: '2CIA' }, coverage: '50%', equipment: 2, attention: 1 },
@@ -527,6 +544,23 @@ describe('dashboard routes', () => {
     expect(response.body.criticalCalls).toBe(1);
     expect(response.body.pendingMovements).toBe(1);
     expect(response.body.monitoredUnits).toBe(2);
+    expect(response.body.recentActivity).toEqual([
+      expect.objectContaining({
+        id: expect.any(String),
+        description: 'Chamado Resolvido: ATIVUS-2026-0003',
+        occurredAt: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: expect.any(String),
+        description: 'Chamado Em atendimento: ATIVUS-2026-0002',
+        occurredAt: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: expect.any(String),
+        description: 'Chamado Aberto: ATIVUS-2026-0001',
+        occurredAt: expect.any(String),
+      }),
+    ]);
     expect(response.body.recentMovements).toHaveLength(1);
     expect(response.body.recentMovements[0]).toMatchObject({
       equipmentId: 'PAT-004',
@@ -561,6 +595,18 @@ describe('dashboard routes', () => {
     expect(response.body.criticalCalls).toBe(1);
     expect(response.body.pendingMovements).toBe(1);
     expect(response.body.monitoredUnits).toBe(1);
+    expect(response.body.recentActivity).toEqual([
+      expect.objectContaining({
+        id: expect.any(String),
+        description: 'Chamado Resolvido: ATIVUS-2026-0003',
+        occurredAt: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: expect.any(String),
+        description: 'Chamado Aberto: ATIVUS-2026-0001',
+        occurredAt: expect.any(String),
+      }),
+    ]);
     expect(response.body.recentMovements).toHaveLength(1);
     expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
   });
