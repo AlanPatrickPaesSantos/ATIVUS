@@ -178,7 +178,7 @@ function ReportsContent({ session }: { session: SessionContext }) {
 }
 
 function PreviewMasthead({ generatedByName }: { generatedByName: string }) {
-  return <header className="report-preview__masthead"><img src="/images/brasao-pmpa.png" alt="Brasão da Polícia Militar do Pará" /><div><p className="page-eyebrow">SIGAT · PMPA / DITEL</p><span>Documento para conferência</span></div><strong>{generatedByName}</strong></header>
+  return <header className="report-preview__masthead"><img src="/images/brasao-pmpa.png" alt="Brasão da Polícia Militar do Pará" /><div><p className="page-eyebrow">ATIVUS · PMPA / DITEL</p><span>Documento para conferência</span></div><strong>{generatedByName}</strong></header>
 }
 
 function InventoryPreview({ response, periodLabel: label, scopeLabel, selectedSituationLabel }: { response: import('../../../shared/api/contracts').InventoryReportResponse; periodLabel: string; scopeLabel: string; selectedSituationLabel: string }) {

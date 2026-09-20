@@ -9,9 +9,9 @@ import { server } from '../shared/api/msw/server'
 import { clearSession, createSession } from '../shared/auth/session'
 import { fixtureSessionAdapter } from '../features/auth/data/sessionFixture'
 
-test('renders the SIGAT application shell', () => {
+test('renders the ATIVUS application shell', () => {
   render(<App />)
-  expect(screen.getByText('SIGAT')).toBeInTheDocument()
+  expect(screen.getByText('ATIVUS')).toBeInTheDocument()
 })
 
 beforeAll(() => {
@@ -53,7 +53,7 @@ test('keeps the loading state until the session endpoint validates the cookie', 
   render(<App />)
 
   expect(screen.getByText('Carregando sessão…')).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Entrar no SIGAT' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Entrar no ATIVUS' })).not.toBeInTheDocument()
   await waitFor(() => expect(resolveSession).toEqual(expect.any(Function)))
 
   resolveSession!(HttpResponse.json({
@@ -73,7 +73,7 @@ test('ignores a cached context when the session cookie is absent', async () => {
 
   render(<App />)
 
-  expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
 })
 
@@ -82,7 +82,7 @@ test('redirects to login when the session belongs to a blocked user', async () =
 
   render(<App />)
 
-  expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Painel estadual' })).not.toBeInTheDocument()
 })
 

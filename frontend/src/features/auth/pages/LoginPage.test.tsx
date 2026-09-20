@@ -9,7 +9,7 @@ test('renders the PMPA and DITEL institutional sign-in form', () => {
 
   expect(screen.getByTestId('login-split-screen')).toHaveAttribute('data-visual-variant', 'institutional-night-frame')
   expect(screen.getByTestId('login-card')).toHaveAttribute('data-visual-variant', 'centered-institutional-credential')
-  expect(screen.getByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
   expect(screen.getByRole('img', { name: 'Brasão da Polícia Militar do Pará' })).toBeInTheDocument()
   expect(screen.getByTestId('login-institutional-lockup')).toHaveTextContent('PMPA · DITEL')
   expect(screen.getByText('Diretoria de Telemática')).toBeInTheDocument()

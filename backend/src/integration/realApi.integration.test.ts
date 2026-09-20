@@ -43,7 +43,7 @@ describe('real API integration', () => {
     const admin = new UserModel({ name: 'Admin Integração', registration: 'int-admin', role: 'ditel_admin', unit: null });
     admin.set('password', 'senha-de-teste-nao-sensivel');
     await admin.save();
-    const equipment = await EquipmentModel.create({ patrimony: `INT-${Date.now()}`, type: 'Notebook', model: 'Teste', brand: 'SIGAT', situation: 'active', location: 'Sala de teste', unit, createdBy: user.id, history: [{ id: 'initial', description: 'Cadastro inicial', occurredAt: new Date() }] });
+    const equipment = await EquipmentModel.create({ patrimony: `INT-${Date.now()}`, type: 'Notebook', model: 'Teste', brand: 'ATIVUS', situation: 'active', location: 'Sala de teste', unit, createdBy: user.id, history: [{ id: 'initial', description: 'Cadastro inicial', occurredAt: new Date() }] });
     equipmentId = equipment.id;
   });
 

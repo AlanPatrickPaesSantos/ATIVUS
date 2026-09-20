@@ -171,7 +171,7 @@ function buildPdf(lines: string[]) {
 
 function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportResponse>>) {
   const lines = [
-    'SIGAT - Inventário consolidado',
+    'ATIVUS - Inventário consolidado',
     `Escopo: ${response.report.scope.name}`,
     `Gerado por: ${response.generatedBy.name}`,
     `Total: ${response.totals.total}`,

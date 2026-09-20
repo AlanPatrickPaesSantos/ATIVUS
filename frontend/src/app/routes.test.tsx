@@ -72,12 +72,12 @@ function renderRoutes(path: string, session: SessionContext | null) {
 
 test('renders the public login route', () => {
   renderRoutes('/login', null)
-  expect(screen.getByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
 })
 
 test('redirects unauthenticated dashboard access to login', () => {
   renderRoutes('/dashboard', null)
-  expect(screen.getByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
 })
 
 test('renders the unit dashboard and allowed navigation for a Unit user', () => {
@@ -96,7 +96,7 @@ test('navigates to the real Unit inventory page through the module link', async 
 
   expect(await screen.findByRole('heading', { name: 'Inventário da Unidade Centro' })).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Tipo' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Entrar no SIGAT' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Entrar no ATIVUS' })).not.toBeInTheDocument()
 })
 
 test('renders the real inventory page in the authenticated Unit scope', () => {
@@ -180,7 +180,7 @@ test('revokes the server session before returning to the login route', async () 
   await user.click(screen.getByRole('button', { name: 'Carlos Lima' }))
   await user.click(screen.getByRole('menuitem', { name: 'Sair' }))
 
-  expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
   expect(fetchSpy).toHaveBeenCalledWith(
     'http://localhost/api/v1/auth/logout',
     expect.objectContaining({ method: 'POST', credentials: 'include' }),

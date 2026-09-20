@@ -22,7 +22,7 @@ export async function startServer(options: StartServerOptions = {}) {
 
   const app = options.app ?? createApp();
   const server = app.listen(port, () => {
-    logger.log(`SIGAT backend listening on port ${port}`);
+    logger.log(`ATIVUS backend listening on port ${port}`);
   });
 
   return server;
@@ -30,7 +30,7 @@ export async function startServer(options: StartServerOptions = {}) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   startServer().catch((error) => {
-    console.error('Failed to start SIGAT backend', error);
+    console.error('Failed to start ATIVUS backend', error);
     process.exitCode = 1;
   });
 }

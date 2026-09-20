@@ -94,7 +94,7 @@ async function seedEquipment() {
 
   await database.collection('calls').insertMany([
     {
-      protocol: 'SIGAT-2026-0001',
+      protocol: 'ATIVUS-2026-0001',
       problem: 'radio',
       priority: 'Crítica',
       subject: 'Falha no rádio operacional',
@@ -108,7 +108,7 @@ async function seedEquipment() {
       updatedAt: new Date('2026-09-01T10:00:00.000Z'),
     },
     {
-      protocol: 'SIGAT-2026-0002',
+      protocol: 'ATIVUS-2026-0002',
       problem: 'printer',
       priority: 'Alta',
       subject: 'Impressora sem conexão',
@@ -122,7 +122,7 @@ async function seedEquipment() {
       updatedAt: new Date('2026-09-02T10:00:00.000Z'),
     },
     {
-      protocol: 'SIGAT-2026-0003',
+      protocol: 'ATIVUS-2026-0003',
       problem: 'software',
       priority: 'Média',
       subject: 'GPS desatualizado',

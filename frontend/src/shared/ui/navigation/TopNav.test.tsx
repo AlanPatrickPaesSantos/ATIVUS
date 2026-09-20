@@ -47,10 +47,8 @@ test('marks the active module and shows the unit context', () => {
 
   expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument()
   expect(screen.getByRole('list', { name: '' })).toHaveAttribute('data-alignment', 'page-center')
-  expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' }).closest('.top-nav__search')).toHaveAttribute('data-alignment', 'available-center')
-  expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' }).closest('.top-nav__search')).toHaveAttribute('data-actions-gap', 'comfortable')
   expect(screen.getByRole('link', { name: /inventário/i })).toHaveAttribute('aria-current', 'page')
-  expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' })).toBeInTheDocument()
+  expect(screen.queryByRole('searchbox', { name: 'Buscar no sistema' })).not.toBeInTheDocument()
 })
 
 test('does not render the textual session context (unit name / scope) in the top bar', () => {
@@ -65,7 +63,7 @@ test('does not render the textual session context (unit name / scope) in the top
 test('keeps the brand corner free of decorative symbols', () => {
   renderTopNav('/painel')
 
-  expect(screen.getByRole('link', { name: /sigat/i })).toHaveTextContent('SIGAT')
+  expect(screen.getByRole('link', { name: /ativus/i })).toHaveTextContent('ATIVUS')
   expect(document.querySelector('.top-nav__rail-icon')).not.toBeInTheDocument()
 })
 
@@ -91,7 +89,7 @@ test('opens the profile menu by keyboard and provides an explicit logout action'
   expect(onLogout).toHaveBeenCalledOnce()
 })
 
-test('desktop-wide shows all official modules and the search without overlap', () => {
+test('desktop-wide shows all official modules without global search', () => {
   setViewport(2200)
   renderTopNav('/painel')
 
@@ -99,7 +97,7 @@ test('desktop-wide shows all official modules and the search without overlap', (
   for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração']) {
     expect(screen.getByRole('link', { name: label, exact: true })).toBeVisible()
   }
-  expect(screen.getByRole('searchbox', { name: 'Buscar no sistema' })).toBeVisible()
+  expect(screen.queryByRole('searchbox', { name: 'Buscar no sistema' })).not.toBeInTheDocument()
   // Manutenção e módulos removidos do menu oficial não aparecem
   expect(screen.queryByRole('link', { name: /manutenção/i })).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: /missões técnicas/i })).not.toBeInTheDocument()
@@ -200,5 +198,5 @@ test('opens notification and help panels', async () => {
   await user.click(screen.getByRole('button', { name: 'Notificações' }))
   expect(screen.getByRole('status')).toHaveTextContent('Nenhuma notificação nova')
   await user.click(screen.getByRole('button', { name: 'Ajuda' }))
-  expect(screen.getByRole('dialog', { name: 'Ajuda do SIGAT' })).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: 'Ajuda do ATIVUS' })).toBeInTheDocument()
 })

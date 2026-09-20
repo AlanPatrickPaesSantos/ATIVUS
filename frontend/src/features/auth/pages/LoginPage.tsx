@@ -51,7 +51,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </div>
           <div className="login-card__heading">
             <span className="login-card__access-anchor" data-testid="login-access-anchor" aria-hidden="true" />
-            <h1 id="login-title">Entrar no SIGAT</h1>
+            <h1 id="login-title">Entrar no ATIVUS</h1>
             <p className="login-card__intro">Use sua matrícula e senha institucional.</p>
           </div>
           <form className="login-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>

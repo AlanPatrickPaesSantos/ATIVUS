@@ -11,7 +11,7 @@
 @media (max-width: 800px) { .metric-grid, .dashboard-grid { grid-template-columns: 1fr 1fr; } .page-header { align-items: start; flex-direction: column; } }
 @media (max-width: 540px) { .metric-grid, .dashboard-grid { grid-template-columns: 1fr; } }
 
-/* Chamados — fila e abertura no padrão operacional do SIGAT. */
+/* Chamados — fila e abertura no padrão operacional do ATIVUS. */
 .calls-page {
   margin: 0 auto;
   max-width: 76rem;
@@ -312,7 +312,7 @@
   .ditel-call-filters { grid-template-columns: 1fr; }
 }
 
-/* Unit dashboard: operational layout used by the approved SIGAT reference. */
+/* Unit dashboard: operational layout used by the approved ATIVUS reference. */
 .unit-dashboard-page { color: var(--sigat-text); margin: 0 auto; max-width: 100rem; }
 .unit-dashboard-page__header { align-items: center; border-bottom: 1px solid var(--sigat-border); display: flex; gap: 1.5rem; justify-content: space-between; margin-bottom: 1rem; padding: .15rem 0 1rem; }
 .unit-dashboard-page__header h1 { color: var(--sigat-text); font-family: var(--font-title); font-size: clamp(1.45rem, 2.2vw, 1.9rem); letter-spacing: 0; margin: .25rem 0; }

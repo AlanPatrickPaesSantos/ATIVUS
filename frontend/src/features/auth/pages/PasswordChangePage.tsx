@@ -43,7 +43,7 @@ export function PasswordChangePage({ userName, onChangePassword, onLogout }: Pas
       <section className="password-change-card">
         <p className="password-change-card__eyebrow">Troca obrigatória</p>
         <h1 id="password-change-title">Defina uma nova senha</h1>
-        <p>Olá, {userName}. Para continuar usando o SIGAT, cadastre uma senha definitiva para substituir a senha temporária.</p>
+        <p>Olá, {userName}. Para continuar usando o ATIVUS, cadastre uma senha definitiva para substituir a senha temporária.</p>
         <form className="login-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
           <label htmlFor="newPassword">Nova senha</label>
           <input id="newPassword" name="newPassword" type="password" autoComplete="new-password" required minLength={8} />

@@ -115,7 +115,7 @@ describe('homologation transaction support', () => {
 
   it('fails bootstrap when MongoDB does not support transactions', async () => {
     await expect(bootstrapHomologation()).rejects.toThrow(
-      'MongoDB deployment does not support transactions required by SIGAT.',
+      'MongoDB deployment does not support transactions required by ATIVUS.',
     );
   });
 });

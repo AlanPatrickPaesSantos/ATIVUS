@@ -227,7 +227,7 @@ export async function bootstrapHomologation(
   }
 
   if (report.transactionSupport !== 'supported') {
-    throw new Error('MongoDB deployment does not support transactions required by SIGAT.');
+    throw new Error('MongoDB deployment does not support transactions required by ATIVUS.');
   }
 
   await ensureOperationalIndexes();
@@ -245,7 +245,7 @@ export async function bootstrapHomologation(
 
 function formatReport(report: HomologationReport): string {
   return [
-    '# SIGAT homologation verify report',
+    '# ATIVUS homologation verify report',
     '',
     `Database: ${report.databaseName ?? 'unavailable'}`,
     `Mongo ready: ${report.ready ? 'yes' : 'no'}`,
@@ -289,7 +289,7 @@ async function runCli(argv: string[]) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runCli(process.argv.slice(2)).catch((error) => {
-    console.error('Failed to run SIGAT homologation command', error);
+    console.error('Failed to run ATIVUS homologation command', error);
     process.exitCode = 1;
   });
 }

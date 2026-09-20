@@ -33,7 +33,7 @@ export function App() {
       <BrowserRouter>
         {sessionReady
           ? <AppRoutes session={session} onSessionChange={setSession} />
-          : <main aria-busy="true"><p>SIGAT</p><p>Carregando sessão…</p></main>}
+          : <main aria-busy="true"><p>ATIVUS</p><p>Carregando sessão…</p></main>}
       </BrowserRouter>
     </AppProviders>
   )

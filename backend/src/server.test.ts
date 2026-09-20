@@ -33,7 +33,7 @@ describe('startServer', () => {
     expect(connectToDatabase).toHaveBeenCalledWith('mongodb://127.0.0.1:27017/sigat-test');
     expect(listen).toHaveBeenCalledWith(4310, expect.any(Function));
     expect(connectToDatabase.mock.invocationCallOrder[0]).toBeLessThan(listen.mock.invocationCallOrder[0]);
-    expect(logger.log).toHaveBeenCalledWith('SIGAT backend listening on port 4310');
+    expect(logger.log).toHaveBeenCalledWith('ATIVUS backend listening on port 4310');
   });
 
   it('fails early and does not start listening when MongoDB connection setup fails', async () => {

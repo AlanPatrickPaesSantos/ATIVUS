@@ -595,7 +595,7 @@ export const handlers = [
       })
     }
     if (format === 'pdf') {
-      return new HttpResponse('%PDF-1.4\n% SIGAT inventory summary\n%%EOF', {
+      return new HttpResponse('%PDF-1.4\n% ATIVUS inventory summary\n%%EOF', {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': 'attachment; filename="inventory-summary.pdf"',

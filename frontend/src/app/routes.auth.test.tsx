@@ -74,7 +74,7 @@ describe('real login route integration', () => {
     await user.type(screen.getByLabelText('Senha'), 'senha-bloqueada')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(await screen.findByRole('heading', { name: 'Entrar no SIGAT' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível entrar com essas credenciais.')
   })
 
