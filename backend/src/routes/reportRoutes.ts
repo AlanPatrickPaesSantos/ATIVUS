@@ -1,3 +1,7 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { deflateSync, inflateSync } from 'node:zlib';
+
 import { Router, type RequestHandler } from 'express';
 
 import { resolveAccessScopeFromContext, type ActiveUnitAccessScope } from '../auth/activeUnitScope.js';
@@ -18,6 +22,7 @@ import {
 } from '../repositories/reportsRepository.js';
 
 const CSV_HEADERS = ['Unidade', 'Total', 'Em operação', 'Em manutenção', 'Inativos', 'Perdidos', 'Baixados', 'Atenção'];
+type PdfImage = { name: string; width: number; height: number; data: Buffer };
 
 async function scope(context: SessionContext | undefined): Promise<ActiveUnitAccessScope> {
   if (!context) {
@@ -166,17 +171,130 @@ function horizontalLine(x1: number, y: number, x2: number, color = '0.800 0.835 
   return line(x1, y, x2, y, color, lineWidth);
 }
 
-function buildPdf(commands: string[]) {
+function imageAt(name: string, x: number, y: number, width: number, height: number) {
+  return `q ${width} 0 0 ${height} ${x} ${y} cm /${name} Do Q`;
+}
+
+function paethPredictor(a: number, b: number, c: number) {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+
+  if (pa <= pb && pa <= pc) {
+    return a;
+  }
+
+  return pb <= pc ? b : c;
+}
+
+function decodePngImage(filePath: string, name: string): PdfImage | null {
+  if (!existsSync(filePath)) {
+    return null;
+  }
+
+  const png = readFileSync(filePath);
+
+  if (!png.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return null;
+  }
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  let interlace = 0;
+  const idat: Buffer[] = [];
+
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.subarray(offset + 4, offset + 8).toString('ascii');
+    const data = png.subarray(offset + 8, offset + 8 + length);
+    offset += length + 12;
+
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+      interlace = data[12];
+    } else if (type === 'IDAT') {
+      idat.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+  }
+
+  if (!width || !height || bitDepth !== 8 || interlace !== 0 || ![2, 6].includes(colorType)) {
+    return null;
+  }
+
+  const inputChannels = colorType === 6 ? 4 : 3;
+  const scanlineLength = width * inputChannels;
+  const inflated = inflateSync(Buffer.concat(idat));
+  const unfiltered = Buffer.alloc(width * height * inputChannels);
+  let inputOffset = 0;
+  let outputOffset = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[inputOffset];
+    inputOffset += 1;
+
+    for (let x = 0; x < scanlineLength; x += 1) {
+      const raw = inflated[inputOffset + x];
+      const left = x >= inputChannels ? unfiltered[outputOffset + x - inputChannels] : 0;
+      const up = y > 0 ? unfiltered[outputOffset + x - scanlineLength] : 0;
+      const upLeft = y > 0 && x >= inputChannels ? unfiltered[outputOffset + x - scanlineLength - inputChannels] : 0;
+      let value = raw;
+
+      if (filter === 1) {
+        value = (raw + left) & 0xff;
+      } else if (filter === 2) {
+        value = (raw + up) & 0xff;
+      } else if (filter === 3) {
+        value = (raw + Math.floor((left + up) / 2)) & 0xff;
+      } else if (filter === 4) {
+        value = (raw + paethPredictor(left, up, upLeft)) & 0xff;
+      }
+
+      unfiltered[outputOffset + x] = value;
+    }
+
+    inputOffset += scanlineLength;
+    outputOffset += scanlineLength;
+  }
+
+  const rgb = Buffer.alloc(width * height * 3);
+
+  for (let source = 0, target = 0; source < unfiltered.length; source += inputChannels, target += 3) {
+    rgb[target] = unfiltered[source];
+    rgb[target + 1] = unfiltered[source + 1];
+    rgb[target + 2] = unfiltered[source + 2];
+  }
+
+  return { name, width, height, data: deflateSync(rgb) };
+}
+
+function loadReportLogo(): PdfImage | null {
+  return decodePngImage(join(process.cwd(), '..', 'frontend', 'public', 'images', 'brasao-pmpa.png'), 'LogoPmpa');
+}
+
+function buildPdf(commands: string[], images: PdfImage[] = []) {
   const content = commands.join('\n');
+  const imageResources = images.length > 0
+    ? ` /XObject << ${images.map((image, index) => `/${image.name} ${8 + index} 0 R`).join(' ')} >>`
+    : '';
 
   const objects = [
     '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
     '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R /F3 6 0 R >> >> /Contents 7 0 R >>\nendobj\n',
+    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R /F3 6 0 R >>${imageResources} >> /Contents 7 0 R >>\nendobj\n`,
     '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n',
     '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n',
     '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>\nendobj\n',
     `7 0 obj\n<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream\nendobj\n`,
+    ...images.map((image, index) => `${8 + index} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${image.data.length} >>\nstream\n${image.data.toString('latin1')}\nendstream\nendobj\n`),
   ];
   let output = '%PDF-1.4\n';
   const offsets = [0];
@@ -209,28 +327,33 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   const attentionWidth = Math.max(0, barWidth - activeWidth - maintenanceWidth);
   const operationBarWidth = response.totals.total > 0 ? Math.round((response.totals.active / response.totals.total) * 210) : 0;
   const attentionBarWidth = response.totals.total > 0 ? Math.round((response.totals.attention / response.totals.total) * 210) : 0;
+  const logo = loadReportLogo();
+  const images = logo ? [logo] : [];
   const commands = [
     fillRect(0, 0, 595, 842, '1 1 1'),
-    strokeRect(42, 748, 40, 48, '0.137 0.388 0.922', 1),
-    textAt('PMPA', 50, 770, 8, 'F2'),
-    strokeRect(513, 748, 40, 48, '0.137 0.388 0.922', 1),
-    textAt('ATIVUS', 518, 770, 7, 'F2'),
-    textAt('GOVERNO DO ESTADO DO PARÁ', 224, 789, 7, 'F2'),
-    textAt('SECRETARIA DE SEGURANÇA PÚBLICA E DEFESA SOCIAL', 188, 778, 7, 'F2'),
-    textAt('POLÍCIA MILITAR DO PARÁ', 232, 767, 7, 'F2'),
-    textAt('DIRETORIA DE TELEMÁTICA', 234, 756, 8, 'F2'),
+    ...(logo ? [imageAt(logo.name, 44, 750, 38, 46), imageAt(logo.name, 513, 750, 38, 46)] : [
+      strokeRect(42, 748, 40, 48, '0.137 0.388 0.922', 1),
+      textAt('PMPA', 50, 770, 8, 'F2'),
+      strokeRect(513, 748, 40, 48, '0.137 0.388 0.922', 1),
+      textAt('ATIVUS', 518, 770, 7, 'F2'),
+    ]),
+    textAt('GOVERNO DO ESTADO DO PARÁ', 224, 790, 7, 'F2'),
+    textAt('SECRETARIA DE SEGURANÇA PÚBLICA E DEFESA SOCIAL', 188, 779, 7, 'F2'),
+    textAt('POLÍCIA MILITAR DO PARÁ', 232, 768, 7, 'F2'),
+    textAt('DIRETORIA DE TELEMÁTICA', 234, 757, 8, 'F2'),
     horizontalLine(42, 736, 553, '0 0 0', 1),
-    textAt('RELATÓRIO PATRIMONIAL', 186, 704, 18, 'F2'),
-    textAt(response.report.title, 238, 684, 10, 'F2'),
-    textAt('Documento oficial para conferência administrativa do inventário institucional.', 133, 666, 8, 'F1'),
-    horizontalLine(82, 642, 513, '0.137 0.388 0.922', 1.5),
-    textAt('RECORTE DO RELATÓRIO', 82, 618, 8, 'F2'),
-    textAt('ESCOPO', 82, 598, 7, 'F2'),
-    textAt(restrictedScope, 82, 586, 8, 'F1'),
-    textAt('PERÍODO', 244, 598, 7, 'F2'),
-    textAt(period, 244, 586, 8, 'F1'),
-    textAt('GERADO POR', 390, 598, 7, 'F2'),
-    textAt(response.generatedBy.name, 390, 586, 8, 'F1'),
+    textAt('RELATÓRIO PATRIMONIAL', 201, 706, 16, 'F2'),
+    textAt(response.report.title, 238, 687, 9, 'F2'),
+    textAt('Documento oficial para conferência administrativa do inventário institucional.', 133, 670, 8, 'F1'),
+    horizontalLine(82, 650, 513, '0.137 0.388 0.922', 1.5),
+    textAt('UNIDADE EMISSORA', 82, 626, 8, 'F2'),
+    fillRect(82, 607, 170, 14, '0.925 0.961 1'),
+    textAt(response.report.scope.name, 90, 611, 8, 'F2'),
+    textAt('PERÍODO', 286, 626, 7, 'F2'),
+    textAt(period, 286, 612, 8, 'F1'),
+    textAt('GERADO POR', 410, 626, 7, 'F2'),
+    textAt(response.generatedBy.name, 410, 612, 8, 'F1'),
+    textAt(`Escopo autorizado: ${restrictedScope}.`, 82, 590, 7, 'F1'),
     horizontalLine(82, 566, 513),
     textAt('SÍNTESE EXECUTIVA', 82, 543, 10, 'F2'),
     textAt(`${response.totals.total}`, 82, 516, 18, 'F2'),
@@ -296,7 +419,7 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   commands.push(textAt(response.report.scope.name.toUpperCase(), 397, 47, 6, 'F2'));
   commands.push(textAt(`Emissão: ${generatedAt}`, 450, 28, 7, 'F1'));
 
-  return buildPdf(commands);
+  return buildPdf(commands, images);
 }
 
 async function buildCallsReportResponse(context: SessionContext, query: Record<string, unknown>) {

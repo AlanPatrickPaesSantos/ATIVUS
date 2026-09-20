@@ -206,13 +206,15 @@ describe('report routes', () => {
     expect(pdf).toContain('/F2 18 Tf');
     expect(pdf).toContain('/F2 14 Tf');
     expect(pdf).toContain('/F3 8 Tf');
+    expect(pdf).toContain('/Subtype /Image');
     expect(pdf).toContain('/Encoding /WinAnsiEncoding');
     expect(pdf).toContain('0.137 0.388 0.922 RG');
     expect(pdf).toContain('(GOVERNO DO ESTADO DO PAR\\301)');
     expect(pdf).toContain('(SECRETARIA DE SEGURAN\\307A P\\332BLICA E DEFESA SOCIAL)');
     expect(pdf).toContain('(DIRETORIA DE TELEM\\301TICA)');
     expect(pdf).toContain('(RELAT\\323RIO PATRIMONIAL)');
-    expect(pdf).toContain('(RECORTE DO RELAT\\323RIO)');
+    expect(pdf).toContain('(UNIDADE EMISSORA)');
+    expect(pdf).toContain('(Estado do Par\\341)');
     expect(pdf).toContain('(S\\315NTESE EXECUTIVA)');
     expect(pdf).toContain('(DIAGN\\323STICO VISUAL)');
     expect(pdf).toContain('(COMPOSI\\307\\303O DO PARQUE)');
@@ -225,6 +227,7 @@ describe('report routes', () => {
     expect(pdf).toContain('(OPERA\\307\\303O)');
     expect(pdf).toContain('(MANUTEN\\307\\303O)');
     expect(pdf).not.toContain('(PAINEL EXECUTIVO)');
+    expect(pdf).not.toContain('(RECORTE DO RELAT\\323RIO)');
     expect(pdf).not.toContain('54 40 487 762 re');
     expect(pdf).not.toContain('0.945 0.969 1 rg');
     expect(pdf).not.toContain('<FEFF');
