@@ -158,8 +158,12 @@ function strokeRect(x: number, y: number, width: number, height: number, color: 
   return `q ${color} RG ${lineWidth} w ${x} ${y} ${width} ${height} re S Q`;
 }
 
+function line(x1: number, y1: number, x2: number, y2: number, color = '0.800 0.835 0.878', lineWidth = 1) {
+  return `q ${color} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S Q`;
+}
+
 function horizontalLine(x1: number, y: number, x2: number, color = '0.800 0.835 0.878', lineWidth = 1) {
-  return `q ${color} RG ${lineWidth} w ${x1} ${y} m ${x2} ${y} l S Q`;
+  return line(x1, y, x2, y, color, lineWidth);
 }
 
 function buildPdf(commands: string[]) {
@@ -169,9 +173,9 @@ function buildPdf(commands: string[]) {
     '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
     '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
     '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R /F3 6 0 R >> >> /Contents 7 0 R >>\nendobj\n',
-    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
-    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n',
-    '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n',
+    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n',
+    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n',
+    '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>\nendobj\n',
     `7 0 obj\n<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream\nendobj\n`,
   ];
   let output = '%PDF-1.4\n';
@@ -197,48 +201,60 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   const period = response.report.filters.period ?? 'Agosto de 2026';
   const commands = [
     fillRect(0, 0, 595, 842, '0.945 0.969 1'),
-    fillRect(42, 44, 511, 754, '1 1 1'),
-    strokeRect(42, 44, 511, 754, '0.800 0.835 0.878'),
-    textAt('ATIVUS · PMPA / DITEL', 94, 746, 10, 'F2'),
-    textAt('DOCUMENTO PARA CONFERÊNCIA', 94, 732, 7, 'F1'),
-    strokeRect(431, 733, 78, 22, '0.137 0.388 0.922'),
-    textAt(response.report.scope.acronym || response.report.scope.name, 443, 741, 8, 'F3'),
-    horizontalLine(74, 712, 521),
-    textAt('Pré-visualização', 74, 686, 20, 'F2'),
+    fillRect(44, 40, 507, 762, '1 1 1'),
+    strokeRect(44, 40, 507, 762, '0.760 0.815 0.878'),
+    fillRect(44, 747, 507, 55, '0.965 0.976 0.988'),
+    fillRect(44, 747, 6, 55, '0.137 0.388 0.922'),
+    textAt('POLÍCIA MILITAR DO PARÁ', 74, 778, 8, 'F2'),
+    textAt('DIRETORIA DE TELEMÁTICA - DITEL', 74, 764, 8, 'F1'),
+    textAt('ATIVUS', 461, 772, 16, 'F2'),
+    textAt('Relatório patrimonial', 74, 727, 20, 'F2'),
+    textAt(response.report.title, 74, 704, 12, 'F2'),
+    textAt('Documento gerado para conferência administrativa do inventário institucional.', 74, 686, 9, 'F1'),
     horizontalLine(74, 670, 521, '0.137 0.388 0.922', 2),
-    textAt(response.report.title, 74, 646, 14, 'F2'),
-    textAt('Posição patrimonial por unidade e situação.', 74, 625, 10, 'F1'),
-    horizontalLine(74, 602, 521),
-    textAt('PERÍODO', 74, 581, 8, 'F2'),
-    textAt(period, 74, 566, 9, 'F3'),
-    textAt('ESCOPO', 312, 581, 8, 'F2'),
-    textAt(response.report.scope.name, 312, 566, 9, 'F3'),
-    textAt('REGISTROS INCLUÍDOS', 74, 544, 8, 'F2'),
-    textAt(`${response.totals.total} equipamentos`, 74, 529, 9, 'F3'),
-    textAt('GERADO POR', 312, 544, 8, 'F2'),
-    textAt(response.generatedBy.name, 312, 529, 9, 'F3'),
-    horizontalLine(74, 508, 521),
-    textAt('FILTROS APLICADOS', 74, 489, 8, 'F2'),
-    textAt(`Situação: ${situationFilter}`, 74, 474, 9, 'F1'),
-    horizontalLine(74, 455, 521),
-    textAt(`${response.totals.active} em operação`, 74, 433, 12, 'F2'),
-    textAt(`${response.totals.maintenance} em manutenção`, 186, 433, 12, 'F2'),
-    textAt(`${response.totals.inactive} inativos`, 316, 433, 12, 'F2'),
-    textAt(`${response.totals.attention} requerem atenção`, 414, 433, 12, 'F2'),
-    textAt('Resumo por unidade', 74, 398, 12, 'F2'),
-    fillRect(74, 370, 447, 20, '0.137 0.388 0.922'),
-    textAt('UNIDADE', 84, 377, 8, 'F2'),
-    textAt('TOTAL', 298, 377, 8, 'F2'),
-    textAt('OPERAÇÃO', 346, 377, 8, 'F2'),
-    textAt('MANUT.', 412, 377, 8, 'F2'),
-    textAt('ATENÇÃO', 466, 377, 8, 'F2'),
+    fillRect(74, 612, 447, 44, '0.965 0.976 0.988'),
+    strokeRect(74, 612, 447, 44, '0.800 0.835 0.878'),
+    textAt('ESCOPO', 90, 637, 7, 'F2'),
+    textAt(response.report.scope.name, 90, 622, 10, 'F1'),
+    textAt('PERÍODO', 304, 637, 7, 'F2'),
+    textAt(period, 304, 622, 10, 'F1'),
+    textAt('GERADO POR', 420, 637, 7, 'F2'),
+    textAt(response.generatedBy.name, 420, 622, 10, 'F1'),
+    textAt('Resumo executivo', 74, 582, 12, 'F2'),
+    fillRect(74, 526, 103, 42, '0.949 0.973 1'),
+    fillRect(188, 526, 103, 42, '0.925 0.988 0.953'),
+    fillRect(302, 526, 103, 42, '1 0.984 0.902'),
+    fillRect(416, 526, 105, 42, '1 0.949 0.949'),
+    strokeRect(74, 526, 103, 42, '0.675 0.792 0.976'),
+    strokeRect(188, 526, 103, 42, '0.518 0.855 0.604'),
+    strokeRect(302, 526, 103, 42, '0.949 0.765 0.263'),
+    strokeRect(416, 526, 105, 42, '0.973 0.444 0.444'),
+    textAt('TOTAL', 88, 551, 7, 'F2'),
+    textAt(`${response.totals.total}`, 88, 535, 14, 'F2'),
+    textAt('EM OPERAÇÃO', 202, 551, 7, 'F2'),
+    textAt(`${response.totals.active}`, 202, 535, 14, 'F2'),
+    textAt('MANUTENÇÃO', 316, 551, 7, 'F2'),
+    textAt(`${response.totals.maintenance}`, 316, 535, 14, 'F2'),
+    textAt('ATENÇÃO', 430, 551, 7, 'F2'),
+    textAt(`${response.totals.attention}`, 430, 535, 14, 'F2'),
+    textAt('Filtros aplicados', 74, 497, 12, 'F2'),
+    textAt(`Situação: ${situationFilter}`, 74, 478, 9, 'F1'),
+    horizontalLine(74, 462, 521),
+    textAt('Resumo por unidade', 74, 431, 12, 'F2'),
+    fillRect(74, 400, 447, 22, '0.137 0.388 0.922'),
+    textAt('UNIDADE', 86, 408, 8, 'F2'),
+    textAt('TOTAL', 298, 408, 8, 'F2'),
+    textAt('OPERAÇÃO', 346, 408, 8, 'F2'),
+    textAt('MANUT.', 412, 408, 8, 'F2'),
+    textAt('ATENÇÃO', 466, 408, 8, 'F2'),
   ];
 
   response.units.slice(0, 10).forEach((item, index) => {
-    const y = 349 - (index * 22);
+    const y = 377 - (index * 24);
     if (index % 2 === 0) {
-      commands.push(fillRect(74, y - 5, 447, 20, '0.965 0.976 0.988'));
+      commands.push(fillRect(74, y - 7, 447, 22, '0.965 0.976 0.988'));
     }
+    commands.push(line(74, y - 8, 521, y - 8, '0.900 0.925 0.955'));
     commands.push(textAt(item.unit.name, 84, y, 8, 'F1'));
     commands.push(textAt(String(item.total), 304, y, 8, 'F3'));
     commands.push(textAt(String(item.active), 360, y, 8, 'F3'));
@@ -247,7 +263,7 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   });
 
   commands.push(horizontalLine(74, 92, 521));
-  commands.push(textAt('Prévia atualizada para conferência.', 74, 74, 8, 'F1'));
+  commands.push(textAt('Documento emitido pelo ATIVUS para conferência patrimonial.', 74, 74, 8, 'F1'));
   commands.push(textAt(`Emissão: ${generatedAt}`, 426, 74, 8, 'F1'));
 
   return buildPdf(commands);

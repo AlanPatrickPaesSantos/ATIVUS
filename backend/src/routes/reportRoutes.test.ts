@@ -204,12 +204,14 @@ describe('report routes', () => {
     const pdf = response.body.toString('latin1');
     expect(pdf).toMatch(/^%PDF-/);
     expect(pdf).toContain('/F2 20 Tf');
-    expect(pdf).toContain('/F3 9 Tf');
+    expect(pdf).toContain('/F3 8 Tf');
+    expect(pdf).toContain('/Encoding /WinAnsiEncoding');
     expect(pdf).toContain('0.945 0.969 1 rg');
     expect(pdf).toContain('0.137 0.388 0.922 RG');
     expect(pdf).toContain('(Invent\\341rio consolidado)');
-    expect(pdf).toContain('(1 em opera\\347\\343o)');
-    expect(pdf).toContain('(1 em manuten\\347\\343o)');
+    expect(pdf).toContain('(EM OPERA\\307\\303O)');
+    expect(pdf).toContain('(MANUTEN\\307\\303O)');
+    expect(pdf).toContain('(Resumo executivo)');
     expect(pdf).not.toContain('<FEFF');
     expect(pdf).not.toContain('þÿ');
   });
