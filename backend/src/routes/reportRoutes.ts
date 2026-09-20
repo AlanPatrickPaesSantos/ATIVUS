@@ -210,76 +210,77 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
   const operationBarWidth = response.totals.total > 0 ? Math.round((response.totals.active / response.totals.total) * 210) : 0;
   const attentionBarWidth = response.totals.total > 0 ? Math.round((response.totals.attention / response.totals.total) * 210) : 0;
   const commands = [
-    fillRect(0, 0, 595, 842, '0.945 0.969 1'),
-    fillRect(54, 40, 487, 762, '1 1 1'),
-    strokeRect(54, 40, 487, 762, '0.760 0.815 0.878'),
-    fillRect(54, 742, 487, 60, '0.055 0.125 0.235'),
-    fillRect(54, 742, 8, 60, '0.137 0.388 0.922'),
-    textAt('POLÍCIA MILITAR DO PARÁ', 82, 778, 8, 'F2'),
-    textAt('DIRETORIA DE TELEMÁTICA - DITEL', 82, 764, 8, 'F1'),
-    textAt('ATIVUS', 462, 770, 18, 'F2'),
-    textAt('Sistema de Gestão Patrimonial', 418, 755, 7, 'F1'),
-    textAt('RELATÓRIO PATRIMONIAL', 82, 700, 22, 'F2'),
-    textAt(response.report.title, 82, 678, 11, 'F2'),
-    textAt('Documento oficial para conferência administrativa do inventário institucional.', 82, 660, 8, 'F1'),
-    horizontalLine(82, 642, 513, '0.137 0.388 0.922', 2),
-    textAt('RECORTE DO RELATÓRIO', 82, 615, 9, 'F2'),
-    textAt('ESCOPO', 82, 594, 7, 'F2'),
-    textAt(restrictedScope, 82, 580, 9, 'F1'),
-    textAt('PERÍODO', 244, 594, 7, 'F2'),
-    textAt(period, 244, 580, 9, 'F1'),
-    textAt('GERADO POR', 390, 594, 7, 'F2'),
-    textAt(response.generatedBy.name, 390, 580, 9, 'F1'),
-    horizontalLine(82, 560, 513),
-    textAt('SÍNTESE EXECUTIVA', 82, 536, 11, 'F2'),
-    textAt(`${response.totals.total}`, 82, 505, 24, 'F2'),
-    textAt('equipamentos no recorte', 116, 513, 8, 'F1'),
-    textAt(`${response.totals.active}`, 244, 505, 24, 'F2'),
-    textAt('em operação', 278, 513, 8, 'F1'),
-    textAt(`${response.totals.maintenance}`, 390, 505, 24, 'F2'),
-    textAt('em manutenção', 424, 513, 8, 'F1'),
-    horizontalLine(82, 490, 513),
-    textAt('DIAGNÓSTICO VISUAL', 82, 464, 11, 'F2'),
-    textAt('Indicador de operação', 82, 443, 8, 'F2'),
-    fillRect(82, 421, 210, 10, '0.900 0.925 0.955'),
-    fillRect(82, 421, operationBarWidth, 10, '0.063 0.725 0.506'),
-    textAt(`${operationalPercent}%`, 302, 419, 16, 'F2'),
-    textAt('Parque em operação no recorte autorizado.', 82, 404, 8, 'F1'),
-    textAt('Atenção administrativa', 82, 380, 8, 'F2'),
-    fillRect(82, 358, 210, 10, '0.900 0.925 0.955'),
-    fillRect(82, 358, attentionBarWidth, 10, '0.933 0.247 0.247'),
-    textAt(`${attentionPercent}%`, 302, 356, 16, 'F2'),
-    textAt('Registros que exigem acompanhamento.', 82, 341, 8, 'F1'),
-    textAt('COMPOSIÇÃO DO PARQUE', 82, 314, 11, 'F2'),
-    textAt('Equipamentos por situação', 82, 296, 8, 'F2'),
-    fillRect(82, 275, barWidth, 14, '0.900 0.925 0.955'),
-    fillRect(82, 275, activeWidth, 14, '0.063 0.725 0.506'),
-    fillRect(82 + activeWidth, 275, maintenanceWidth, 14, '0.965 0.620 0.043'),
-    fillRect(82 + activeWidth + maintenanceWidth, 275, attentionWidth, 14, '0.933 0.247 0.247'),
-    textAt('OPERAÇÃO', 82, 254, 7, 'F2'),
-    textAt(`${response.totals.active} item(ns)`, 82, 241, 8, 'F1'),
-    textAt('MANUTENÇÃO', 202, 254, 7, 'F2'),
-    textAt(`${response.totals.maintenance} item(ns)`, 202, 241, 8, 'F1'),
-    textAt('ATENÇÃO', 332, 254, 7, 'F2'),
-    textAt(`${response.totals.attention} item(ns)`, 332, 241, 8, 'F1'),
-    textAt(`Parque em operação: ${response.totals.active} de ${response.totals.total} equipamento(s), equivalente a ${operationalPercent}%.`, 82, 219, 8, 'F1'),
-    textAt(`Filtro aplicado: ${situationFilter}.`, 82, 205, 8, 'F1'),
-    horizontalLine(82, 187, 513),
-    textAt('Resumo por unidade', 82, 164, 11, 'F2'),
-    fillRect(82, 137, 431, 18, '0.137 0.388 0.922'),
-    textAt('UNIDADE', 94, 143, 7, 'F2'),
-    textAt('TOTAL', 304, 143, 7, 'F2'),
-    textAt('OPERAÇÃO', 352, 143, 7, 'F2'),
-    textAt('MANUT.', 418, 143, 7, 'F2'),
-    textAt('ATENÇÃO', 468, 143, 7, 'F2'),
+    fillRect(0, 0, 595, 842, '1 1 1'),
+    strokeRect(42, 748, 40, 48, '0.137 0.388 0.922', 1),
+    textAt('PMPA', 50, 770, 8, 'F2'),
+    strokeRect(513, 748, 40, 48, '0.137 0.388 0.922', 1),
+    textAt('ATIVUS', 518, 770, 7, 'F2'),
+    textAt('GOVERNO DO ESTADO DO PARÁ', 224, 789, 7, 'F2'),
+    textAt('SECRETARIA DE SEGURANÇA PÚBLICA E DEFESA SOCIAL', 188, 778, 7, 'F2'),
+    textAt('POLÍCIA MILITAR DO PARÁ', 232, 767, 7, 'F2'),
+    textAt('DIRETORIA DE TELEMÁTICA', 234, 756, 8, 'F2'),
+    horizontalLine(42, 736, 553, '0 0 0', 1),
+    textAt('RELATÓRIO PATRIMONIAL', 186, 704, 18, 'F2'),
+    textAt(response.report.title, 238, 684, 10, 'F2'),
+    textAt('Documento oficial para conferência administrativa do inventário institucional.', 133, 666, 8, 'F1'),
+    horizontalLine(82, 642, 513, '0.137 0.388 0.922', 1.5),
+    textAt('RECORTE DO RELATÓRIO', 82, 618, 8, 'F2'),
+    textAt('ESCOPO', 82, 598, 7, 'F2'),
+    textAt(restrictedScope, 82, 586, 8, 'F1'),
+    textAt('PERÍODO', 244, 598, 7, 'F2'),
+    textAt(period, 244, 586, 8, 'F1'),
+    textAt('GERADO POR', 390, 598, 7, 'F2'),
+    textAt(response.generatedBy.name, 390, 586, 8, 'F1'),
+    horizontalLine(82, 566, 513),
+    textAt('SÍNTESE EXECUTIVA', 82, 543, 10, 'F2'),
+    textAt(`${response.totals.total}`, 82, 516, 18, 'F2'),
+    textAt('equipamentos no recorte', 110, 521, 7, 'F1'),
+    textAt(`${response.totals.active}`, 242, 516, 18, 'F2'),
+    textAt('em operação', 270, 521, 7, 'F1'),
+    textAt(`${response.totals.maintenance}`, 390, 516, 18, 'F2'),
+    textAt('em manutenção', 418, 521, 7, 'F1'),
+    horizontalLine(82, 500, 513),
+    textAt('DIAGNÓSTICO VISUAL', 82, 477, 10, 'F2'),
+    textAt('Indicador de operação', 82, 456, 8, 'F2'),
+    fillRect(82, 436, 210, 8, '0.900 0.925 0.955'),
+    fillRect(82, 436, operationBarWidth, 8, '0.063 0.725 0.506'),
+    textAt(`${operationalPercent}%`, 302, 432, 14, 'F2'),
+    textAt('Parque em operação no recorte autorizado.', 82, 420, 7, 'F1'),
+    textAt('Atenção administrativa', 82, 396, 8, 'F2'),
+    fillRect(82, 376, 210, 8, '0.900 0.925 0.955'),
+    fillRect(82, 376, attentionBarWidth, 8, '0.933 0.247 0.247'),
+    textAt(`${attentionPercent}%`, 302, 372, 14, 'F2'),
+    textAt('Registros que exigem acompanhamento.', 82, 360, 7, 'F1'),
+    textAt('COMPOSIÇÃO DO PARQUE', 82, 334, 10, 'F2'),
+    textAt('Equipamentos por situação', 82, 317, 8, 'F2'),
+    fillRect(82, 297, barWidth, 12, '0.900 0.925 0.955'),
+    fillRect(82, 297, activeWidth, 12, '0.063 0.725 0.506'),
+    fillRect(82 + activeWidth, 297, maintenanceWidth, 12, '0.965 0.620 0.043'),
+    fillRect(82 + activeWidth + maintenanceWidth, 297, attentionWidth, 12, '0.933 0.247 0.247'),
+    textAt('OPERAÇÃO', 82, 277, 7, 'F2'),
+    textAt(`${response.totals.active} item(ns)`, 82, 265, 7, 'F1'),
+    textAt('MANUTENÇÃO', 202, 277, 7, 'F2'),
+    textAt(`${response.totals.maintenance} item(ns)`, 202, 265, 7, 'F1'),
+    textAt('ATENÇÃO', 332, 277, 7, 'F2'),
+    textAt(`${response.totals.attention} item(ns)`, 332, 265, 7, 'F1'),
+    textAt(`Parque em operação: ${response.totals.active} de ${response.totals.total} equipamento(s), equivalente a ${operationalPercent}%.`, 82, 244, 7, 'F1'),
+    textAt(`Filtro aplicado: ${situationFilter}.`, 82, 232, 7, 'F1'),
+    horizontalLine(82, 214, 513),
+    textAt('Resumo por unidade', 82, 191, 10, 'F2'),
+    fillRect(82, 166, 431, 16, '0.137 0.388 0.922'),
+    textAt('UNIDADE', 94, 171, 7, 'F2'),
+    textAt('TOTAL', 304, 171, 7, 'F2'),
+    textAt('OPERAÇÃO', 352, 171, 7, 'F2'),
+    textAt('MANUT.', 418, 171, 7, 'F2'),
+    textAt('ATENÇÃO', 468, 171, 7, 'F2'),
   ];
 
   response.units.slice(0, 10).forEach((item, index) => {
-    const y = 116 - (index * 20);
+    const y = 146 - (index * 18);
     if (index % 2 === 0) {
-      commands.push(fillRect(82, y - 7, 431, 18, '0.965 0.976 0.988'));
+      commands.push(fillRect(82, y - 6, 431, 16, '0.965 0.976 0.988'));
     }
-    commands.push(line(82, y - 8, 513, y - 8, '0.900 0.925 0.955'));
+    commands.push(line(82, y - 7, 513, y - 7, '0.900 0.925 0.955'));
     commands.push(textAt(item.unit.name, 94, y, 8, 'F1'));
     commands.push(textAt(String(item.total), 310, y, 8, 'F3'));
     commands.push(textAt(String(item.active), 366, y, 8, 'F3'));
@@ -287,10 +288,13 @@ function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportRes
     commands.push(textAt(String(item.attention), 488, y, 8, 'F3'));
   });
 
-  commands.push(horizontalLine(82, 78, 513));
-  commands.push(textAt('Conferência administrativa', 82, 61, 8, 'F2'));
-  commands.push(textAt('Responsável: ______________________________  Matrícula: ________________', 82, 48, 7, 'F1'));
-  commands.push(textAt(`Emissão: ${generatedAt}`, 438, 48, 7, 'F1'));
+  commands.push(horizontalLine(70, 74, 260, '0 0 0', 1));
+  commands.push(horizontalLine(335, 74, 525, '0 0 0', 1));
+  commands.push(textAt('RESPONSÁVEL TÉCNICO', 116, 58, 7, 'F2'));
+  commands.push(textAt('DIRETORIA DE TELEMÁTICA - PMPA', 99, 47, 6, 'F2'));
+  commands.push(textAt('ASSINATURA DO RECEPTOR / SOLICITANTE', 374, 58, 7, 'F2'));
+  commands.push(textAt(response.report.scope.name.toUpperCase(), 397, 47, 6, 'F2'));
+  commands.push(textAt(`Emissão: ${generatedAt}`, 450, 28, 7, 'F1'));
 
   return buildPdf(commands);
 }
