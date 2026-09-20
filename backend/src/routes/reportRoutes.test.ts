@@ -220,7 +220,6 @@ describe('report routes', () => {
     expect(pdf).toContain('(COMPOSI\\307\\303O DO PARQUE)');
     expect(pdf).toContain('(Indicador de opera\\347\\343o)');
     expect(pdf).toContain('(Equipamentos por situa\\347\\343o)');
-    expect(pdf).toContain('(Invent\\341rio consolidado)');
     expect(pdf).toContain('(Parque em opera\\347\\343o: 1 de 5 equipamento\\(s\\), equivalente a 20%.)');
     expect(pdf).toContain('(RESPONS\\301VEL T\\311CNICO)');
     expect(pdf).toContain('(ASSINATURA DO RECEPTOR / SOLICITANTE)');
@@ -228,10 +227,12 @@ describe('report routes', () => {
     expect(pdf).toContain('(MANUTEN\\307\\303O)');
     expect(pdf).not.toContain('(PAINEL EXECUTIVO)');
     expect(pdf).not.toContain('(RECORTE DO RELAT\\323RIO)');
+    expect(pdf).not.toContain('(Invent\\341rio consolidado)');
+    expect(pdf).not.toContain('(Documento oficial para confer\\352ncia administrativa do invent\\341rio institucional.)');
+    expect(pdf).not.toContain('(Escopo autorizado:');
     expect(pdf).not.toContain('54 40 487 762 re');
     expect(pdf).not.toContain('0.945 0.969 1 rg');
     expect(pdf).not.toContain('<FEFF');
-    expect(pdf).not.toContain('þÿ');
   });
 
   it('rejects unsupported export formats and invalid situation filters', async () => {
