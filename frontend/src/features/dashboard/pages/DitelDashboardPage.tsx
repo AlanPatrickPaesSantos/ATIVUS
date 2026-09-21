@@ -90,6 +90,7 @@ export function DitelDashboardPage() {
   const total = data?.metrics.total ?? 0
   const active = data?.metrics.active ?? 0
   const maintenance = data?.metrics.maintenance ?? 0
+  const inactive = situations.find((item) => item.situation === 'inactive')?.count ?? 0
   const attention = data?.metrics.attention ?? 0
   const healthPercent = percent(active, total)
   const maxCallCount = Math.max(...callsByStatus.map((item) => item.count), 0)
@@ -102,7 +103,7 @@ export function DitelDashboardPage() {
         { label: 'Equipamentos cadastrados', value: formatNumber(total), tone: 'operational' as Tone },
         { label: 'Em operação', value: formatNumber(active), tone: 'available' as Tone },
         { label: 'Em manutenção', value: formatNumber(maintenance), tone: 'attention' as Tone },
-        { label: 'Requer atenção', value: formatNumber(attention), tone: 'critical' as Tone },
+        { label: 'Inativos', value: formatNumber(inactive), tone: 'critical' as Tone },
         { label: 'Chamados críticos', value: formatNumber(data.criticalCalls ?? 0), tone: 'critical' as Tone },
         { label: 'Movimentações pendentes', value: formatNumber(data.pendingMovements ?? 0), tone: 'operational' as Tone },
       ]

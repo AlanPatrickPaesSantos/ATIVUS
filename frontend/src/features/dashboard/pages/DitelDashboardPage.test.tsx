@@ -21,11 +21,12 @@ vi.mock('../api/dashboardQueries', () => ({
 
 const dashboard = {
   unit: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
-  metrics: { total: 428, active: 360, maintenance: 47, attention: 21 },
+  metrics: { total: 428, active: 360, maintenance: 47, attention: 0 },
   situations: [
     { situation: 'active', label: 'Em operação', count: 360 },
     { situation: 'maintenance', label: 'Em manutenção', count: 47 },
-    { situation: 'attention', label: 'Requer atenção', count: 21 },
+    { situation: 'inactive', label: 'Inativos', count: 21 },
+    { situation: 'attention', label: 'Requer atenção', count: 0 },
   ],
   unitSummaries: [
     { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '84%', equipment: 128, attention: 9 },
@@ -84,6 +85,8 @@ test('renders API-backed metrics when the dashboard query has data', () => {
   expect(within(metricsGrid).getByText('428')).toBeInTheDocument()
   expect(within(metricsGrid).getByText('47')).toBeInTheDocument()
   expect(within(metricsGrid).getByText('21')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('Inativos')).toBeInTheDocument()
+  expect(within(metricsGrid).queryByText('Requer atenção')).not.toBeInTheDocument()
   expect(within(metricsGrid).queryByText('1.248')).not.toBeInTheDocument()
   expect(within(metricsGrid).getByText('Em manutenção')).toBeInTheDocument()
 })

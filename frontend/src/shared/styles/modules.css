@@ -470,10 +470,10 @@
 .ditel-state-health::after { background: radial-gradient(circle, rgb(56 189 248 / 16%), transparent 58%); content: ''; height: 14rem; position: absolute; right: -5rem; top: -5rem; width: 14rem; }
 .ditel-state-health__body { align-items: center; display: grid; gap: 1.3rem; grid-template-columns: auto 1fr; margin-top: 1rem; position: relative; z-index: 1; }
 .ditel-state-health__ring { --health: 0%; align-items: center; background: conic-gradient(var(--sigat-available) var(--health), rgb(17 24 39 / 88%) 0); border-radius: 999px; display: grid; height: 8.5rem; justify-items: center; place-content: center; position: relative; width: 8.5rem; }
-.ditel-state-health__ring::after { background: rgb(24 34 49); border: 1px solid rgb(148 163 184 / 22%); border-radius: inherit; content: ''; inset: 1rem; position: absolute; }
+.ditel-state-health__ring::after { background: rgb(24 34 49); border: 1px solid rgb(148 163 184 / 22%); border-radius: inherit; content: ''; inset: 1.25rem; position: absolute; }
 .ditel-state-health__ring span, .ditel-state-health__ring strong { position: relative; z-index: 1; }
-.ditel-state-health__ring span { color: var(--sigat-muted); font-size: .66rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
-.ditel-state-health__ring strong { color: var(--sigat-available); font-family: var(--font-identifier); font-size: 1.65rem; line-height: 1; }
+.ditel-state-health__ring span { color: var(--sigat-muted); font-size: .58rem; font-weight: 850; letter-spacing: .025em; line-height: 1.05; max-width: 4.4rem; text-align: center; text-transform: uppercase; }
+.ditel-state-health__ring strong { color: var(--sigat-available); font-family: var(--font-identifier); font-size: 1.45rem; line-height: 1; }
 .ditel-state-health__readout { display: grid; gap: .55rem; min-width: 0; }
 .ditel-state-health__readout > div:first-child { align-items: end; display: flex; gap: 1rem; justify-content: space-between; }
 .ditel-state-health__readout span { color: var(--sigat-muted); font-size: .76rem; }
