@@ -70,7 +70,6 @@ export function UnitOperationalWorkspace() {
         <header className="unit-operations-panel__header">
           <div>
             <h2 id="dashboard-inventory-title">Equipamentos da Unidade</h2>
-            <p>Consulta rápida do inventário autenticado.</p>
           </div>
           <Link className="button-link button-link--quiet" to="/inventario">Ver inventário</Link>
         </header>

@@ -24,6 +24,17 @@
 }
 .maintenance-page__header p:last-child { color: var(--sigat-muted); margin: 0; }
 
+.maintenance-page__header .page-eyebrow,
+.maintenance-page__header p:last-child,
+.missions-page.module-panel .module-panel__header .page-eyebrow,
+.missions-page.module-panel .module-panel__header p:last-child,
+.equipment-types-page.module-panel .module-panel__header .page-eyebrow,
+.equipment-types-page.module-panel .module-panel__header p:last-child,
+.audit-page.module-panel .module-panel__header .page-eyebrow,
+.audit-page.module-panel .module-panel__header p:last-child {
+  display: none;
+}
+
 .maintenance-page__filters {
   background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface));
   border: 1px solid var(--sigat-border);

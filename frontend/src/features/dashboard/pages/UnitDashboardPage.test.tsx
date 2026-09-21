@@ -98,7 +98,7 @@ test('renders equipment metrics, situation summary and recent activity for the a
   renderDashboard()
 
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
-  expect(screen.getByText(/Unidade Centro · visão atualizada/i)).toBeInTheDocument()
+  expect(screen.getByText('Unidade Centro')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Dashboards da Unidade' })).toBeInTheDocument()
   expect(within(screen.getByTestId('kpi-ativos')).queryByLabelText('2 equipamentos ativos')).not.toBeInTheDocument()
   expect(screen.getByTestId('kpi-inativos')).toBeInTheDocument()
@@ -108,7 +108,7 @@ test('renders equipment metrics, situation summary and recent activity for the a
   expect(screen.getByRole('heading', { name: 'Distribuição da unidade' })).toBeInTheDocument()
   expect(screen.getByRole('figure', { name: 'Gráfico circular da distribuição da unidade' })).toBeInTheDocument()
   expect(screen.getByTestId('unit-park-donut')).toBeInTheDocument()
-  expect(screen.getByText('Equipamentos agrupados por situação nesta unidade.')).toBeInTheDocument()
+  expect(screen.queryByText('Equipamentos agrupados por situação nesta unidade.')).not.toBeInTheDocument()
   expect(within(screen.getByTestId('unit-park-donut')).getByText('Inativos')).toBeInTheDocument()
   expect(within(screen.getByTestId('unit-park-donut')).queryByText('Requer atenção')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados da unidade' })).toBeInTheDocument()
@@ -233,7 +233,7 @@ test('renders the Unit returned by the session-scoped dashboard without a Unit s
   renderDashboard(norteSession)
 
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
-  expect(screen.getByText(/Unidade Norte · visão atualizada/i)).toBeInTheDocument()
-  expect(screen.queryByText(/Unidade Centro · visão atualizada/i)).not.toBeInTheDocument()
+  expect(screen.getByText('Unidade Norte')).toBeInTheDocument()
+  expect(screen.queryByText('Unidade Centro')).not.toBeInTheDocument()
   expect(screen.queryByRole('combobox', { name: /unidade/i })).not.toBeInTheDocument()
 })

@@ -32,9 +32,8 @@ function UnitDashboardContent({ session }: UnitDashboardPageProps) {
     <section aria-labelledby="unit-dashboard-title" className="unit-dashboard-page">
       <header className="unit-dashboard-page__header">
         <div>
-          <p className="page-eyebrow">Controle patrimonial · Unidade autenticada</p>
           <h1 id="unit-dashboard-title">Painel da Unidade</h1>
-          <p>{unitName} · visão atualizada do inventário e das pendências operacionais.</p>
+          <p>{unitName}</p>
         </div>
         <div className="unit-dashboard-page__actions">
           <Link className="button-link" to="/relatorios">Gerar relatório</Link>

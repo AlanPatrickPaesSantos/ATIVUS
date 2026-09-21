@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { useState } from 'react'
@@ -83,7 +83,7 @@ test('redirects unauthenticated dashboard access to login', () => {
 test('renders the unit dashboard and allowed navigation for a Unit user', () => {
   renderRoutes('/dashboard', unitSession)
   expect(screen.getByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
-  expect(screen.getByText(/Unidade Centro · visão atualizada/i)).toBeInTheDocument()
+  expect(within(screen.getByRole('main')).getByText('Unidade Centro')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Inventário' })).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Administração' })).not.toBeInTheDocument()
 })
@@ -151,7 +151,7 @@ test('renders a filterable movement history without exposing Administration to a
 })
 
 test.each([
-  ['100001', 'sigat-unit', 'Painel da Unidade', /3º BPM · visão atualizada/i],
+  ['100001', 'sigat-unit', 'Painel da Unidade', /3º BPM/i],
   ['200001', 'sigat-ditel', 'Painel estadual', undefined],
 ])('logs in with API credentials and lands on the expected dashboard', async (registration, password, dashboard, unitSubheading) => {
   const user = userEvent.setup()
@@ -162,7 +162,7 @@ test.each([
   await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
   expect(await screen.findByRole('heading', { name: dashboard })).toBeInTheDocument()
-  if (unitSubheading) expect(screen.getByText(unitSubheading)).toBeInTheDocument()
+  if (unitSubheading) expect(within(screen.getByRole('main')).getByText(unitSubheading)).toBeInTheDocument()
 })
 
 test('shows a permission state for unauthorized direct navigation', () => {

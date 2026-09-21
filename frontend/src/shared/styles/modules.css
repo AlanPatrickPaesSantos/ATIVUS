@@ -57,6 +57,17 @@
   margin: 0;
 }
 
+/* Interface limpa: cabeçalhos principais mantêm só título e ações. */
+.calls-page__header .page-eyebrow,
+.calls-page__header p:last-child,
+.module-page__header .page-eyebrow,
+.module-page__header p:last-child,
+.administration-page__workspace > header .page-eyebrow,
+.administration-page__workspace > header p:not(.page-eyebrow),
+.report-controls > div:first-child .page-eyebrow {
+  display: none;
+}
+
 .module-total {
   background: rgb(22 119 255 / 12%);
   border: 1px solid rgb(50 140 255 / 35%);

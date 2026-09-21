@@ -44,7 +44,6 @@ export function UnitParkDonutChart({ situations, total }: UnitParkDonutChartProp
       aria-label="Gráfico circular da distribuição da unidade"
     >
       <h3 className="unit-park-donut-chart__title">Distribuição da unidade</h3>
-      <p className="unit-park-donut-chart__subtitle">Equipamentos agrupados por situação nesta unidade.</p>
 
       {!isAnyData ? (
         <div className="unit-park-donut-chart__empty">

@@ -126,9 +126,7 @@ export function DitelDashboardPage() {
     >
       <header className="module-page__header">
         <div>
-          <p className="page-eyebrow">Gestão estadual · DITEL</p>
           <h1 id="ditel-dashboard-title">Painel estadual</h1>
-          <p>Leitura consolidada da cobertura patrimonial, das unidades e dos pontos que exigem decisão administrativa.</p>
         </div>
         <Link className="button-link button-link--primary" to="/relatorios">
           Gerar relatório
@@ -242,9 +240,7 @@ export function DitelDashboardPage() {
           <section className="ditel-state-grid" aria-label="Visão estadual consolidada">
             <article className="module-panel ditel-state-health" data-testid="ditel-state-health">
               <div>
-                <p className="page-eyebrow">Leitura executiva</p>
                 <h2>Centro estadual DITEL</h2>
-                <p>Consolida operação, manutenção, chamados críticos e movimentações pendentes em uma leitura única.</p>
               </div>
               <div className="ditel-state-health__body">
                 <div className="ditel-state-health__ring" style={{ '--health': `${healthPercent}%` } as CSSProperties}>
@@ -275,9 +271,7 @@ export function DitelDashboardPage() {
 
             <article className="module-panel ditel-park-distribution" data-testid="ditel-park-distribution">
               <div>
-                <p className="page-eyebrow">Composição do parque</p>
                 <h2>Distribuição estadual do parque</h2>
-                <p>Equipamentos agrupados por situação em todo o escopo DITEL.</p>
               </div>
               <div className="ditel-park-distribution__stack" aria-hidden="true">
                 {situations.map((item) => (
@@ -305,7 +299,6 @@ export function DitelDashboardPage() {
             <section className="module-panel ditel-units">
               <div>
                 <h2>Unidades monitoradas</h2>
-                <p>Cobertura do inventário e demandas prioritárias por unidade.</p>
               </div>
               <div className="ditel-units__table" role="table" aria-label="Resumo por unidade">
                 <div role="row" className="ditel-units__header">
@@ -332,7 +325,6 @@ export function DitelDashboardPage() {
             <section className="module-panel ditel-coverage-dashboard">
               <div>
                 <h2>Cobertura por unidade</h2>
-                <p>Percentual de equipamentos por unidade dentro do recorte estadual.</p>
               </div>
               <ol className="ditel-coverage-dashboard__list">
                 {sortedUnits.map((unit) => (
@@ -355,7 +347,6 @@ export function DitelDashboardPage() {
               <div className="ditel-panel-heading">
                 <div>
                   <h2>Chamados estaduais</h2>
-                  <p>Status dos chamados no recorte selecionado.</p>
                 </div>
                 <strong>{formatNumber(callsByStatus.reduce((sum, item) => sum + item.count, 0))} chamados</strong>
               </div>
@@ -382,7 +373,6 @@ export function DitelDashboardPage() {
               <div className="ditel-panel-heading">
                 <div>
                   <h2>Fluxo patrimonial</h2>
-                  <p>Movimentações recentes e pendências de conferência.</p>
                 </div>
                 <strong>{formatNumber(data.pendingMovements ?? 0)} pendentes</strong>
               </div>
@@ -410,7 +400,6 @@ export function DitelDashboardPage() {
             <article className="module-panel ditel-ranking" data-testid="ditel-unit-ranking">
               <div>
                 <h2>Ranking de atenção</h2>
-                <p>Unidades com maior concentração de pendências operacionais.</p>
               </div>
               {sortedUnits.length === 0 ? (
                 <p className="ditel-dashboard-empty">Nenhuma Unidade corresponde ao recorte atual.</p>
