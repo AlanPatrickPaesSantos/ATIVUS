@@ -56,7 +56,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </div>
           <form className="login-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
             <label htmlFor="registration">Matrícula</label>
-            <input id="registration" name="registration" autoComplete="username" inputMode="numeric" required autoFocus placeholder="Digite sua matrícula" />
+            <input id="registration" name="registration" autoComplete="username" inputMode="text" required autoFocus placeholder="Digite sua matrícula" />
             <label htmlFor="password">Senha</label>
             <span className="login-form__password"><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required placeholder="Digite sua senha" /><button type="button" aria-label={showPassword ? 'Ocultar' : 'Mostrar'} onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? 'Ocultar' : 'Mostrar'}</button></span>
             {error && <p className="login-form__error" role="alert">{error}</p>}
