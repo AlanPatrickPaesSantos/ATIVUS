@@ -28,6 +28,10 @@ import { createAuditRoutes } from './routes/auditRoutes.js';
 import { createReportRoutes } from './routes/reportRoutes.js';
 import { createAttachmentRoutes } from './routes/attachmentRoutes.js';
 import { createMaintenanceRoutes } from './routes/maintenanceRoutes.js';
+import { createAcMaterialRoutes } from './routes/acMaterialRoutes.js';
+import { createAcTransferRoutes } from './routes/acTransferRoutes.js';
+import { createAcReportRoutes } from './routes/acReportRoutes.js';
+import { createAcTransferDocumentRoutes } from './routes/acTransferDocumentRoutes.js';
 
 type ErrorLogger = Pick<Console, 'error'>;
 export interface CreateAppOptions {
@@ -90,6 +94,7 @@ export function createErrorHandler(logger: ErrorLogger = console) {
 
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
+  app.set('trust proxy', false);
   const clock = resolveClock(options.authSecurity?.clock);
   const sessionService = options.sessionService ?? createSessionService({
     clock,
@@ -139,6 +144,10 @@ export function createApp(options: CreateAppOptions = {}): Express {
     requireSession,
   }));
   app.use('/api/v1', createInventoryRoutes(requireSession));
+  app.use('/api/v1', createAcMaterialRoutes(requireSession));
+  app.use('/api/v1', createAcTransferRoutes(requireSession));
+  app.use('/api/v1', createAcTransferDocumentRoutes(requireSession));
+  app.use('/api/v1', createAcReportRoutes(requireSession));
   app.use('/api/v1', createCallsRoutes(requireSession));
   app.use('/api/v1', createAttachmentRoutes(requireSession));
   app.use('/api/v1', createMaintenanceRoutes(requireSession));
