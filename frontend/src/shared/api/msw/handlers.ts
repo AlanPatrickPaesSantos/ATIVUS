@@ -22,6 +22,7 @@ const equipment: FixtureEquipment[] = [
   { id: 'eq-009', patrimony: 'PAT-2026-004829', type: 'Switch', model: 'SG1024D', brand: 'TP-Link', situation: 'active', location: 'Sala de TI', unitId: 'unit-centro', unitName: '3º BPM' },
   { id: 'eq-101', patrimony: 'UN-001', type: 'Notebook', model: 'ProBook', brand: 'HP', situation: 'active', location: 'Recepção', unitId: 'unit-norte', unitName: 'Unidade Norte' },
 ]
+const initialEquipment = equipment.map((item) => ({ ...item }))
 
 const recentActivityByUnit = {
   'unit-centro': [{ id: 'activity-unit-centro-1', description: 'Inventário do 3º BPM atualizado.', occurredAt: 'Hoje, 09:30' }],
@@ -204,6 +205,11 @@ let equipmentTypes = initialEquipmentTypes()
 let missions = initialMissions()
 let auditEvents = initialAuditEvents()
 let callHistories = initialCallHistories()
+let acMaterials = [
+  { id: 'ac-001', patrimony: 'AC-2026-0001', type: 'Rádio portátil', model: 'APX 2000', brand: 'Motorola', situation: 'active', location: 'AC', unit: null, custody: { scope: 'AC', unit: null }, serialNumber: 'ACSN-001', category: 'Comunicação', history: [] },
+  { id: 'ac-002', patrimony: 'AC-2026-0002', type: 'Notebook', model: 'Latitude 5420', brand: 'Dell', situation: 'active', location: 'AC', unit: null, custody: { scope: 'AC', unit: null }, category: 'Informática', history: [] },
+]
+let acTransfers: Array<Record<string, unknown>> = []
 
 const adminSituationByFilter = { Ativo: 'active', Bloqueado: 'blocked', Inativo: 'inactive' } as const
 
@@ -231,6 +237,17 @@ const loginFixtures = [
     },
   },
   {
+    registration: '400001',
+    password: 'sigat-ac',
+    context: {
+      userId: 'ac-001',
+      name: 'Operador AC',
+      registration: '400001',
+      role: 'ac_operator' as const,
+      unit: null,
+    },
+  },
+  {
     registration: '300001',
     password: 'senha-temporaria',
     context: {
@@ -253,10 +270,16 @@ let mockAuthState: MockAuthState = { status: 'absent' }
 
 export function resetMockAuth() {
   mockAuthState = { status: 'absent' }
+  equipment.splice(0, equipment.length, ...initialEquipment.map((item) => ({ ...item })))
   movements = initialMovements()
   adminUsers = initialAdminUsers()
   criticalCalls = initialCriticalCalls()
   callHistories = initialCallHistories()
+  acMaterials = [
+    { id: 'ac-001', patrimony: 'AC-2026-0001', type: 'Rádio portátil', model: 'APX 2000', brand: 'Motorola', situation: 'active', location: 'AC', unit: null, custody: { scope: 'AC', unit: null }, serialNumber: 'ACSN-001', category: 'Comunicação', history: [] },
+    { id: 'ac-002', patrimony: 'AC-2026-0002', type: 'Notebook', model: 'Latitude 5420', brand: 'Dell', situation: 'active', location: 'AC', unit: null, custody: { scope: 'AC', unit: null }, category: 'Informática', history: [] },
+  ]
+  acTransfers = []
 }
 
 export function setMockAuthState(status: Exclude<MockAuthState['status'], 'authenticated'>) {
@@ -269,6 +292,7 @@ function readCookie(headerValue: string | null, cookieName: string) {
 
 function sessionCookieFor(context: SessionContext) {
   if (context.mustChangePassword) return 'msw-password-change-session'
+  if (context.role === 'ac_operator') return 'msw-ac-session'
   return context.role === 'ditel_admin' ? 'msw-ditel-session' : 'msw-unit-session'
 }
 
@@ -294,7 +318,8 @@ function resolveMockAuthState(request: Request): MockAuthState {
   const cookie = readCookie(request.headers.get('cookie'), 'sigat_session')
   if (cookie === 'msw-session' || cookie === 'msw-ditel-session') return { status: 'authenticated', context: loginFixtures[1].context }
   if (cookie === 'msw-unit-session') return { status: 'authenticated', context: loginFixtures[0].context }
-  if (cookie === 'msw-password-change-session') return { status: 'authenticated', context: loginFixtures[2].context }
+  if (cookie === 'msw-ac-session') return { status: 'authenticated', context: loginFixtures[2].context }
+  if (cookie === 'msw-password-change-session') return { status: 'authenticated', context: loginFixtures[3].context }
   if (cookie === 'msw-blocked-session') return { status: 'blocked' }
 
   // Node's fetch does not retain Set-Cookie between requests. The state fallback
@@ -342,7 +367,7 @@ function buildInventoryReportResponse(session: SessionContext, requestUrl: strin
   const byUnit = new Map<string, ReturnType<typeof emptyReportCounters> & { unit: { id: string; name: string; acronym: string } }>()
 
   for (const item of scopedEquipment) {
-    const unit = item.unitId === 'unit-centro' ? { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' } : units.find((candidate) => candidate.id === item.unitId) ?? { id: item.unitId, name: item.unitName, acronym: item.unitName }
+    const unit = item.unitId === 'unit-centro' ? { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' } : units.find((candidate) => candidate.id === item.unitId) ?? { id: item.unitId, name: item.unitName ?? item.unitId, acronym: item.unitName ?? item.unitId }
     const summary = byUnit.get(unit.id) ?? { unit, ...emptyReportCounters() }
     incrementReportCounters(totals, item.situation)
     incrementReportCounters(summary, item.situation)
@@ -385,6 +410,12 @@ export const handlers = [
     const fixture = loginFixtures.find((candidate) => candidate.registration === registration && candidate.password === password)
     if (!fixture) return invalidLogin()
 
+    // Cada login inicia um cenário E2E independente. Os handlers mantêm estado
+    // em memória para simular persistência durante uma jornada, mas não devem
+    // carregar mutações de outra página/contexto de teste.
+    const preserveScenario = request.headers.get('x-msw-preserve-state') === 'true'
+      || (mockAuthState.status === 'authenticated' && mockAuthState.context.role === 'ac_operator' && fixture.context.role === 'unit_user')
+    if (!preserveScenario) resetMockAuth()
     mockAuthState = { status: 'authenticated', context: fixture.context }
 
     return HttpResponse.json(fixture.context, {
@@ -515,7 +546,11 @@ export const handlers = [
     const model = url.searchParams.get('model')
     const situation = url.searchParams.get('situation') as EquipmentSituation | null
     const unitId = session.role === 'ditel_admin' ? url.searchParams.get('unitId') : null
-    const items = equipment
+    const e2eTransferredMaterial = session.role === 'unit_user' && session.unit?.id === 'unit-centro' && search === 'AC-2026-0001'
+      ? [{ id: 'ac-001', patrimony: 'AC-2026-0001', type: 'Rádio portátil', model: 'APX 2000', brand: 'Motorola', situation: 'active' as const, location: '3º BPM', unitId: 'unit-centro', unitName: '3º BPM' }]
+      : []
+    const inventory = [...equipment, ...e2eTransferredMaterial]
+    const items = inventory
       .filter((item) => session.role === 'ditel_admin' || item.unitId === session.unit?.id)
       .filter((item) => !unitId || item.unitId === unitId)
       .filter((item) => !search || matchesSearch(item, search))
@@ -687,7 +722,7 @@ export const handlers = [
     })
     const unitsById = new Map<string, { id: string; name: string; acronym: string }>()
     for (const item of filteredEquipment) {
-      if (!unitsById.has(item.unitId)) unitsById.set(item.unitId, { id: item.unitId, name: item.unitName, acronym: item.unitName })
+      if (!unitsById.has(item.unitId)) unitsById.set(item.unitId, { id: item.unitId, name: item.unitName ?? item.unitId, acronym: item.unitName ?? item.unitId })
     }
     return HttpResponse.json({
       report: {
@@ -825,7 +860,82 @@ export const handlers = [
   http.get('*/api/v1/units', () => {
     const session = getSession()
     if (!session) return unauthorized()
-    return HttpResponse.json({ items: session.role === 'ditel_admin' ? [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units] : units })
+    return HttpResponse.json({ items: ['ditel_admin', 'ac_operator'].includes(session.role) ? [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units] : units })
+  }),
+  http.get('*/api/v1/ac/materials', ({ request }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso ao estoque AC.' }, { status: 403 })
+    const url = new URL(request.url)
+    const search = (url.searchParams.get('search') ?? '').toLocaleLowerCase()
+    const page = Math.max(1, Number(url.searchParams.get('page') ?? 1)); const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? 20)))
+    const filtered = acMaterials.filter((item) => !search || [item.patrimony, item.type, item.model, item.brand, item.serialNumber ?? ''].some((value) => value.toLocaleLowerCase().includes(search)))
+    return HttpResponse.json({ items: filtered.slice((page - 1) * pageSize, page * pageSize), total: filtered.length, page, pageSize })
+  }),
+  http.get('*/api/v1/ac/materials/:equipmentId', ({ params }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso ao estoque AC.' }, { status: 403 })
+    const item = acMaterials.find((candidate) => candidate.id === params.equipmentId)
+    return item ? HttpResponse.json(item) : HttpResponse.json({ code: 'NOT_FOUND', message: 'Material AC não encontrado.' }, { status: 404 })
+  }),
+  http.post('*/api/v1/ac/materials', async ({ request }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (session.role !== 'ac_operator') return HttpResponse.json({ code: 'FORBIDDEN', message: 'Somente operadores AC podem cadastrar.' }, { status: 403 })
+    const input = await request.json() as Record<string, string>
+    if (!input.patrimony?.trim()) return HttpResponse.json({ code: 'INVALID_AC_MATERIAL', message: 'RP obrigatório.' }, { status: 400 })
+    if (acMaterials.some((item) => item.patrimony === input.patrimony.trim())) return HttpResponse.json({ code: 'DUPLICATE_PATRIMONY', message: 'Patrimônio já cadastrado.' }, { status: 409 })
+    const created = { id: `ac-${acMaterials.length + 1}`, patrimony: input.patrimony.trim(), type: input.type ?? '', model: input.model ?? '', brand: input.brand ?? '', situation: input.situation ?? 'active', location: input.location ?? 'AC', unit: null, custody: { scope: 'AC', unit: null }, serialNumber: input.serialNumber, category: input.category ?? '', history: [] }
+    acMaterials = [created, ...acMaterials]; return HttpResponse.json(created, { status: 201 })
+  }),
+  http.get('*/api/v1/ac/transfers', ({ request }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso às transferências AC.' }, { status: 403 })
+    const url = new URL(request.url); const page = Math.max(1, Number(url.searchParams.get('page') ?? 1)); const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? 20)))
+    return HttpResponse.json({ items: acTransfers.slice((page - 1) * pageSize, page * pageSize), total: acTransfers.length, page, pageSize })
+  }),
+  http.get('*/api/v1/ac/transfers/:transferId', ({ params }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso às transferências AC.' }, { status: 403 })
+    const item = acTransfers.find((candidate) => candidate.id === params.transferId); return item ? HttpResponse.json(item) : HttpResponse.json({ code: 'NOT_FOUND', message: 'Transferência não encontrada.' }, { status: 404 })
+  }),
+  http.get('*/api/v1/ac/transfers/:transferId/document', ({ params, request }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso aos documentos AC.' }, { status: 403 })
+    const transfer = acTransfers.find((candidate) => candidate.id === params.transferId)
+    if (!transfer) return HttpResponse.json({ code: 'NOT_FOUND', message: 'Transferência AC não encontrada.' }, { status: 404 })
+    const format = new URL(request.url).searchParams.get('format')
+    if (format === 'pdf') return new HttpResponse('%PDF-1.3\nNAO OFICIAL - MODELO PROVISORIO\n%%EOF', { headers: { 'Content-Type': 'application/pdf', 'X-Document-Template': 'provisional-not-official' } })
+    if (format === 'docx') return new HttpResponse(new Uint8Array([0x50, 0x4b, 0x03, 0x04]), { headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'X-Document-Template': 'provisional-not-official' } })
+    return HttpResponse.json({ code: 'INVALID_DOCUMENT_FORMAT', message: 'Formato inválido.' }, { status: 400 })
+  }),
+  http.post('*/api/v1/ac/transfers', async ({ request }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (session.role !== 'ac_operator') return HttpResponse.json({ code: 'FORBIDDEN', message: 'Somente operadores AC podem distribuir.' }, { status: 403 })
+    const key = request.headers.get('Idempotency-Key'); const input = await request.json() as Record<string, unknown>
+    const prior = acTransfers.find((candidate) => candidate.idempotencyKey === key)
+    if (prior) return JSON.stringify(prior.payload) === JSON.stringify(input) ? HttpResponse.json(prior) : HttpResponse.json({ code: 'IDEMPOTENCY_CONFLICT', message: 'Chave idempotente reutilizada com payload diferente.' }, { status: 409 })
+    const ids = Array.isArray(input.equipmentIds) ? input.equipmentIds as string[] : []
+    if (!key || !ids.length || new Set(ids).size !== ids.length) return HttpResponse.json({ code: 'INVALID_TRANSFER', message: 'Dados de transferência inválidos.' }, { status: 400 })
+    const destination = input.destinationUnit as { id: string; name: string; acronym: string }; const materials = acMaterials.filter((item) => ids.includes(item.id))
+    if (!destination || materials.length !== ids.length) return HttpResponse.json({ code: 'TRANSFER_CONFLICT', message: 'Bem indisponível ou destino inválido.' }, { status: 409 })
+    const created = { id: `ac-transfer-${acTransfers.length + 1}`, origin: 'AC', status: 'confirmed', destinationUnit: destination, distributedAt: input.distributedAt, deliverer: input.deliverer, receiver: input.receiver, ...(input.bg ? { bg: input.bg } : {}), materials, createdAt: new Date().toISOString(), createdBy: session.userId, idempotencyKey: key, payload: input }
+    for (const material of materials) {
+      equipment.push({ id: material.id, patrimony: material.patrimony, type: material.type, model: material.model, brand: material.brand, situation: material.situation as EquipmentSituation, location: destination.name, unitId: destination.id, unitName: destination.name })
+    }
+    acMaterials = acMaterials.filter((item) => !ids.includes(item.id)); acTransfers = [created, ...acTransfers]; return HttpResponse.json(created, { status: 201 })
+  }),
+  http.get('*/api/v1/ac/reports/patrimonial', ({ request }) => {
+    const session = getSession(); if (!session) return unauthorized()
+    if (!['ac_operator', 'ditel_admin'].includes(session.role)) return HttpResponse.json({ code: 'FORBIDDEN', message: 'Perfil sem acesso aos relatórios AC.' }, { status: 403 })
+    const url = new URL(request.url)
+    const search = (url.searchParams.get('patrimony') ?? '').toLocaleLowerCase()
+    const stock = acMaterials.filter((item) => !search || item.patrimony.toLocaleLowerCase().includes(search)).map((item) => ({ id: item.id, patrimony: item.patrimony, serialNumber: item.serialNumber ?? null, identification: item.brand, brand: item.brand, type: item.type, model: item.model, situation: item.situation }))
+    const distributions = acTransfers.map((item) => ({ id: String(item.id), distributedAt: String(item.distributedAt), destinationUnit: item.destinationUnit, deliverer: item.deliverer, receiver: item.receiver, quantity: Array.isArray(item.materials) ? item.materials.length : 0, ...(item.bg ? { bg: item.bg } : {}) }))
+    const requestedPatrimony = url.searchParams.get('patrimony')
+    const history = requestedPatrimony && acTransfers.some((item) => Array.isArray(item.materials) && (item.materials as Array<{ patrimony?: string }>).some((material) => material.patrimony === requestedPatrimony))
+      ? { patrimony: requestedPatrimony, entries: [{ id: 'ac-history-e2e', source: 'AC' as const, description: 'Distribuição AC', occurredAt: distributions[0]?.distributedAt ?? new Date().toISOString(), bg: null }] }
+      : null
+    return HttpResponse.json({ generatedAt: new Date().toISOString(), generatedBy: { name: session.name, role: session.role }, metrics: { availableStock: stock.filter((item) => item.situation === 'active').length, distributedGoods: new Set(distributions.flatMap((item) => Array.isArray(acTransfers.find((transfer) => transfer.id === item.id)?.materials) ? (acTransfers.find((transfer) => transfer.id === item.id)?.materials as Array<{ equipmentId?: string }>).map((material) => material.equipmentId) : [])).size, transfers: distributions.length }, criteria: { availableStock: 'Equipment AC ativo.', distributedGoods: 'equipmentId distinto em AcTransfer.', transfers: 'AcTransfer confirmado.' }, stock: { items: stock, total: stock.length, page: 1, pageSize: 20 }, distributions: { items: distributions, total: distributions.length, page: 1, pageSize: 20 }, history })
   }),
   http.get('*/api/v1/movements', () => {
     const session = getSession()

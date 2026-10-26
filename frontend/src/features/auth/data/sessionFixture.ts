@@ -18,6 +18,14 @@ const fixtureUsers: Array<SessionContext & { password: string }> = [
     unit: null,
   },
   {
+    userId: 'ac-001',
+    name: 'Operador AC',
+    registration: '400001',
+    password: 'sigat-ac',
+    role: 'ac_operator',
+    unit: null,
+  },
+  {
     userId: 'reset-001',
     name: 'Patrícia Reset',
     registration: '300001',

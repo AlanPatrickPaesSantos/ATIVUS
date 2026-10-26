@@ -16,6 +16,9 @@ import { MissionsPage } from '../features/missions/pages/MissionsPage'
 import { DitelMissionsPage } from '../features/missions/pages/DitelMissionsPage'
 import { AuditPage } from '../features/audit/pages/AuditPage'
 import { AdministrationPage } from '../features/administration/pages/AdministrationPage'
+import { AcMaterialsPage } from '../features/ac/pages/AcMaterialsPage'
+import { AcTransfersPage } from '../features/ac/pages/AcTransfersPage'
+import { AcReportsPage } from '../features/ac/pages/AcReportsPage'
 import { changeSessionPassword, clearSession, createSession } from '../shared/auth/session'
 import { can, getNavigation } from '../shared/auth/permissions'
 import type { SessionContext } from '../shared/auth/types'
@@ -36,6 +39,11 @@ const routePermissions: Record<string, string> = {
   '/administracao': 'administration',
   '/auditoria': 'administration',
   '/tipos-equipamento': 'administration',
+  '/manutencao': 'maintenance',
+  '/missoes-tecnicas': 'missions',
+  '/ac/materiais': 'ac_materials',
+  '/ac/transferencias': 'ac_transfers',
+  '/ac/relatorios': 'ac_reports',
 }
 
 function PermissionState() {
@@ -84,6 +92,9 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
         <Route path="/tipos-equipamento" element={<EquipmentTypesPage session={session} />} />
         <Route path="/auditoria" element={<AuditPage session={session} />} />
         <Route path="/administracao" element={<AdministrationPage />} />
+        <Route path="/ac/materiais" element={<AcMaterialsPage session={session} />} />
+        <Route path="/ac/transferencias" element={<AcTransfersPage session={session} />} />
+        <Route path="/ac/relatorios" element={<AcReportsPage session={session} />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
 
@@ -91,8 +102,8 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
     <AppShell
       context={{
         unitName: session.unit?.name ?? 'DITEL',
-        roleLabel: session.role === 'ditel_admin' ? 'Administração estadual' : 'Usuário da unidade',
-        scopeLabel: session.unit ? `Escopo ${session.unit.acronym}` : 'Escopo estadual',
+        roleLabel: session.role === 'ditel_admin' ? 'Administração estadual' : session.role === 'ac_operator' ? 'Operador AC' : 'Usuário da unidade',
+        scopeLabel: session.unit ? `Escopo ${session.unit.acronym}` : session.role === 'ac_operator' ? 'Custódia AC' : 'Escopo estadual',
         userName: session.name,
       }}
       navigation={getNavigation(session)}

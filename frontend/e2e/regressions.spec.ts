@@ -14,15 +14,19 @@ test.describe('regressões visuais das páginas de governança', () => {
     await signInDitel(page)
     await page.setViewportSize({ width: 1280, height: 800 })
 
-    // Layout desktop compacto: os 6 módulos oficiais cabem; sem botão "Mais ações"
+    // A navegação AC adiciona consultas autorizadas ao DITEL; os módulos
+    // excedentes ficam no menu para preservar o espaço dos módulos principais.
     const nav = page.locator('.top-nav')
     await expect(nav).toHaveAttribute('data-layout', 'desktop')
-    await expect(page.getByRole('button', { name: 'Mais ações' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Mais ações' })).toBeVisible()
 
     // Módulos oficiais na barra (Manutenção não é módulo oficial)
     for (const label of ['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração']) {
       await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible()
     }
+    await page.getByRole('button', { name: 'Mais ações' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Materiais AC', exact: true })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Transferências AC', exact: true })).toBeVisible()
     // Manutenção e módulos não oficiais nunca aparecem
     await expect(page.getByRole('link', { name: 'Manutenção', exact: true })).toHaveCount(0)
     await expect(page.getByRole('link', { name: /Missões técnicas/i })).toHaveCount(0)

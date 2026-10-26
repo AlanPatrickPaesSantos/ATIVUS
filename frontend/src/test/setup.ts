@@ -1,4 +1,9 @@
 // Test setup global — roda antes de cada arquivo de teste (vitest setupFiles).
+// O fetch do Node (undici) exige sua própria implementação de File ao
+// interpretar FormData; jsdom fornece uma implementação incompatível.
+import { File as NodeFile } from 'node:buffer'
+
+Object.defineProperty(globalThis, 'File', { configurable: true, writable: true, value: NodeFile })
 //
 // No jsdom, clicar num `<a href="blob:...">` (download gerado pelo
 // ReportsPage.exportReport) dispara o aviso "Not implemented: navigation to

@@ -9,7 +9,7 @@
     "build": "tsc -b --pretty false && tsc -p tsconfig.server.json && vite build",
     "preview": "vite preview",
     "start:spa": "node spa-server-out/spaStaticServer.js",
-    "test": "vitest --exclude e2e/** --exclude e2e-real/**",
+    "test": "vitest run --exclude 'e2e/**' --exclude 'e2e-real/**'",
     "test:watch": "vitest --watch",
     "test:e2e": "playwright test",
     "test:e2e:real": "playwright test -c playwright.real-backend.config.ts",
@@ -36,7 +36,10 @@
     "jsdom": "30.0.1",
     "msw": "2.15.0",
     "typescript": "7.0.2",
-    "vite": "8.2.2",
-    "vitest": "4.1.11"
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
+  },
+  "overrides": {
+    "undici": "8.12.2"
   }
 }

@@ -585,6 +585,27 @@
 
 /* Relatórios: preparação e conferência de documento institucional. */
 .reports-page { margin: 0 auto; max-width: 76rem; }
+.ac-reports-page { margin: 0 auto; max-width: 82rem; }
+.ac-report-metrics { display: grid; gap: .8rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 1rem; }
+.ac-report-metrics .metric-card { display: grid; gap: .35rem; }
+.ac-report-metrics .metric-card span { color: var(--sigat-muted); font-size: .72rem; text-transform: uppercase; }
+.ac-report-metrics .metric-card strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: 1.8rem; }
+.ac-report-filters { display: grid; gap: .8rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1rem; }
+.ac-report-filters .button-link { align-self: end; }
+.ac-report-tabs { display: flex; gap: .5rem; margin-bottom: .8rem; }
+.ac-report-tabs button[aria-pressed='true'] { background: var(--sigat-operational); color: white; }
+.ac-report-tabs button { background: var(--sigat-surface); border: 1px solid var(--sigat-border); color: var(--sigat-text); cursor: pointer; padding: .65rem .8rem; }
+.ac-report-results { min-height: 14rem; }
+.ac-report-results table { width: 100%; }
+.ac-report-results th { color: var(--sigat-muted); font-size: .7rem; text-align: left; text-transform: uppercase; }
+.ac-report-results td, .ac-report-results th { border-bottom: 1px solid var(--sigat-border); padding: .7rem .55rem; }
+.ac-report-pagination { align-items: center; display: flex; gap: 1rem; justify-content: flex-end; margin-top: .8rem; }
+.ac-report-criteria { color: var(--sigat-muted); font-size: .75rem; }
+.ac-report-history { display: grid; gap: .7rem; list-style: none; padding: 0; }
+.ac-report-history li { border-left: 3px solid var(--sigat-operational); display: grid; gap: .2rem; padding: .7rem .9rem; }
+.ac-transfer-document-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.ac-report-history span, .ac-report-history time, .ac-report-history small { color: var(--sigat-muted); font-size: .75rem; }
+@media (max-width: 760px) { .ac-report-metrics, .ac-report-filters { grid-template-columns: 1fr 1fr; } .ac-report-tabs { overflow-x: auto; } }
 .reports-page .page-eyebrow { color: var(--sigat-muted); }
 .reports-page__grid { align-items: start; display: grid; gap: 1.2rem; grid-template-columns: minmax(17rem, .72fr) minmax(0, 1.28fr); }
 .report-controls { background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface)); border-top: 3px solid var(--sigat-operational); display: grid; gap: 1rem; padding: 1.2rem; }

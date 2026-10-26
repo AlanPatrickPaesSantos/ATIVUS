@@ -13,6 +13,14 @@ function reportScope(session: SessionContext | null, query: { unitId?: string; s
 }
 
 export const queryKeys = {
+  ac: {
+    all: ['ac'] as const,
+    materials: (query: { search?: string; page: number; pageSize: number }) => ['ac', 'materials', query] as const,
+    material: (id: string) => ['ac', 'material', id] as const,
+    transfers: (query: { page: number; pageSize: number }) => ['ac', 'transfers', query] as const,
+    transfer: (id: string) => ['ac', 'transfer', id] as const,
+    reports: (query: unknown) => ['ac', 'reports', 'patrimonial', query] as const,
+  },
   dashboard: (session: SessionContext | null) => ['dashboard', {
     userId: session?.userId ?? null,
     unitId: session?.unit?.id ?? null,

@@ -6,6 +6,7 @@ async function signIn(page: import('@playwright/test').Page, registration: strin
   await page.getByLabel('Matrícula').fill(registration)
   await page.getByLabel('Senha').fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByRole('heading', { name: registration === '100001' ? 'Painel da Unidade' : 'Painel estadual' })).toBeVisible()
 }
 
 test('DITEL user reaches the statewide dashboard and administration route', async ({ page }) => {

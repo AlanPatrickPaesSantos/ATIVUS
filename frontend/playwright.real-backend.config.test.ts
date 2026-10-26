@@ -8,8 +8,11 @@ async function readProjectFile(path: string) {
 describe('real backend Playwright configuration', () => {
   it('keeps the MSW E2E command separate from the guarded real-backend command', async () => {
     const packageJson = JSON.parse(await readProjectFile('./package.json')) as { scripts: Record<string, string> }
+    const viteConfig = await readProjectFile('./vite.config.ts')
 
-    expect(packageJson.scripts.test).toContain('--exclude e2e-real/**')
+    expect(packageJson.scripts.test).toContain('vitest run')
+    expect(viteConfig).toContain("'e2e/**'")
+    expect(viteConfig).toContain("'e2e-real/**'")
     expect(packageJson.scripts['test:e2e']).toBe('playwright test')
     expect(packageJson.scripts['test:e2e:real']).toBe('playwright test -c playwright.real-backend.config.ts')
   })

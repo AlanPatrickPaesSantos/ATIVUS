@@ -31,7 +31,7 @@ afterAll(() => {
 })
 
 test('restores an authenticated session before rendering protected content', async () => {
-  server.use(http.get('http://localhost/api/v1/session', () => HttpResponse.json({
+  server.use(http.get('*/api/v1/session', () => HttpResponse.json({
     userId: 'ditel-001',
     name: 'Carlos Lima',
     registration: '200001',
@@ -46,7 +46,7 @@ test('restores an authenticated session before rendering protected content', asy
 
 test('keeps the loading state until the session endpoint validates the cookie', async () => {
   let resolveSession: ((response: Response) => void) | undefined
-  server.use(http.get('http://localhost/api/v1/session', () => new Promise((resolve) => {
+  server.use(http.get('*/api/v1/session', () => new Promise((resolve) => {
     resolveSession = resolve
   })))
 

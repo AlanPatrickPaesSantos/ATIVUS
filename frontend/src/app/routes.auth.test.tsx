@@ -57,7 +57,7 @@ describe('real login route integration', () => {
 
     expect(await screen.findByRole('heading', { name: dashboard })).toBeInTheDocument()
     expect(fetchSpy).toHaveBeenCalledWith(
-      'http://localhost/api/v1/auth/login',
+      '/api/v1/auth/login',
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
@@ -79,7 +79,7 @@ describe('real login route integration', () => {
   })
 
   it('lands on mandatory password change instead of the dashboard when the session requires it', async () => {
-    server.use(http.post('http://localhost/api/v1/auth/login', () => HttpResponse.json({
+    server.use(http.post('*/api/v1/auth/login', () => HttpResponse.json({
       userId: 'ditel-001',
       name: 'Carlos Lima',
       registration: '200001',

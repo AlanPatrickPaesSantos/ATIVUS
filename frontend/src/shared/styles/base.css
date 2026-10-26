@@ -72,9 +72,13 @@ a { color: inherit; }
 }
 @media (max-width: 1450px) {
   .top-nav { gap: .4rem; }
+  .top-nav[data-layout='desktop'] { grid-template-columns: auto auto minmax(0, 1fr); }
+  .top-nav[data-layout='desktop'] .top-nav__modules { min-width: 0; width: max-content; }
   .top-nav[data-layout='desktop'] .top-nav__end { gap: .35rem; }
-  .top-nav[data-layout='desktop'] .top-nav__link { padding-inline: .7rem; }
-  .top-nav[data-layout='desktop'] .top-nav__link::after { left: .7rem; right: .7rem; }
+  .top-nav[data-layout='desktop'] .top-nav__end { position: absolute; right: clamp(.75rem, 2vw, 1.25rem); top: 50%; transform: translateY(-50%); }
+  .top-nav[data-layout='desktop'] .top-nav__link .top-nav__icon { display: none; }
+  .top-nav[data-layout='desktop'] .top-nav__link { font-size: .75rem; gap: .2rem; padding-inline: .25rem; }
+  .top-nav[data-layout='desktop'] .top-nav__link::after { left: .25rem; right: .25rem; }
 }
 @media (max-width: 900px) {
   .top-nav { gap: .25rem; padding-inline: .75rem; }

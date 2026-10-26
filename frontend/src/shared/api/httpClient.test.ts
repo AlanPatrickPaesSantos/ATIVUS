@@ -16,14 +16,14 @@ describe('httpClient', () => {
     vi.unstubAllEnvs()
   })
 
-  it('parses a successful JSON response from the configured API base URL', async () => {
-    server.use(http.get('http://localhost/api/v1/health', () => HttpResponse.json({ ok: true })))
+  it('parses a successful JSON response from the API base URL', async () => {
+    server.use(http.get('*/api/v1/health', () => HttpResponse.json({ ok: true })))
 
     await expect(httpClient<{ ok: boolean }>('/health')).resolves.toEqual({ ok: true })
   })
 
   it('normalizes a 401 API response into an ApiError', async () => {
-    server.use(http.get('http://localhost/api/v1/protected', () => HttpResponse.json(
+    server.use(http.get('*/api/v1/protected', () => HttpResponse.json(
       { code: 'UNAUTHENTICATED', message: 'Sessão expirada', details: { reason: 'expired' } },
       { status: 401 },
     )))
@@ -40,7 +40,7 @@ describe('httpClient', () => {
   })
 
   it('sends credentials with every request', async () => {
-    server.use(http.get('http://localhost/api/v1/session', ({ request }) => {
+    server.use(http.get('*/api/v1/session', ({ request }) => {
       expect(request.credentials).toBe('include')
       return HttpResponse.json({ authenticated: true })
     }))
@@ -49,7 +49,7 @@ describe('httpClient', () => {
   })
 
   it('accepts successful responses without a JSON body', async () => {
-    server.use(http.post('http://localhost/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })))
+    server.use(http.post('*/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })))
 
     await expect(httpClient<void>('/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
   })

@@ -1,7 +1,7 @@
 import { ApiError, UnauthorizedError, type ApiErrorPayload } from './errors'
 
 function apiUrl(path: string) {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.MODE === 'test' ? 'http://localhost/api/v1' : '/api/v1')
+  const baseUrl = import.meta.env.MODE === 'test' ? '/api/v1' : (import.meta.env.VITE_API_BASE_URL ?? '/api/v1')
   return `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
 }
 

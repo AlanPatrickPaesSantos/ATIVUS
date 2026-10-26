@@ -15,6 +15,7 @@ const apiTransfer = { id: 'api-mov-01', type: 'Transferência definitiva', equip
 
 beforeAll(() => {
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost/api/v1')
+  vi.stubEnv('VITE_ENABLE_MSW', 'true')
   server.listen({ onUnhandledRequest: 'error' })
 })
 
@@ -150,6 +151,18 @@ test('renders a filterable movement history without exposing Administration to a
   expect(screen.queryByRole('link', { name: 'Administração' })).not.toBeInTheDocument()
 })
 
+test('blocks direct AC URLs for a unit user', () => {
+  renderRoutes('/ac/materiais', unitSession)
+  expect(screen.getByRole('heading', { name: 'Acesso não autorizado' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Materiais AC' })).not.toBeInTheDocument()
+})
+
+test('blocks direct AC reports URL for a unit user', () => {
+  renderRoutes('/ac/relatorios', unitSession)
+  expect(screen.getByRole('heading', { name: 'Acesso não autorizado' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Relatórios AC' })).not.toBeInTheDocument()
+})
+
 test.each([
   ['100001', 'sigat-unit', 'Painel da Unidade', /3º BPM/i],
   ['200001', 'sigat-ditel', 'Painel estadual', undefined],
@@ -182,7 +195,7 @@ test('revokes the server session before returning to the login route', async () 
 
   expect(await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
   expect(fetchSpy).toHaveBeenCalledWith(
-    'http://localhost/api/v1/auth/logout',
+    '/api/v1/auth/logout',
     expect.objectContaining({ method: 'POST', credentials: 'include' }),
   )
 })
@@ -207,7 +220,7 @@ test('validates mandatory password confirmation locally without calling the API'
 
   expect(await screen.findByRole('alert')).toHaveTextContent('As senhas não conferem.')
   expect(fetchSpy).not.toHaveBeenCalledWith(
-    'http://localhost/api/v1/auth/password-change',
+    '/api/v1/auth/password-change',
     expect.anything(),
   )
 })
@@ -224,7 +237,7 @@ test('submits mandatory password change, updates the session, and releases the a
   expect(await screen.findByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Defina uma nova senha' })).not.toBeInTheDocument()
   expect(fetchSpy).toHaveBeenCalledWith(
-    'http://localhost/api/v1/auth/password-change',
+    '/api/v1/auth/password-change',
     expect.objectContaining({
       method: 'POST',
       credentials: 'include',
@@ -236,7 +249,7 @@ test('submits mandatory password change, updates the session, and releases the a
 })
 
 test('keeps the mandatory password form available after an API failure', async () => {
-  server.use(http.post('http://localhost/api/v1/auth/password-change', () => HttpResponse.json(
+  server.use(http.post('*/api/v1/auth/password-change', () => HttpResponse.json(
     { code: 'INTERNAL_SERVER_ERROR', message: 'Internal server error' },
     { status: 500 },
   )))

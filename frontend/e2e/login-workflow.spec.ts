@@ -26,6 +26,6 @@ test('mandatory password change blocks modules until the new password is accepte
   await page.getByRole('textbox', { name: 'Confirmar nova senha' }).fill('nova-senha-segura')
   await page.getByRole('button', { name: 'Atualizar senha' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Painel estadual DITEL' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Painel estadual' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Defina uma nova senha' })).toHaveCount(0)
 })

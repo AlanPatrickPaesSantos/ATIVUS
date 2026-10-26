@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+
+async function signIn(page: import('@playwright/test').Page, registration: string, password: string, heading?: string) {
+  await page.goto('/login')
+  await page.getByLabel('Matrícula').fill(registration)
+  await page.getByLabel('Senha').fill(password)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  if (heading) await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+}
+
+test('ac_operator cadastra, distribui em lote e confirma a baixa imediata', async ({ page }) => {
+  const patrimony = `AC-E2E-${Date.now()}`
+  await signIn(page, '400001', 'sigat-ac')
+  await page.getByRole('link', { name: 'Materiais AC', exact: true }).click()
+  await page.getByRole('button', { name: '+ Cadastrar material' }).click()
+  const materialDialog = page.getByRole('dialog', { name: 'Cadastrar material AC' })
+  await materialDialog.getByLabel('RP patrimonial').fill(patrimony)
+  await materialDialog.getByLabel('type').fill('Rádio portátil')
+  await materialDialog.getByLabel('model').fill('APX E2E')
+  await materialDialog.getByLabel('brand').fill('Motorola')
+  await materialDialog.getByLabel('category').fill('Comunicação')
+  await materialDialog.getByLabel('location').fill('AC')
+  await materialDialog.getByRole('button', { name: 'Salvar material' }).click()
+  await expect(page.getByRole('status')).toContainText('cadastrado com sucesso')
+
+  await page.getByRole('link', { name: 'Transferências AC', exact: true }).click()
+  await page.getByLabel('Unidade de destino').selectOption('unit-centro')
+  await page.getByLabel('Data da distribuição').fill('2026-10-26')
+  await page.getByLabel('Entregador').fill('Cb Entregador')
+  await page.getByLabel('Recebedor').fill('Sd Recebedor')
+  await page.getByLabel(new RegExp(patrimony)).check()
+  await page.getByRole('button', { name: 'Revisar distribuição' }).click()
+  await expect(page.getByRole('dialog', { name: 'Confirmar distribuição' })).toContainText('baixa imediata')
+  await page.getByRole('dialog', { name: 'Confirmar distribuição' }).getByRole('button', { name: 'Confirmar baixa imediata' }).click()
+  await expect(page.getByRole('status')).toContainText('baixa na AC')
+  await expect(page.getByText(patrimony)).toHaveCount(0)
+  await page.getByRole('row').filter({ hasText: '2026-10-26' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Exportar DOCX', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('DOCX preparado')
+  await page.getByRole('dialog').getByRole('button', { name: 'Exportar PDF', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('PDF preparado')
+  await page.getByRole('button', { name: 'Fechar' }).click()
+  await page.getByRole('link', { name: 'Relatórios AC', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Relatórios patrimoniais da AC' })).toBeVisible()
+  await expect(page.getByText('Bens distribuídos', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Distribuições' }).click()
+  await expect(page.getByText(patrimony)).toHaveCount(0)
+
+})
+
+test('sessões AC e unidade verificam a carga transferida sem logout', async ({ page }) => {
+  const patrimony = 'AC-2026-0001'
+  await signIn(page, '400001', 'sigat-ac')
+  await page.getByRole('link', { name: 'Transferências AC', exact: true }).click()
+  await page.getByLabel('Unidade de destino').selectOption('unit-centro')
+  await page.getByLabel('Data da distribuição').fill('2026-10-26')
+  await page.getByLabel('Entregador').fill('Cb Entregador')
+  await page.getByLabel('Recebedor').fill('Sd Recebedor')
+  await page.getByLabel(new RegExp(patrimony)).check()
+  await page.getByRole('button', { name: 'Revisar distribuição' }).click()
+  await page.getByRole('dialog', { name: 'Confirmar distribuição' }).getByRole('button', { name: 'Confirmar baixa imediata' }).click()
+  await expect(page.getByRole('status')).toContainText('baixa na AC')
+
+  const unitPage = await page.context().newPage()
+  await unitPage.route('**/api/v1/auth/login', async (route) => {
+    await route.continue({ headers: { ...route.request().headers(), 'x-msw-preserve-state': 'true' } })
+  })
+  await signIn(unitPage, '100001', 'sigat-unit', 'Painel da Unidade')
+  await unitPage.getByRole('link', { name: 'Inventário', exact: true }).click()
+  await unitPage.getByRole('searchbox', { name: 'Buscar equipamento' }).fill(patrimony)
+  await unitPage.evaluate((search) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('search', search)
+    window.history.pushState({}, '', url)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, patrimony)
+  await unitPage.waitForTimeout(500)
+  await expect(unitPage).toHaveURL(/search=AC-2026-0001/)
+  await expect(unitPage.getByRole('button', { name: `Ver detalhes de ${patrimony}` })).toBeVisible()
+  await unitPage.close()
+})
