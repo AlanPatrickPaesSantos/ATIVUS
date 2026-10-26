@@ -518,6 +518,182 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /ac/materials:
+    get:
+      tags: [AC]
+      summary: Lista bens patrimoniais sob custódia da AC
+      operationId: listAcMaterials
+      description: Operadores AC e administradores DITEL podem consultar somente bens com custódia AC.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/AcMaterialSearch' }
+        - { $ref: '#/components/parameters/AcPage' }
+        - { $ref: '#/components/parameters/AcPageSize' }
+      responses:
+        '200':
+          description: Página de bens patrimoniais da AC
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcMaterialsResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [AC]
+      summary: Cadastra bem patrimonial recebido pela AC
+      operationId: createAcMaterial
+      description: Exclusivo para operador AC. O bem é criado com custódia AC e sem unidade, sem alterar o fluxo tradicional de inventário ou movimentação.
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcMaterialCreateRequest' }
+      responses:
+        '201':
+          description: Bem patrimonial cadastrado
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcMaterial' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/materials/{equipmentId}:
+    get:
+      tags: [AC]
+      summary: Consulta um bem patrimonial da AC
+      operationId: getAcMaterial
+      description: Operadores AC e administradores DITEL podem consultar um bem somente enquanto ele estiver sob custódia AC.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Bem patrimonial da AC
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcMaterial' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ac/transfers:
+    post:
+      tags: [AC]
+      summary: Confirma distribuição patrimonial da AC para uma unidade
+      operationId: createAcTransfer
+      description: Exclusivo para operador AC. A confirmação é imediata e, em uma única transação, transfere a custódia dos bens para a unidade, sem aprovação posterior.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 160 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcTransferCreateRequest' }
+      responses:
+        '201':
+          description: Distribuição confirmada
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcTransfer' } } }
+        '200':
+          description: Replay idempotente da distribuição já confirmada
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcTransfer' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+    get:
+      tags: [AC]
+      summary: Lista distribuições patrimoniais da AC
+      operationId: listAcTransfers
+      description: Operadores AC e administradores DITEL podem consultar o histórico de distribuições, sem chaves de idempotência.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/AcPage' }
+        - { $ref: '#/components/parameters/AcPageSize' }
+      responses:
+        '200':
+          description: Página de distribuições AC
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcTransfersResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /ac/transfers/{transferId}:
+    get:
+      tags: [AC]
+      summary: Consulta uma distribuição patrimonial da AC
+      operationId: getAcTransfer
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhes imutáveis da distribuição
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcTransfer' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ac/transfers/{transferId}/document:
+    get:
+      tags: [AC]
+      summary: Exporta o modelo provisório de uma transferência AC
+      operationId: exportAcTransferDocument
+      description: Gera somente leitura um DOCX editável ou PDF a partir dos snapshots da transferência confirmada. O arquivo é um modelo provisório e não oficial da PMPA.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-fA-F0-9]{24}$' }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [docx, pdf] }
+      responses:
+        '200':
+          description: Documento binário provisório
+          headers:
+            X-Document-Template: { description: Sempre provisional-not-official nesta fase., schema: { type: string, enum: [provisional-not-official] } }
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ac/reports/patrimonial:
+    get:
+      tags: [AC]
+      summary: Consulta relatórios patrimoniais da AC
+      operationId: getAcPatrimonialReport
+      description: Consulta somente leitura para operadores AC e administradores DITEL. O estoque usa Equipment e as distribuições usam AcTransfer; indicadores contam equipmentId distintos.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/AcReportFrom' }
+        - { $ref: '#/components/parameters/AcReportTo' }
+        - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/AcReportPatrimony' }
+        - { $ref: '#/components/parameters/Type' }
+        - { $ref: '#/components/parameters/Model' }
+        - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/AcReportBg' }
+        - { $ref: '#/components/parameters/AcPage' }
+        - { $ref: '#/components/parameters/AcPageSize' }
+        - { $ref: '#/components/parameters/AcReportSort' }
+        - { $ref: '#/components/parameters/AcReportOrder' }
+      responses:
+        '200':
+          description: Relatório patrimonial consolidado da AC
+          content: { application/json: { schema: { $ref: '#/components/schemas/AcPatrimonialReportResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /inventory/{equipmentId}:
     get:
       tags: [Inventory]
@@ -572,7 +748,7 @@ paths:
                   id: { type: string }
                   patrimony: { type: string }
                   situation: { $ref: '#/components/schemas/EquipmentSituation' }
-                  unitName: { type: string }
+                  unitName: { oneOf: [{ type: string }, { type: 'null' }] }
                   updatedBy: { type: string }
                   updatedAt: { type: string, format: date-time }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -944,6 +1120,7 @@ components:
     MovementId: { name: id, in: path, required: true, schema: { type: string } }
     AdminUserId: { name: userId, in: path, required: true, schema: { type: string } }
     Search: { name: search, in: query, schema: { type: string } }
+    AcMaterialSearch: { name: search, in: query, description: 'Pesquisa por RP, número de série, descrição (observações) ou demais campos patrimoniais.', schema: { type: string, maxLength: 160 } }
     Type: { name: type, in: query, schema: { type: string } }
     Model: { name: model, in: query, schema: { type: string } }
     Situation:
@@ -961,6 +1138,14 @@ components:
         enum: [july_2026, q2_2026]
     Page: { name: page, in: query, required: true, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    AcPage: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    AcPageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    AcReportFrom: { name: from, in: query, description: Data inicial inclusiva da distribuição (YYYY-MM-DD)., schema: { type: string, format: date } }
+    AcReportTo: { name: to, in: query, description: Data final inclusiva da distribuição (YYYY-MM-DD)., schema: { type: string, format: date } }
+    AcReportPatrimony: { name: patrimony, in: query, schema: { type: string, maxLength: 120 } }
+    AcReportBg: { name: bg, in: query, schema: { type: string, maxLength: 120 } }
+    AcReportSort: { name: sort, in: query, schema: { type: string, enum: [distributedAt, patrimony, destinationUnit], default: distributedAt } }
+    AcReportOrder: { name: order, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
   responses:
     BadRequest:
       description: Dados inválidos
@@ -1179,6 +1364,15 @@ components:
             role: { const: unit_user }
             password: { type: string, minLength: 1, writeOnly: true }
             unit: { $ref: '#/components/schemas/UnitContext' }
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, password]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: ac_operator }
+            password: { type: string, minLength: 1, writeOnly: true }
+            unit: { type: 'null' }
     AdminUserUpdateRequest:
       oneOf:
         - type: object
@@ -1198,6 +1392,15 @@ components:
             registration: { type: string, minLength: 1 }
             role: { const: unit_user }
             unit: { $ref: '#/components/schemas/UnitContext' }
+            updatedAt: { type: string, format: date-time }
+        - type: object
+          additionalProperties: false
+          required: [name, registration, role, unit, updatedAt]
+          properties:
+            name: { type: string, minLength: 1 }
+            registration: { type: string, minLength: 1 }
+            role: { const: ac_operator }
+            unit: { type: 'null' }
             updatedAt: { type: string, format: date-time }
     AdminUserSituationUpdateRequest:
       type: object
@@ -1348,7 +1551,7 @@ components:
         newPassword: { type: string, minLength: 8, format: password, writeOnly: true }
     UserRole:
       type: string
-      enum: [ditel_admin, unit_user]
+      enum: [ditel_admin, unit_user, ac_operator]
     UserSituation:
       type: string
       enum: [active, blocked, inactive]
@@ -1389,7 +1592,7 @@ components:
         brand: { type: string }
         situation: { $ref: '#/components/schemas/EquipmentSituation' }
         location: { type: string }
-        unitName: { type: string }
+        unitName: { oneOf: [{ type: string }, { type: 'null' }] }
     InventoryResponse:
       type: object
       required: [items, total, page, pageSize]
@@ -1398,6 +1601,194 @@ components:
         total: { type: integer, minimum: 0 }
         page: { type: integer, minimum: 1 }
         pageSize: { type: integer, minimum: 1 }
+    AcMaterialCustody:
+      type: object
+      required: [scope, unit]
+      properties:
+        scope: { type: string, enum: [AC] }
+        unit: { type: 'null' }
+    AcMaterial:
+      type: object
+      required: [id, patrimony, type, model, brand, situation, location, unit, custody, category, history]
+      properties:
+        id: { type: string }
+        patrimony: { type: string }
+        type: { type: string }
+        model: { type: string }
+        brand: { type: string }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        location: { type: string }
+        unit: { type: 'null' }
+        custody: { $ref: '#/components/schemas/AcMaterialCustody' }
+        serialNumber: { type: string }
+        category: { type: string }
+        warranty: { type: string }
+        observations: { type: string }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string }
+        updatedAt: { type: string, format: date-time }
+        updatedBy: { type: string }
+        history:
+          type: array
+          items:
+            type: object
+            required: [id, description, occurredAt]
+            properties:
+              id: { type: string }
+              description: { type: string }
+              occurredAt: { type: string, format: date-time }
+    AcMaterialCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [patrimony, type, model, brand, situation, location]
+      properties:
+        patrimony: { type: string, minLength: 1, maxLength: 160 }
+        type: { type: string, minLength: 1, maxLength: 160 }
+        model: { type: string, minLength: 1, maxLength: 160 }
+        brand: { type: string, minLength: 1, maxLength: 160 }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        location: { type: string, minLength: 1, maxLength: 160 }
+        serialNumber: { type: string, maxLength: 160 }
+        category: { type: string, maxLength: 160 }
+        warranty: { type: string, maxLength: 160 }
+        observations: { type: string, maxLength: 160 }
+    AcMaterialsResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AcMaterial' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    AcTransferPerson:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        registration: { type: string, maxLength: 30 }
+    AcTransferMaterial:
+      type: object
+      required: [equipmentId, patrimony, sourceCustody, equipmentUpdatedAt, equipmentVersion]
+      properties:
+        equipmentId: { type: string }
+        patrimony: { type: string }
+        description: { type: string }
+        identification: { type: string }
+        model: { type: string }
+        serialNumber: { type: string }
+        sourceCustody: { $ref: '#/components/schemas/AcMaterialCustody' }
+        equipmentUpdatedAt: { type: string, format: date-time }
+        equipmentVersion: { type: integer, minimum: 0 }
+    AcTransfer:
+      type: object
+      required: [id, origin, status, destinationUnit, distributedAt, deliverer, receiver, materials, createdAt, createdBy]
+      properties:
+        id: { type: string }
+        origin: { type: string, enum: [AC] }
+        status: { type: string, enum: [confirmed] }
+        destinationUnit: { $ref: '#/components/schemas/UnitContext' }
+        distributedAt: { type: string, format: date-time }
+        deliverer: { $ref: '#/components/schemas/AcTransferPerson' }
+        receiver: { $ref: '#/components/schemas/AcTransferPerson' }
+        bg:
+          type: object
+          additionalProperties: false
+          required: [number]
+          properties:
+            number: { type: string, maxLength: 80 }
+        materials: { type: array, minItems: 1, maxItems: 500, items: { $ref: '#/components/schemas/AcTransferMaterial' } }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string }
+    AcTransferCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [destinationUnit, distributedAt, deliverer, receiver, equipmentIds]
+      properties:
+        destinationUnit: { $ref: '#/components/schemas/UnitContext' }
+        distributedAt: { type: string, format: date-time }
+        deliverer: { $ref: '#/components/schemas/AcTransferPerson' }
+        receiver: { $ref: '#/components/schemas/AcTransferPerson' }
+        bg:
+          type: object
+          additionalProperties: false
+          required: [number]
+          properties:
+            number: { type: string, maxLength: 80 }
+        equipmentIds: { type: array, minItems: 1, maxItems: 500, uniqueItems: true, items: { type: string } }
+    AcTransfersResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AcTransfer' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    AcPatrimonialStockItem:
+      type: object
+      required: [id, patrimony, serialNumber, identification, brand, type, model, situation]
+      properties:
+        id: { type: string }
+        patrimony: { type: string }
+        serialNumber: { type: [string, 'null'] }
+        identification: { type: string }
+        brand: { type: string }
+        type: { type: string }
+        model: { type: string }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+    AcPatrimonialDistribution:
+      type: object
+      required: [id, distributedAt, destinationUnit, deliverer, receiver, quantity]
+      properties:
+        id: { type: string }
+        distributedAt: { type: string, format: date-time }
+        destinationUnit: { $ref: '#/components/schemas/UnitContext' }
+        deliverer: { $ref: '#/components/schemas/AcTransferPerson' }
+        receiver: { $ref: '#/components/schemas/AcTransferPerson' }
+        quantity: { type: integer, minimum: 0 }
+        bg: { type: object, required: [number], properties: { number: { type: string } } }
+    AcPatrimonialReportResponse:
+      type: object
+      required: [generatedAt, generatedBy, metrics, criteria, stock, distributions, history]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        generatedBy: { type: object, required: [name, role], properties: { name: { type: string }, role: { type: string, enum: [ac_operator, ditel_admin] } } }
+        metrics:
+          type: object
+          required: [availableStock, distributedGoods, transfers]
+          properties:
+            availableStock: { type: integer, minimum: 0 }
+            distributedGoods: { type: integer, minimum: 0 }
+            transfers: { type: integer, minimum: 0 }
+        criteria: { type: object, required: [availableStock, distributedGoods, transfers], properties: { availableStock: { type: string }, distributedGoods: { type: string }, transfers: { type: string } } }
+        stock: { $ref: '#/components/schemas/AcPatrimonialStockPage' }
+        distributions: { $ref: '#/components/schemas/AcPatrimonialDistributionPage' }
+        history:
+          oneOf:
+            - { $ref: '#/components/schemas/AcPatrimonialHistory' }
+            - { type: 'null' }
+    AcPatrimonialStockPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AcPatrimonialStockItem' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    AcPatrimonialDistributionPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AcPatrimonialDistribution' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    AcPatrimonialHistory:
+      type: object
+      required: [patrimony, entries]
+      properties:
+        patrimony: { type: string }
+        entries: { type: array, items: { type: object, required: [id, source, description, occurredAt], properties: { id: { type: string }, source: { type: string, enum: [AC, DITEL] }, description: { type: string }, occurredAt: { type: string, format: date-time }, bg: { type: [string, 'null'] } } } }
     InventoryReportCounters:
       type: object
       required: [total, active, maintenance, inactive, lost, writtenOff, attention]

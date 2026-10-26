@@ -30,6 +30,40 @@ describe('OpenAPI contract', () => {
     expect(schema).toMatch(/EquipmentCreateRequest:[\s\S]*category:\s*\{ type: string \}/);
   });
 
+  it('documents the AC patrimonial material contract and its restricted operations', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    const collection = pathBlock(schema, '/ac/materials');
+    const detail = pathBlock(schema, '/ac/materials/{equipmentId}');
+
+    expect(collection).toContain('operationId: listAcMaterials');
+    expect(collection).toContain('operationId: createAcMaterial');
+    expect(collection).toContain("schema: { $ref: '#/components/schemas/AcMaterialCreateRequest' }");
+    expect(collection).toContain("schema: { $ref: '#/components/schemas/AcMaterialsResponse' }");
+    expect(detail).toContain('operationId: getAcMaterial');
+    expect(detail).toContain("schema: { $ref: '#/components/schemas/AcMaterial' }");
+    expect(schema).toContain('AcMaterialCustody:');
+    expect(schema).toContain('scope: { type: string, enum: [AC] }');
+    expect(schema).toContain('AcMaterialCreateRequest:');
+    expect(schema).toContain('additionalProperties: false');
+    expect(schema).toContain('AcMaterialsResponse:');
+  });
+
+  it('documents AC transfer confirmation, idempotency and paginated history', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    const collection = pathBlock(schema, '/ac/transfers');
+    const detail = pathBlock(schema, '/ac/transfers/{transferId}');
+
+    expect(collection).toContain('operationId: createAcTransfer');
+    expect(collection).toContain('operationId: listAcTransfers');
+    expect(collection).toContain('Idempotency-Key');
+    expect(collection).toContain("schema: { $ref: '#/components/schemas/AcTransferCreateRequest' }");
+    expect(collection).toContain("schema: { $ref: '#/components/schemas/AcTransfersResponse' }");
+    expect(detail).toContain('operationId: getAcTransfer');
+    expect(detail).toContain("schema: { $ref: '#/components/schemas/AcTransfer' }");
+    expect(schema).toContain('AcTransferMaterial:');
+    expect(schema).toContain('equipmentIds: { type: array, minItems: 1, maxItems: 500, uniqueItems: true');
+  });
+
   it('documents every backend call queue status returned after triage', async () => {
     const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
     const callQueueItem = schema.match(/CallQueueItem:[\s\S]*?(?=\n    [A-Z][A-Za-z]+:|\n  securitySchemes:|$)/)?.[0] ?? '';
