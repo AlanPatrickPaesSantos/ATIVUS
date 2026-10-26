@@ -1,8 +1,34 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from 'mongoose';
 
-import type { UnitReference } from './User.js';
+import { isValidUnitReference, type UnitReference } from './User.js';
 
 export type EquipmentSituation = 'active' | 'maintenance' | 'inactive' | 'lost' | 'written_off';
+export type EquipmentCustodyScope = 'AC' | 'UNIT';
+export interface EquipmentCustody {
+  scope: EquipmentCustodyScope;
+  unit: UnitReference | null;
+}
+
+export function isValidEquipmentCustody(value: unknown): value is EquipmentCustody {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const custody = value as Partial<EquipmentCustody>;
+  if (custody.scope === 'AC') {
+    return custody.unit === null;
+  }
+
+  return custody.scope === 'UNIT' && isValidUnitReference(custody.unit);
+}
+
+export function unitEquipmentCustody(unit: UnitReference): EquipmentCustody {
+  return { scope: 'UNIT', unit };
+}
+function sameUnitReference(left: unknown, right: unknown): boolean {
+  return isValidUnitReference(left) && isValidUnitReference(right)
+    && left.id === right.id && left.name === right.name && left.acronym === right.acronym;
+}
 const historyEntrySchema = new Schema({ id: { type: String, required: true }, description: { type: String, required: true }, occurredAt: { type: Date, required: true } }, { _id: false });
 const attachmentSchema = new Schema({
   id: { type: String, required: true },
@@ -23,6 +49,14 @@ const unitReferenceSchema = new Schema<UnitReference>(
   { _id: false },
 );
 
+const equipmentCustodySchema = new Schema<EquipmentCustody>(
+  {
+    scope: { type: String, required: true, enum: ['AC', 'UNIT'] satisfies EquipmentCustodyScope[] },
+    unit: { type: unitReferenceSchema, default: null },
+  },
+  { _id: false },
+);
+
 const equipmentSchema = new Schema(
   {
     patrimony: { type: String, required: true, trim: true },
@@ -35,13 +69,56 @@ const equipmentSchema = new Schema(
       enum: ['active', 'maintenance', 'inactive', 'lost', 'written_off'] satisfies EquipmentSituation[],
     },
     location: { type: String, required: true, trim: true },
-    unit: { type: unitReferenceSchema, required: true },
+    unit: { type: unitReferenceSchema, default: null },
+    custody: { type: equipmentCustodySchema, default: null },
     serialNumber: { type: String, trim: true }, category: { type: String, trim: true, default: '' }, warranty: { type: String, trim: true }, observations: { type: String, trim: true }, createdBy: { type: String, trim: true, default: '' }, updatedBy: { type: String, trim: true }, history: { type: [historyEntrySchema], default: [] }, attachments: { type: [attachmentSchema], default: [] },
   },
   {
     timestamps: true,
   },
 );
+
+equipmentSchema.pre('validate', function validateCustodyConsistency(next) {
+  const custody = this.custody;
+  const unit = this.unit;
+
+  if (custody === null || custody === undefined) {
+    if (!isValidUnitReference(unit)) {
+      this.invalidate('unit', 'Equipamento legado deve possuir uma unidade válida.');
+    }
+    next();
+    return;
+  }
+
+  if (!isValidEquipmentCustody(custody)) {
+    this.invalidate('custody', 'Custódia do equipamento inválida.');
+    next();
+    return;
+  }
+
+  if (custody.scope === 'AC') {
+    if (unit !== null && unit !== undefined) {
+      this.invalidate('unit', 'Equipamento sob custódia AC não pode possuir unidade.');
+    }
+    next();
+    return;
+  }
+
+  if (!isValidUnitReference(unit)) {
+    this.invalidate('unit', 'Equipamento sob custódia de unidade deve possuir unidade válida.');
+  } else if (JSON.stringify(unit) !== JSON.stringify(custody.unit)) {
+    this.invalidate('custody', 'A unidade do equipamento deve corresponder à unidade da custódia.');
+  }
+  next();
+});
+
+equipmentSchema.path('custody').validate(function validateCustodyPath(value: unknown) {
+  if (value === null || value === undefined) return isValidUnitReference(this.unit);
+  if (!isValidEquipmentCustody(value)) return false;
+  const custody = value as EquipmentCustody;
+  if (custody.scope === 'AC') return this.unit === null || this.unit === undefined;
+  return sameUnitReference(this.unit, custody.unit);
+}, 'Custódia do equipamento inválida.');
 
 equipmentSchema.index({ 'unit.id': 1, situation: 1 });
 equipmentSchema.index({ patrimony: 1 }, { unique: true });

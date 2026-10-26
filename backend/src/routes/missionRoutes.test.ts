@@ -41,6 +41,7 @@ async function waitForPrimary() {
 const unit1 = { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' };
 const ditelContext: SessionContext = { userId: 'ditel-1', name: 'DITEL Admin', registration: '200001', role: 'ditel_admin', unit: null };
 const unitContext: SessionContext = { userId: 'unit-1', name: 'Ana Souza', registration: '100001', role: 'unit_user', unit: unit1 };
+const acContext: SessionContext = { userId: 'ac-1', name: 'Operador AC', registration: '300001', role: 'ac_operator', unit: null };
 
 describe('mission routes', () => {
   let mongoServer: MongoMemoryReplSet;
@@ -99,6 +100,12 @@ describe('mission routes', () => {
     const unitRes = await request(unitApp).get('/api/v1/missions').set('Cookie', 'sigat_session=test');
     expect(unitRes.status).toBe(200);
     expect(unitRes.body.items).toHaveLength(1);
+  });
+
+  it('denies mission listing to an AC operator', async () => {
+    const acApp = createApp({ sessionService: sessionServiceFor(acContext) });
+    const res = await request(acApp).get('/api/v1/missions').set('Cookie', 'sigat_session=test');
+    expect(res.status).toBe(403);
   });
 
   it('transitions mission through assigned → in_progress → completed', async () => {

@@ -1,4 +1,4 @@
-export type UserRole = 'ditel_admin' | 'unit_user'
+export type UserRole = 'ditel_admin' | 'unit_user' | 'ac_operator'
 
 export type SessionContext = {
   userId: string

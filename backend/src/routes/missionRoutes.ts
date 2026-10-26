@@ -41,6 +41,7 @@ export function createMissionRoutes(requireSession: RequestHandler): Router {
     try {
       const context = req.sessionContext;
       if (!context) throw new AuthError(401, 'UNAUTHENTICATED', 'Sessão inválida ou expirada.');
+      if (context.role !== 'ditel_admin' && context.role !== 'unit_user') throw new AuthError(403, 'FORBIDDEN', 'Perfil sem acesso a missões técnicas.');
       const unitId = typeof req.query.unitId === 'string' ? req.query.unitId : undefined;
       const status = typeof req.query.status === 'string' ? req.query.status : undefined;
       if (unitId && context.role === 'unit_user' && unitId !== context.unit?.id) {

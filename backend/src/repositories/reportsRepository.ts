@@ -79,7 +79,8 @@ function increment(counters: InventoryReportCounters, situation: EquipmentSituat
 }
 
 function filterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
-  const filter: Record<string, unknown> = scope.role === 'unit_user' ? { 'unit.id': scope.unitId } : {};
+  const filter: Record<string, unknown> = { 'custody.scope': { $ne: 'AC' } };
+  if (scope.role === 'unit_user') filter['unit.id'] = scope.unitId;
 
   if (scope.role === 'ditel_admin' && filters.unitId) {
     filter['unit.id'] = filters.unitId;

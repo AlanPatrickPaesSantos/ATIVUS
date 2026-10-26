@@ -37,7 +37,7 @@ const auditActorSchema = new Schema<AuditActor>(
     id: { type: String, required: true, trim: true },
     name: { type: String, trim: true },
     registration: { type: String, trim: true },
-    role: { type: String, enum: ['ditel_admin', 'unit_user'] satisfies UserRole[] },
+    role: { type: String, enum: ['ditel_admin', 'unit_user', 'ac_operator'] satisfies UserRole[] },
   },
   { _id: false },
 );

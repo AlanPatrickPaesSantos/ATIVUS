@@ -140,4 +140,32 @@ describe('admin user routes', () => { let server: MongoMemoryReplSet; beforeAll(
     expect(login.status).toBe(401);
     expect(login.body.code).toBe('INVALID_CREDENTIALS');
   });
+
+  it('creates an AC operator without a unit and exposes the new role publicly', async () => {
+    const response = await createUser(admin, {
+      name: 'Operador AC',
+      registration: '70001',
+      role: 'ac_operator',
+      password: 'senha-ac-segura',
+      unit: null,
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      name: 'Operador AC',
+      registration: '70001',
+      role: 'ac_operator',
+      unit: null,
+    });
+    expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|password|token|sessionId/i);
+
+    const login = await request(createApp()).post('/api/v1/auth/login').send({
+      registration: '70001',
+      password: 'senha-ac-segura',
+    });
+
+    expect(login.status).toBe(200);
+    expect(login.body).toMatchObject({ role: 'ac_operator', unit: null });
+    expect(JSON.stringify(login.body)).not.toMatch(/passwordHash|password|token|sessionId/i);
+  });
 });

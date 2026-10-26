@@ -48,7 +48,7 @@ export async function resolveAccessScopeFromContext(
   }
 
   return {
-    role: context.role,
+    role: 'unit_user',
     unitId: unit.id,
     unit,
   };

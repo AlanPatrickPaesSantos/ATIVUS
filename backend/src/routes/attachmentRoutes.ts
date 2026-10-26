@@ -23,7 +23,7 @@ export function createAttachmentRoutes(requireSession: RequestHandler): Router {
     try {
       const access = await scope(req.sessionContext);
       const attachmentId = req.params.attachmentId;
-      const scopeFilter = access.role === 'unit_user' ? { 'unit.id': access.unitId } : {};
+      const scopeFilter = access.role === 'unit_user' ? { 'unit.id': access.unitId, 'custody.scope': { $ne: 'AC' } } : { 'custody.scope': { $ne: 'AC' } };
       const [equipment, call] = await Promise.all([
         EquipmentModel.findOne({ ...scopeFilter, 'attachments.id': attachmentId }).select({ attachments: 1 }).lean().exec(),
         CallModel.findOne({ ...scopeFilter, 'attachments.id': attachmentId }).select({ attachments: 1 }).lean().exec(),

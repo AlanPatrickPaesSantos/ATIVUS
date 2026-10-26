@@ -22,7 +22,7 @@ import {
 import { revokeSessionsForUser } from '../repositories/sessionsRepository.js';
 import { findActiveUnitReference } from '../repositories/unitsRepository.js';
 
-const roles = new Set<UserRole>(['ditel_admin', 'unit_user']);
+const roles = new Set<UserRole>(['ditel_admin', 'unit_user', 'ac_operator']);
 const situations = new Set(['Ativo', 'Bloqueado', 'Inativo']);
 const mutableSituations = new Set(['active', 'blocked']);
 const SITUATION_AUDIT_ACTION = 'admin.users.situation.update';
@@ -155,16 +155,16 @@ async function requestedUser(req: Parameters<RequestHandler>[0]): Promise<AdminU
   if (
     !name
     || !registration
-    || (role !== 'ditel_admin' && role !== 'unit_user')
+    || (role !== 'ditel_admin' && role !== 'unit_user' && role !== 'ac_operator')
     || typeof password !== 'string'
     || password.length === 0
   ) {
     throw new AuthError(400, 'INVALID_USER', 'Dados do usuário inválidos.');
   }
 
-  if (role === 'ditel_admin') {
+  if (role === 'ditel_admin' || role === 'ac_operator') {
     if (req.body.unit !== undefined && req.body.unit !== null) {
-      throw new AuthError(400, 'INVALID_USER', 'Administrador DITEL não pode ser limitado a uma unidade.');
+      throw new AuthError(400, 'INVALID_USER', 'Este perfil não pode ser limitado a uma unidade.');
     }
     return { name, registration, role, password, unit: null };
   }
@@ -203,13 +203,13 @@ async function requestedUserUpdate(req: Parameters<RequestHandler>[0]): Promise<
   const role = req.body.role;
   const updatedAt = typeof req.body.updatedAt === 'string' ? new Date(req.body.updatedAt) : null;
 
-  if (!name || !registration || (role !== 'ditel_admin' && role !== 'unit_user') || !updatedAt || Number.isNaN(updatedAt.getTime())) {
+  if (!name || !registration || (role !== 'ditel_admin' && role !== 'unit_user' && role !== 'ac_operator') || !updatedAt || Number.isNaN(updatedAt.getTime())) {
     throw new AuthError(400, 'INVALID_USER', 'Dados do usuário inválidos.');
   }
 
-  if (role === 'ditel_admin') {
+  if (role === 'ditel_admin' || role === 'ac_operator') {
     if (req.body.unit !== null) {
-      throw new AuthError(400, 'INVALID_USER', 'Administrador DITEL não pode ser limitado a uma unidade.');
+      throw new AuthError(400, 'INVALID_USER', 'Este perfil não pode ser limitado a uma unidade.');
     }
     return { name, registration, role, unit: null, updatedAt };
   }

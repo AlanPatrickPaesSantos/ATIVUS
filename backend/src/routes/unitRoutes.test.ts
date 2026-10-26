@@ -37,6 +37,15 @@ describe('unit routes', () => {
     const response = await get({ userId: 'admin', name: 'Carlos', registration: '2', role: 'ditel_admin', unit: null });
     expect(response.status).toBe(200); expect(response.body).toEqual({ items: [{ id: 'unit-1', name: 'Origem', acronym: 'ORI' }] });
   });
+  it('returns all active units to AC operators without sensitive fields', async () => {
+    await UnitModel.create([
+      { id: 'unit-1', name: 'Destino', acronym: 'DST', active: true },
+      { id: 'unit-2', name: 'Inativa', acronym: 'INA', active: false },
+    ]);
+    const response = await get({ userId: 'ac-1', name: 'AC', registration: '3', role: 'ac_operator', unit: null });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ items: [{ id: 'unit-1', name: 'Destino', acronym: 'DST' }] });
+  });
   it('rejects a unit user without a valid unit scope', async () => {
     const response = await get({ userId: 'u1', name: 'Ana', registration: '1', role: 'unit_user', unit: null });
     expect(response.status).toBe(403);

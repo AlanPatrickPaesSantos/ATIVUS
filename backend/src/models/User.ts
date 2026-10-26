@@ -14,7 +14,7 @@ import {
   PASSWORD_UPDATE_ERROR,
 } from './passwordHash.js';
 
-export type UserRole = 'ditel_admin' | 'unit_user';
+export type UserRole = 'ditel_admin' | 'unit_user' | 'ac_operator';
 export type UserSituation = 'active' | 'blocked' | 'inactive';
 
 export const USER_SITUATIONS = ['active', 'blocked', 'inactive'] as const satisfies UserSituation[];
@@ -58,6 +58,13 @@ export function assertValidUserRoleUnit(role: unknown, unit: unknown): void {
     return;
   }
 
+  if (role === 'ac_operator') {
+    if (unit !== null) {
+      throw new Error('Operador AC não pode ser vinculado a uma unidade.');
+    }
+    return;
+  }
+
   throw new Error('Perfil de usuário inválido.');
 }
 
@@ -77,7 +84,7 @@ const userSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ['ditel_admin', 'unit_user'] satisfies UserRole[],
+      enum: ['ditel_admin', 'unit_user', 'ac_operator'] satisfies UserRole[],
     },
     situation: { type: String, required: true, enum: USER_SITUATIONS, default: 'active' },
     unit: { type: unitReferenceSchema, default: null },
@@ -132,7 +139,7 @@ userSchema.pre('validate', function validateUnitScope() {
     assertValidUserRoleUnit(this.role, this.unit);
   } catch (error) {
     const message = error instanceof Error ? error.message : UNIT_USER_UNIT_REQUIRED_ERROR;
-    this.invalidate(this.role === 'ditel_admin' || this.role === 'unit_user' ? 'unit' : 'role', message);
+    this.invalidate(this.role === 'ditel_admin' || this.role === 'unit_user' || this.role === 'ac_operator' ? 'unit' : 'role', message);
   }
 });
 

@@ -1,6 +1,6 @@
 import mongoose, { type ClientSession } from 'mongoose';
 import { CallModel } from '../models/Call.js';
-import { EquipmentModel, type EquipmentSituation } from '../models/Equipment.js';
+import { EquipmentModel, type EquipmentCustody, type EquipmentSituation, unitEquipmentCustody } from '../models/Equipment.js';
 import { MovementModel } from '../models/Movement.js';
 import { UnitModel } from '../models/Unit.js';
 import type { UnitReference } from '../models/User.js';
@@ -8,9 +8,10 @@ import { publicAttachment, type AttachmentMetadata } from '../services/attachmen
 
 export interface InventoryFilters { search?: string; type?: string; model?: string; situation?: EquipmentSituation; unitId?: string }
 export interface InventoryScope { role: 'unit_user' | 'ditel_admin'; unitId: string | null }
-export interface EquipmentCreateInput { patrimony: string; type: string; model: string; brand: string; situation: EquipmentSituation; location: string; serialNumber?: string; category: string; warranty?: string; observations?: string; unit: UnitReference; createdBy: string; attachments?: AttachmentMetadata[] }
+export interface EquipmentCreateInput { patrimony: string; type: string; model: string; brand: string; situation: EquipmentSituation; location: string; serialNumber?: string; category: string; warranty?: string; observations?: string; unit: UnitReference | null; custody?: EquipmentCustody; createdBy: string; attachments?: AttachmentMetadata[] }
 function filterFor(filters: InventoryFilters, scope: InventoryScope) {
-  const filter: Record<string, unknown> = scope.role === 'unit_user' ? { 'unit.id': scope.unitId } : {};
+  const filter: Record<string, unknown> = { 'custody.scope': { $ne: 'AC' } };
+  if (scope.role === 'unit_user') filter['unit.id'] = scope.unitId;
   if (scope.role === 'ditel_admin' && filters.unitId) filter['unit.id'] = filters.unitId;
   if (filters.type) filter.type = filters.type;
   if (filters.model) filter.model = filters.model;
@@ -18,8 +19,8 @@ function filterFor(filters: InventoryFilters, scope: InventoryScope) {
   if (filters.search) { const expression = new RegExp(filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); filter.$or = [{ patrimony: expression }, { type: expression }, { model: expression }, { brand: expression }]; }
   return filter;
 }
-function summary(document: any) { return { id: String(document._id), patrimony: document.patrimony, type: document.type, model: document.model, brand: document.brand, situation: document.situation, location: document.location, unitName: document.unit.name }; }
-export async function createEquipment(input: EquipmentCreateInput, session?: ClientSession) { const [document] = await EquipmentModel.create([{ ...input, history: [{ id: `equipment-created-${Date.now()}`, description: 'Cadastro inicial', occurredAt: new Date() }] }], session ? { session } : undefined); return { ...summary(document), serialNumber: document.serialNumber, category: document.category, ...(document.warranty ? { warranty: document.warranty } : {}), ...(document.observations ? { observations: document.observations } : {}), createdAt: document.createdAt?.toISOString(), createdBy: document.createdBy, updatedAt: document.updatedAt?.toISOString(), updatedBy: document.updatedBy, allocation: { location: document.location }, history: document.history.map((entry: any) => ({ id: entry.id, description: entry.description, occurredAt: new Date(entry.occurredAt).toISOString() })), linkedCalls: [], documents: (document.attachments ?? []).map(publicAttachment) }; }
+function summary(document: any) { return { id: String(document._id), patrimony: document.patrimony, type: document.type, model: document.model, brand: document.brand, situation: document.situation, location: document.location, unitName: document.unit?.name ?? null }; }
+export async function createEquipment(input: EquipmentCreateInput, session?: ClientSession) { const [document] = await EquipmentModel.create([{ ...input, ...(input.custody || input.unit === null ? {} : { custody: unitEquipmentCustody(input.unit) }), history: [{ id: `equipment-created-${Date.now()}`, description: 'Cadastro inicial', occurredAt: new Date() }] }], session ? { session } : undefined); return { ...summary(document), serialNumber: document.serialNumber, category: document.category, ...(document.warranty ? { warranty: document.warranty } : {}), ...(document.observations ? { observations: document.observations } : {}), createdAt: document.createdAt?.toISOString(), createdBy: document.createdBy, updatedAt: document.updatedAt?.toISOString(), updatedBy: document.updatedBy, allocation: { location: document.location }, history: document.history.map((entry: any) => ({ id: entry.id, description: entry.description, occurredAt: new Date(entry.occurredAt).toISOString() })), linkedCalls: [], documents: (document.attachments ?? []).map(publicAttachment) }; }
 export async function readInventory(filters: InventoryFilters, scope: InventoryScope, page: number, pageSize: number) {
   const filter = filterFor(filters, scope);
   const [total, documents] = await Promise.all([EquipmentModel.countDocuments(filter).exec(), EquipmentModel.find(filter).sort({ createdAt: -1, _id: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean().exec()]);
@@ -117,7 +118,7 @@ export interface DashboardReadScope {
 }
 
 function buildEquipmentFilter(unitId: string | null) {
-  return unitId ? { 'unit.id': unitId } : {};
+  return unitId ? { 'unit.id': unitId, 'custody.scope': { $ne: 'AC' } } : { 'custody.scope': { $ne: 'AC' } };
 }
 
 function labelForSituation(situation: DashboardSituationSummary['situation']): string {
@@ -140,7 +141,7 @@ function isAttentionSituation(situation: string): boolean {
 }
 
 async function readUnitSummaries(unitId?: string | null): Promise<DashboardUnitSummary[]> {
-  const scopeFilter = unitId ? { 'unit.id': unitId } : {};
+  const scopeFilter = unitId ? { 'unit.id': unitId } : { 'custody.scope': { $ne: 'AC' } };
   const documents = await EquipmentModel.find(scopeFilter)
     .select({ 'unit.id': 1, 'unit.name': 1, 'unit.acronym': 1, situation: 1 })
     .lean()
@@ -149,7 +150,8 @@ async function readUnitSummaries(unitId?: string | null): Promise<DashboardUnitS
   const byUnit = new Map<string, DashboardUnitSummary>();
 
   for (const document of documents) {
-    const unit = document.unit as UnitReference;
+    const unit = document.unit as UnitReference | null;
+    if (!unit) continue;
     const existing = byUnit.get(unit.id) ?? {
       unit,
       coverage: '0%',
@@ -275,20 +277,20 @@ export interface EquipmentSituationInput {
 export interface EquipmentAuditRecord {
   id: string;
   patrimony: string;
-  unit: UnitReference;
+  unit: UnitReference | null;
   situation: EquipmentSituation;
   updatedAt: Date;
 }
 
 export async function findEquipmentAuditRecord(id: string, scope: InventoryScope | null, session?: ClientSession): Promise<EquipmentAuditRecord | null> {
   if (!mongoose.isValidObjectId(id)) return null;
-  const scopeFilter = scope && scope.role === 'unit_user' ? { 'unit.id': scope.unitId } : {};
+  const scopeFilter = scope?.role === 'unit_user' ? { 'unit.id': scope.unitId, 'custody.scope': { $ne: 'AC' } } : { 'custody.scope': { $ne: 'AC' } };
   const document = await EquipmentModel.findOne({ _id: id, ...scopeFilter }).session(session ?? null).lean().exec();
   if (!document) return null;
   return {
     id: String(document._id),
     patrimony: document.patrimony,
-    unit: document.unit as UnitReference,
+    unit: (document.unit as UnitReference | null) ?? null,
     situation: document.situation as EquipmentSituation,
     updatedAt: document.updatedAt as Date,
   };
@@ -299,7 +301,7 @@ export async function updateEquipmentSituation(
   scope: InventoryScope,
   session?: ClientSession,
 ) {
-  const scopeFilter = scope.role === 'unit_user' ? { 'unit.id': scope.unitId } : {};
+  const scopeFilter = scope.role === 'unit_user' ? { 'unit.id': scope.unitId, 'custody.scope': { $ne: 'AC' } } : { 'custody.scope': { $ne: 'AC' } };
   const previous = await EquipmentModel.findOne({ _id: input.equipmentId, ...scopeFilter }).session(session ?? null).lean().exec();
   if (!previous) return null;
   const document = await EquipmentModel.findOneAndUpdate(
