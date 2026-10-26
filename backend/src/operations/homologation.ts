@@ -6,6 +6,7 @@ import { readDatabaseReadiness } from '../database/mongoose.js';
 import { runInTransaction } from '../database/transaction.js';
 import { AuditEventModel } from '../models/AuditEvent.js';
 import { CallModel } from '../models/Call.js';
+import { AcTransferModel } from '../models/AcTransfer.js';
 import { EquipmentModel } from '../models/Equipment.js';
 import { EquipmentTypeModel } from '../models/EquipmentType.js';
 import { MissionModel } from '../models/Mission.js';
@@ -47,6 +48,7 @@ interface IndexedModel {
 
 const INDEXED_MODELS: IndexedModel[] = [
   { model: AuditEventModel, name: 'AuditEvent' },
+  { model: AcTransferModel, name: 'AcTransfer' },
   { model: CallModel, name: 'Call' },
   { model: EquipmentModel, name: 'Equipment' },
   { model: EquipmentTypeModel, name: 'EquipmentType' },

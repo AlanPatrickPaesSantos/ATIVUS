@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { connectToDatabase, disconnectFromDatabase } from '../database/mongoose.js';
 import { AuditEventModel } from '../models/AuditEvent.js';
 import { CallModel } from '../models/Call.js';
+import { AcTransferModel } from '../models/AcTransfer.js';
 import { EquipmentModel } from '../models/Equipment.js';
 import { LoginRateLimitCounterModel } from '../models/LoginRateLimitCounter.js';
 import { MovementModel } from '../models/Movement.js';
@@ -29,6 +30,7 @@ describe('homologation operations', () => {
     await connectToDatabase(replSet.getUri());
     await Promise.all([
       AuditEventModel.init(),
+      AcTransferModel.init(),
       CallModel.init(),
       EquipmentModel.init(),
       LoginRateLimitCounterModel.init(),
@@ -63,6 +65,16 @@ describe('homologation operations', () => {
     expect(after.transactionSupport).toBe('supported');
     expect(after.indexesReady).toBe(true);
     expect(after.missingIndexes).toEqual([]);
+  });
+
+  it('includes AC transfer indexes in the homologation checklist', async () => {
+    await AcTransferModel.collection.dropIndexes();
+
+    const before = await readHomologationReport();
+    expect(before.missingIndexes.some((entry) => entry.model === 'AcTransfer')).toBe(true);
+
+    const after = await bootstrapHomologation();
+    expect(after.missingIndexes.some((entry) => entry.model === 'AcTransfer')).toBe(false);
   });
 
   it('creates a minimal synthetic seed only when explicitly requested', async () => {
