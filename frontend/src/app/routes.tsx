@@ -46,6 +46,20 @@ const routePermissions: Record<string, string> = {
   '/ac/relatorios': 'ac_reports',
 }
 
+export function initialRouteFor(session: SessionContext): string {
+  return session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard'
+}
+
+export function resolveInitialRoute(session: SessionContext, requestedPath?: string): string {
+  if (typeof requestedPath === 'string' && requestedPath.startsWith('/') && !requestedPath.startsWith('//')) {
+    const pathname = requestedPath.split(/[?#]/, 1)[0]
+    const permission = routePermissions[pathname]
+    if (permission && can(session, permission)) return requestedPath
+  }
+
+  return initialRouteFor(session)
+}
+
 function PermissionState() {
   return <section aria-live="polite"><h1>Acesso não autorizado</h1><p>Seu perfil não possui permissão para acessar este módulo.</p></section>
 }
@@ -72,7 +86,7 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
     clearProtectedQueryCache()
     const updatedSession = await changeSessionPassword(authApi, newPassword)
     onSessionChange(updatedSession)
-    navigate('/dashboard', { replace: true })
+    navigate(initialRouteFor(updatedSession), { replace: true })
   }
 
   if (session.mustChangePassword) {
@@ -95,7 +109,7 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
         <Route path="/ac/materiais" element={<AcMaterialsPage session={session} />} />
         <Route path="/ac/transferencias" element={<AcTransfersPage session={session} />} />
         <Route path="/ac/relatorios" element={<AcReportsPage session={session} />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to={initialRouteFor(session)} replace />} />
       </Routes>
 
   return (
@@ -116,6 +130,7 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
 }
 
 function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>) {
+  const location = useLocation()
   const navigate = useNavigate()
 
   async function login(registration: string, password: string) {
@@ -123,7 +138,8 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
     const session = await createSession(authApi, registration, password)
     if (session) {
       onSessionChange(session)
-      navigate(session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard', { replace: true })
+      const state = location.state as { from?: unknown } | null
+      navigate(resolveInitialRoute(session, typeof state?.from === 'string' ? state.from : undefined), { replace: true })
     }
     return session
   }
@@ -132,10 +148,15 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
 }
 
 export function AppRoutes({ session, onSessionChange }: AppRoutesProps) {
+  const location = useLocation()
+  const loginState = location.state as { from?: unknown } | null
+  const requestedPath = typeof loginState?.from === 'string' ? loginState.from : undefined
+
   return (
     <Routes>
-      <Route path="/login" element={session ? <Navigate to={session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard'} replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
-      <Route path="*" element={session ? <ProtectedRoutes session={session} onSessionChange={onSessionChange} /> : <Navigate to="/login" replace />} />
+      <Route index element={session ? <Navigate to={initialRouteFor(session)} replace /> : <Navigate to="/login" replace />} />
+      <Route path="/login" element={session ? <Navigate to={resolveInitialRoute(session, requestedPath)} replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
+      <Route path="*" element={session ? <ProtectedRoutes session={session} onSessionChange={onSessionChange} /> : <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />} />
     </Routes>
   )
 }

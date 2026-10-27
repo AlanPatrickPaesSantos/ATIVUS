@@ -53,6 +53,14 @@ const ditelSession: SessionContext = {
   unit: null,
 }
 
+const acSession: SessionContext = {
+  userId: 'ac-001',
+  name: 'Operador AC',
+  registration: '400001',
+  role: 'ac_operator',
+  unit: null,
+}
+
 const mustChangePasswordSession: SessionContext = {
   ...ditelSession,
   mustChangePassword: true,
@@ -79,6 +87,40 @@ test('renders the public login route', () => {
 test('redirects unauthenticated dashboard access to login', () => {
   renderRoutes('/dashboard', null)
   expect(screen.getByRole('heading', { name: 'Entrar no ATIVUS' })).toBeInTheDocument()
+})
+
+test.each([
+  ['DITEL', ditelSession, 'Painel estadual'],
+  ['unidade', unitSession, 'Painel da Unidade'],
+  ['AC', acSession, 'Materiais da AC'],
+])('resolves the root route for an authenticated %s session', (_label, session, heading) => {
+  renderRoutes('/', session)
+
+  expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+})
+
+test('sends an authenticated AC session away from the login route to AC materials', () => {
+  renderRoutes('/login', acSession)
+
+  expect(screen.getByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
+})
+
+test('keeps the AC materials route after a refresh with a restored session', () => {
+  renderRoutes('/ac/materiais', acSession)
+
+  expect(screen.getByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Acesso não autorizado' })).not.toBeInTheDocument()
+})
+
+test('preserves an authorized destination through login', async () => {
+  const user = userEvent.setup()
+  renderRoutes('/inventario', null)
+
+  await user.type(screen.getByLabelText('Matrícula'), '200001')
+  await user.type(screen.getByLabelText('Senha'), 'sigat-ditel')
+  await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+  expect(await screen.findByRole('heading', { name: 'Inventário estadual' })).toBeInTheDocument()
 })
 
 test('renders the unit dashboard and allowed navigation for a Unit user', () => {
@@ -166,6 +208,7 @@ test('blocks direct AC reports URL for a unit user', () => {
 test.each([
   ['100001', 'sigat-unit', 'Painel da Unidade', /3º BPM/i],
   ['200001', 'sigat-ditel', 'Painel estadual', undefined],
+  ['400001', 'sigat-ac', 'Materiais da AC', undefined],
 ])('logs in with API credentials and lands on the expected dashboard', async (registration, password, dashboard, unitSubheading) => {
   const user = userEvent.setup()
   renderRoutes('/login', null)
