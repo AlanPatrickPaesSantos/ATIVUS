@@ -54,6 +54,26 @@ describe('MSW fixture resets', () => {
     expect(second.status).toBe(201)
   })
 
+  it('allows DITEL to create an AC operator without a unit', async () => {
+    await createSession(fixtureSessionAdapter, '200001', 'sigat-ditel')
+
+    const response = await fetch('http://localhost/api/v1/admin/users', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Operador AC',
+        registration: '300001',
+        role: 'ac_operator',
+        password: 'senha-ac-segura',
+        unit: null,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({ role: 'ac_operator', unit: null })
+  })
+
   it('restores pending movements when the mock state is reset', async () => {
     await createSession(fixtureSessionAdapter, '100001', 'sigat-unit')
 

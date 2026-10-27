@@ -450,11 +450,11 @@ export const handlers = [
     if (!session) return unauthorized()
     if (session.role !== 'ditel_admin') return HttpResponse.json({ code: 'FORBIDDEN', message: 'Acesso administrativo obrigatório.' }, { status: 403 })
     const input = await request.json() as { name?: unknown; registration?: unknown; role?: unknown; password?: unknown; unit?: { id?: unknown; name?: unknown; acronym?: unknown } | null }
-    if (typeof input.name !== 'string' || !input.name.trim() || typeof input.registration !== 'string' || !input.registration.trim() || typeof input.password !== 'string' || !input.password || (input.role !== 'ditel_admin' && input.role !== 'unit_user')) return HttpResponse.json({ code: 'INVALID_USER', message: 'Dados do usuário inválidos.' }, { status: 400 })
+    if (typeof input.name !== 'string' || !input.name.trim() || typeof input.registration !== 'string' || !input.registration.trim() || typeof input.password !== 'string' || !input.password || (input.role !== 'ditel_admin' && input.role !== 'unit_user' && input.role !== 'ac_operator')) return HttpResponse.json({ code: 'INVALID_USER', message: 'Dados do usuário inválidos.' }, { status: 400 })
     const registration = input.registration.trim()
     const selectedUnit = input.unit && [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units].find((unit) => unit.id === input.unit?.id)
     if (input.role === 'unit_user' && (!input.unit || !selectedUnit || input.unit.name !== selectedUnit.name || input.unit.acronym !== selectedUnit.acronym)) return HttpResponse.json({ code: 'INVALID_USER', message: 'Unidade inválida.' }, { status: 400 })
-    if (input.role === 'ditel_admin' && input.unit) return HttpResponse.json({ code: 'INVALID_USER', message: 'Administrador DITEL não pode ser limitado a uma unidade.' }, { status: 400 })
+    if ((input.role === 'ditel_admin' || input.role === 'ac_operator') && input.unit) return HttpResponse.json({ code: 'INVALID_USER', message: 'Este perfil não pode ser limitado a uma unidade.' }, { status: 400 })
     if (adminUsers.some((item) => item.registration === registration)) return HttpResponse.json({ code: 'REGISTRATION_CONFLICT', message: 'Matrícula já cadastrada.' }, { status: 409 })
     const now = new Date().toISOString()
     const created: AdminUserApi = { id: `admin-${adminUsers.length + 1}`, name: input.name.trim(), registration, role: input.role, situation: 'active', unit: input.role === 'unit_user' && selectedUnit ? selectedUnit : null, createdAt: now, updatedAt: now }
@@ -494,11 +494,11 @@ export const handlers = [
     const input = await request.json() as Record<string, unknown>
     const allowed = new Set(['name', 'registration', 'role', 'unit', 'updatedAt'])
     if (Object.keys(input).some((key) => !allowed.has(key))) return HttpResponse.json({ code: 'INVALID_USER', message: 'Dados do usuário inválidos.' }, { status: 400 })
-    if (typeof input.name !== 'string' || !input.name.trim() || typeof input.registration !== 'string' || !input.registration.trim() || (input.role !== 'ditel_admin' && input.role !== 'unit_user') || typeof input.updatedAt !== 'string' || Number.isNaN(new Date(input.updatedAt).getTime())) return HttpResponse.json({ code: 'INVALID_USER', message: 'Dados do usuário inválidos.' }, { status: 400 })
+    if (typeof input.name !== 'string' || !input.name.trim() || typeof input.registration !== 'string' || !input.registration.trim() || (input.role !== 'ditel_admin' && input.role !== 'unit_user' && input.role !== 'ac_operator') || typeof input.updatedAt !== 'string' || Number.isNaN(new Date(input.updatedAt).getTime())) return HttpResponse.json({ code: 'INVALID_USER', message: 'Dados do usuário inválidos.' }, { status: 400 })
     if (new Date(input.updatedAt).getTime() !== new Date(user.updatedAt).getTime()) return HttpResponse.json({ code: 'USER_CONFLICT', message: 'Usuário alterado por outra operação. Recarregue os dados e tente novamente.' }, { status: 409 })
     const registration = input.registration.trim()
     if (adminUsers.some((item) => item.id !== user.id && item.registration === registration)) return HttpResponse.json({ code: 'REGISTRATION_CONFLICT', message: 'Matrícula já cadastrada.' }, { status: 409 })
-    if (input.role === 'ditel_admin' && input.unit !== null) return HttpResponse.json({ code: 'INVALID_USER', message: 'Administrador DITEL não pode ser limitado a uma unidade.' }, { status: 400 })
+    if ((input.role === 'ditel_admin' || input.role === 'ac_operator') && input.unit !== null) return HttpResponse.json({ code: 'INVALID_USER', message: 'Este perfil não pode ser limitado a uma unidade.' }, { status: 400 })
     const candidateUnit = input.unit as { id?: unknown; name?: unknown; acronym?: unknown } | null
     const selectedUnit = candidateUnit && [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units].find((unit) => unit.id === candidateUnit.id)
     if (input.role === 'unit_user' && (!candidateUnit || !selectedUnit || candidateUnit.name !== selectedUnit.name || candidateUnit.acronym !== selectedUnit.acronym)) return HttpResponse.json({ code: 'INVALID_USER', message: 'Unidade inválida.' }, { status: 400 })

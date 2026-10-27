@@ -123,7 +123,7 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
     const session = await createSession(authApi, registration, password)
     if (session) {
       onSessionChange(session)
-      navigate('/dashboard', { replace: true })
+      navigate(session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard', { replace: true })
     }
     return session
   }
@@ -134,7 +134,7 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
 export function AppRoutes({ session, onSessionChange }: AppRoutesProps) {
   return (
     <Routes>
-      <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
+      <Route path="/login" element={session ? <Navigate to={session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard'} replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
       <Route path="*" element={session ? <ProtectedRoutes session={session} onSessionChange={onSessionChange} /> : <Navigate to="/login" replace />} />
     </Routes>
   )

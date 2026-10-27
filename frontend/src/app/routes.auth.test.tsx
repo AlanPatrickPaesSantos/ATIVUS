@@ -66,6 +66,25 @@ describe('real login route integration', () => {
     )
   })
 
+  it('navigates an AC operator directly to the AC materials module after login', async () => {
+    server.use(http.post('*/api/v1/auth/login', () => HttpResponse.json({
+      userId: 'ac-001',
+      name: 'Operador AC',
+      registration: '300001',
+      role: 'ac_operator',
+      unit: null,
+    })))
+    const user = userEvent.setup()
+    renderLogin()
+
+    await user.type(screen.getByLabelText('Matrícula'), '300001')
+    await user.type(screen.getByLabelText('Senha'), 'senha-ac-segura')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    expect(await screen.findByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Acesso não autorizado' })).not.toBeInTheDocument()
+  })
+
   it('keeps a blocked user on the login screen with the generic error', async () => {
     const user = userEvent.setup()
     renderLogin()
