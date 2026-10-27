@@ -46,6 +46,8 @@ const routePermissions: Record<string, string> = {
   '/ac/relatorios': 'ac_reports',
 }
 
+let ignoreNextLoginDestination = false
+
 export function initialRouteFor(session: SessionContext): string {
   return session.role === 'ac_operator' ? '/ac/materiais' : '/dashboard'
 }
@@ -77,8 +79,9 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
     } finally {
       clearProtectedQueryCache()
       clearSession()
-      onSessionChange(null)
+      ignoreNextLoginDestination = true
       navigate('/login', { replace: true })
+      onSessionChange(null)
     }
   }
 
@@ -138,8 +141,10 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
     const session = await createSession(authApi, registration, password)
     if (session) {
       onSessionChange(session)
+      const shouldIgnoreDestination = ignoreNextLoginDestination
+      ignoreNextLoginDestination = false
       const state = location.state as { from?: unknown } | null
-      navigate(resolveInitialRoute(session, typeof state?.from === 'string' ? state.from : undefined), { replace: true })
+      navigate(resolveInitialRoute(session, shouldIgnoreDestination ? undefined : typeof state?.from === 'string' ? state.from : undefined), { replace: true })
     }
     return session
   }
@@ -149,14 +154,15 @@ function LoginRoute({ onSessionChange }: Pick<AppRoutesProps, 'onSessionChange'>
 
 export function AppRoutes({ session, onSessionChange }: AppRoutesProps) {
   const location = useLocation()
-  const loginState = location.state as { from?: unknown } | null
-  const requestedPath = typeof loginState?.from === 'string' ? loginState.from : undefined
+  const loginState = location.state as { from?: unknown; loggedOut?: boolean } | null
+  const requestedPath = ignoreNextLoginDestination ? undefined : typeof loginState?.from === 'string' ? loginState.from : undefined
+  const isLogoutTransition = ignoreNextLoginDestination || loginState?.loggedOut === true
 
   return (
     <Routes>
       <Route index element={session ? <Navigate to={initialRouteFor(session)} replace /> : <Navigate to="/login" replace />} />
-      <Route path="/login" element={session ? <Navigate to={resolveInitialRoute(session, requestedPath)} replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
-      <Route path="*" element={session ? <ProtectedRoutes session={session} onSessionChange={onSessionChange} /> : <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />} />
+      <Route path="/login" element={session && !isLogoutTransition ? <Navigate to={resolveInitialRoute(session, requestedPath)} replace /> : <LoginRoute onSessionChange={onSessionChange} />} />
+      <Route path="*" element={session ? <ProtectedRoutes session={session} onSessionChange={onSessionChange} /> : <Navigate to="/login" replace state={ignoreNextLoginDestination ? { loggedOut: true } : { from: `${location.pathname}${location.search}` }} />} />
     </Routes>
   )
 }

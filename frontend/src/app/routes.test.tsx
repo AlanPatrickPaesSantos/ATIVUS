@@ -243,6 +243,22 @@ test('revokes the server session before returning to the login route', async () 
   )
 })
 
+test('clears the protected destination when another role signs in after logout', async () => {
+  const user = userEvent.setup()
+  renderRoutes('/missoes-tecnicas', ditelSession)
+
+  await user.click(screen.getByRole('button', { name: 'Carlos Lima' }))
+  await user.click(screen.getByRole('menuitem', { name: 'Sair' }))
+  await screen.findByRole('heading', { name: 'Entrar no ATIVUS' })
+
+  await user.type(screen.getByLabelText('Matrícula'), '100001')
+  await user.type(screen.getByLabelText('Senha'), 'sigat-unit')
+  await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+  expect(await screen.findByRole('heading', { name: 'Painel da Unidade' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Missões técnicas' })).not.toBeInTheDocument()
+})
+
 test('blocks protected modules while a mandatory password change is pending', () => {
   renderRoutes('/dashboard', mustChangePasswordSession)
 
