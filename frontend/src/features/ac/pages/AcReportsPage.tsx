@@ -44,16 +44,16 @@ export function AcReportsPage({ session }: { session: SessionContext }) {
       <Metric label="Transferências no período" value={query.data?.metrics.transfers} />
     </div>
     <form className="module-panel ac-report-filters" onSubmit={submit}>
-      <label>De<input type="date" value={draft.from ?? ''} onChange={(event) => update('from', event.target.value)} /></label>
-      <label>Até<input type="date" value={draft.to ?? ''} onChange={(event) => update('to', event.target.value)} /></label>
-      <label>RP<input value={draft.patrimony ?? ''} onChange={(event) => update('patrimony', event.target.value)} /></label>
-      <label>Tipo<input value={draft.type ?? ''} onChange={(event) => update('type', event.target.value)} /></label>
-      <label>Modelo<input value={draft.model ?? ''} onChange={(event) => update('model', event.target.value)} /></label>
-      <label>BG<input value={draft.bg ?? ''} onChange={(event) => update('bg', event.target.value)} /></label>
-      <label>Situação<select value={draft.situation ?? ''} onChange={(event) => update('situation', event.target.value)}>{situations.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}</select></label>
+      <label className="ac-field">De<input className="ac-control" type="date" value={draft.from ?? ''} onChange={(event) => update('from', event.target.value)} /></label>
+      <label className="ac-field">Até<input className="ac-control" type="date" value={draft.to ?? ''} onChange={(event) => update('to', event.target.value)} /></label>
+      <label className="ac-field">RP<input className="ac-control" value={draft.patrimony ?? ''} onChange={(event) => update('patrimony', event.target.value)} /></label>
+      <label className="ac-field">Tipo<input className="ac-control" value={draft.type ?? ''} onChange={(event) => update('type', event.target.value)} /></label>
+      <label className="ac-field">Modelo<input className="ac-control" value={draft.model ?? ''} onChange={(event) => update('model', event.target.value)} /></label>
+      <label className="ac-field">BG<input className="ac-control" value={draft.bg ?? ''} onChange={(event) => update('bg', event.target.value)} /></label>
+      <label className="ac-field">Situação<select className="ac-control" value={draft.situation ?? ''} onChange={(event) => update('situation', event.target.value)}>{situations.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}</select></label>
       <button className="button-link button-link--primary" type="submit">Aplicar filtros</button>
     </form>
-    <nav className="ac-report-tabs" aria-label="Relatórios AC"><button type="button" aria-pressed={view === 'stock'} onClick={() => { setView('stock'); setPage(1) }}>Estoque atual</button><button type="button" aria-pressed={view === 'distributions'} onClick={() => { setView('distributions'); setPage(1) }}>Distribuições</button><button type="button" aria-pressed={view === 'history'} onClick={() => { setView('history'); setPage(1) }}>Histórico por RP</button></nav>
+    <nav className="ac-report-tabs" aria-label="Relatórios AC"><button className="ac-report-tabs__button" type="button" aria-pressed={view === 'stock'} onClick={() => { setView('stock'); setPage(1) }}>Estoque atual</button><button className="ac-report-tabs__button" type="button" aria-pressed={view === 'distributions'} onClick={() => { setView('distributions'); setPage(1) }}>Distribuições</button><button className="ac-report-tabs__button" type="button" aria-pressed={view === 'history'} onClick={() => { setView('history'); setPage(1) }}>Histórico por RP</button></nav>
     <section className="module-panel ac-report-results" aria-live="polite">
       {query.isLoading ? <LoadingState label="Carregando relatório AC" /> : null}
       {query.isError ? <ErrorState message="Não foi possível carregar o relatório AC." onRetry={() => void query.refetch()} /> : null}
@@ -61,7 +61,7 @@ export function AcReportsPage({ session }: { session: SessionContext }) {
       {!query.isLoading && !query.isError && query.data && view === 'distributions' && <DistributionReport items={query.data.distributions.items} />}
       {!query.isLoading && !query.isError && query.data && view === 'history' && <HistoryReport history={query.data.history} />}
     </section>
-    {view !== 'history' && <nav className="ac-report-pagination" aria-label="Paginação dos relatórios AC"><button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page} de {totalPages}</span><button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Próxima</button></nav>}
+    {view !== 'history' && <nav className="ac-report-pagination" aria-label="Paginação dos relatórios AC"><button className="button-link" type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page} de {totalPages}</span><button className="button-link" type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Próxima</button></nav>}
     {query.data && <p className="ac-report-criteria">Critérios: estoque disponível = {query.data.criteria.availableStock} Bens distribuídos = {query.data.criteria.distributedGoods}</p>}
     <span className="sr-only">Consulta realizada por {session.name}</span>
   </section>

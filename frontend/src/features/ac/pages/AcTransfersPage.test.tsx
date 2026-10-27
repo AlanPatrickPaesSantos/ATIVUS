@@ -21,6 +21,8 @@ vi.mock('../../movements/api/unitsApi', () => ({ getUnits: vi.fn(async () => ({ 
 describe('AcTransfersPage', () => {
   it('expõe o estoque AC e a confirmação sem aprovação posterior', async () => {
     render(<QueryClientProvider client={new QueryClient()}><AcTransfersPage session={{ userId: 'ac', name: 'AC', registration: '1', role: 'ac_operator', unit: null }} /></QueryClientProvider>)
+    expect(screen.getByRole('region', { name: 'Transferências AC' })).toHaveClass('ac-transfers-page')
+    expect(screen.getByRole('group', { name: 'Bens disponíveis na AC' })).toHaveClass('ac-transfer-form__inventory')
     expect(screen.getByRole('heading', { name: 'Transferências AC' })).toBeInTheDocument()
     expect(screen.getByText(/AC-1/)).toBeInTheDocument()
     expect(screen.getByText(/Histórico de transferências/)).toBeInTheDocument()

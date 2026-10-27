@@ -33,6 +33,9 @@ describe('AcReportsPage', () => {
 
   it('shows AC metrics and stock report', async () => {
     renderPage()
+    expect(screen.getByRole('region', { name: 'Relatórios patrimoniais da AC' })).toHaveClass('ac-reports-page')
+    expect(screen.getByRole('navigation', { name: 'Relatórios AC' })).toHaveClass('ac-report-tabs')
+    expect(screen.getByRole('button', { name: 'Estoque atual' })).toHaveClass('ac-report-tabs__button')
     expect(screen.getByRole('heading', { name: 'Relatórios patrimoniais da AC' })).toBeInTheDocument()
     expect(await screen.findByText('RP-1')).toBeInTheDocument()
     expect(screen.getByText('Estoque disponível')).toBeInTheDocument()

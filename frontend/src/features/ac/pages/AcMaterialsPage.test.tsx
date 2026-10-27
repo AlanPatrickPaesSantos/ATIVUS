@@ -16,6 +16,9 @@ const renderPage = (role: 'ac_operator' | 'ditel_admin') => render(<QueryClientP
 describe('AcMaterialsPage', () => {
   it('lista materiais e mostra cadastro somente ao operador AC', () => {
     renderPage('ac_operator')
+    expect(screen.getByRole('region', { name: 'Materiais da AC' })).toHaveClass('ac-materials-page')
+    expect(screen.getByRole('searchbox', { name: 'Pesquisar RP, N/S ou descrição' })).toHaveClass('ac-control')
+    expect(screen.getByRole('navigation', { name: 'Paginação dos materiais AC' })).toHaveClass('ac-pagination')
     expect(screen.getByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /cadastrar material/i })).toBeInTheDocument()
     expect(screen.getByText('AC-1')).toBeInTheDocument()
