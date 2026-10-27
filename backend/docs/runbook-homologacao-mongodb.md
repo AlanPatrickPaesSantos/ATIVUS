@@ -52,6 +52,47 @@ A saída informa:
 
 Se `Mongo ready: no`, `Transaction support: unsupported` ou `Indexes ready: no`, não avance para smoke real da aplicação.
 
+## 1.1 Script isolado de índices Equipment e AcTransfer
+
+O script abaixo usa `mongosh` apenas para consultar o banco no modo padrão. Ele exige que a base conectada se chame `ativus`, compara a ordem exata das chaves e considera `unique` parte da identidade do índice.
+
+```bash
+node backend/scripts/ensure-operational-indexes.mjs --help
+node backend/scripts/ensure-operational-indexes.mjs
+```
+
+O modo de aplicação é deliberadamente explícito e só pode ser usado após backup recuperável e restauração isolada testada:
+
+```bash
+node backend/scripts/ensure-operational-indexes.mjs \
+  --apply \
+  --backup-confirmed \
+  --restore-tested
+```
+
+O script não remove nem recria índices incompatíveis, não altera documentos, não executa seed/migration/bootstrap e aborta ao encontrar duplicidades que impeçam índices únicos.
+
+## 1.2 Backup e restauração isolada antes de aplicar índices
+
+Carregue as URIs no ambiente seguro do operador; nunca as imprima ou grave na linha de comando persistente:
+
+```bash
+export BACKUP_FILE="/caminho/fora-do-repositorio/ativus-pre-indexes-$(date +%Y%m%d-%H%M%S).archive.gz"
+mongodump --uri="$MONGODB_URI" --archive="$BACKUP_FILE" --gzip
+```
+
+Valide a restauração em uma instância/banco isolado, nunca usando a URI da base `ativus`:
+
+```bash
+mongorestore --uri="$MONGODB_RESTORE_URI" \
+  --archive="$BACKUP_FILE" \
+  --gzip \
+  --nsFrom='ativus.*' \
+  --nsTo='ativus_restore.*'
+```
+
+Depois confirme apenas a existência e contagem de coleções no destino isolado. Não use `--drop` e não aponte `MONGODB_RESTORE_URI` para a base de produção.
+
 ## 2. Bootstrap seguro de índices
 
 Quando a verificação apontar índices ausentes e a janela permitir escrita operacional, execute:
