@@ -7,7 +7,7 @@ packages:
     repo: alanpatrickpaessantos/ativus
     branch: master
     rootDirectory: backend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node dist/server.js
     envVars:
       - key: NODE_ENV
