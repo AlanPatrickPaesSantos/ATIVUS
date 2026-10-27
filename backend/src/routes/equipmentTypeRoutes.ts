@@ -4,13 +4,13 @@ import mongoose from 'mongoose';
 import { AuthError, type SessionContext } from '../auth/sessionService.js';
 import { runInTransaction } from '../database/transaction.js';
 import { recordAuditEvent } from '../repositories/auditRepository.js';
-import type { EquipmentTypeDocument } from '../models/EquipmentType.js';
 import {
   createEquipmentType,
   equipmentTypeNameExists,
   findEquipmentTypeById,
   listEquipmentTypes,
   updateEquipmentType,
+  toEquipmentTypeListItem,
   type EquipmentTypeInput,
   type EquipmentTypeListItem,
 } from '../repositories/equipmentTypeRepository.js';
@@ -125,7 +125,7 @@ export function createEquipmentTypeRoutes(requireSession: RequestHandler): Route
           actor: actorFromContext(context),
           entity: { type: 'equipment_type', id: updated.id, label: updated.name },
           result: 'success',
-          before: snapshot(toListItem(before)),
+          before: snapshot(toEquipmentTypeListItem(before)),
           after: snapshot(updated),
           session,
         });
@@ -154,7 +154,7 @@ export function createEquipmentTypeRoutes(requireSession: RequestHandler): Route
           actor: actorFromContext(context),
           entity: { type: 'equipment_type', id: updated.id, label: updated.name },
           result: 'success',
-          before: snapshot(toListItem(before)),
+          before: snapshot(toEquipmentTypeListItem(before)),
           after: { ...snapshot(updated), active: false },
           session,
         });
@@ -167,15 +167,4 @@ export function createEquipmentTypeRoutes(requireSession: RequestHandler): Route
   });
 
   return router;
-}
-
-function toListItem(document: EquipmentTypeDocument & { _id?: unknown }) {
-  return {
-    id: String(document._id),
-    name: document.name,
-    description: document.description ?? '',
-    active: document.active ?? true,
-    createdAt: document.createdAt instanceof Date ? document.createdAt : new Date(document.createdAt),
-    updatedAt: document.updatedAt instanceof Date ? document.updatedAt : new Date(document.updatedAt),
-  };
 }
