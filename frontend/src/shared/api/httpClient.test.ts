@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { UnauthorizedError } from './errors'
+import { NetworkError, RequestCancelledError, RequestTimeoutError, UnauthorizedError } from './errors'
 import { httpClient } from './httpClient'
 import { server } from './msw/server'
 
@@ -52,5 +52,47 @@ describe('httpClient', () => {
     server.use(http.post('*/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })))
 
     await expect(httpClient<void>('/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
+  })
+
+  it.each([401, 403, 409, 429, 500])('preserves confirmed HTTP status %s as ApiError', async (status) => {
+    server.use(http.get('*/api/v1/status', () => HttpResponse.json({ code: `HTTP_${status}`, message: 'Falha confirmada' }, { status })))
+
+    const error = await httpClient('/status').catch((caught: unknown) => caught)
+
+    expect(error).toMatchObject({ status, code: `HTTP_${status}`, message: 'Falha confirmada' })
+    expect(error).not.toBeInstanceOf(NetworkError)
+  })
+
+  it('raises a timeout without retrying the request', async () => {
+    let calls = 0
+    server.use(http.get('*/api/v1/slow', async () => {
+      calls += 1
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      return HttpResponse.json({ ok: true })
+    }))
+
+    const error = await httpClient('/slow', {}, { timeoutMs: 5 }).catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(RequestTimeoutError)
+    expect(calls).toBe(1)
+  })
+
+  it('distinguishes caller cancellation from timeout', async () => {
+    const controller = new AbortController()
+    server.use(http.get('*/api/v1/cancelled', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      return HttpResponse.json({ ok: true })
+    }))
+
+    const promise = httpClient('/cancelled', { signal: controller.signal }, { timeoutMs: 100 })
+    controller.abort()
+
+    await expect(promise).rejects.toBeInstanceOf(RequestCancelledError)
+  })
+
+  it('normalizes a network failure without fabricating an HTTP response', async () => {
+    server.use(http.get('*/api/v1/unreachable', () => HttpResponse.error()))
+
+    await expect(httpClient('/unreachable')).rejects.toBeInstanceOf(NetworkError)
   })
 })

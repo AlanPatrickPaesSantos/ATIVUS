@@ -66,12 +66,40 @@ export function parseCookieSameSite(value: string | undefined): CookieSameSite {
   throw new Error(`Invalid SESSION_COOKIE_SAME_SITE value: ${value}`);
 }
 
+export function validateProductionConfiguration(input: {
+  nodeEnv: NodeEnv;
+  allowedOrigins: string[];
+}): void {
+  if (input.nodeEnv !== 'production') {
+    return;
+  }
+
+  if (input.allowedOrigins.length === 0) {
+    throw new Error('ALLOWED_ORIGINS must contain at least one origin in production');
+  }
+
+  for (const origin of input.allowedOrigins) {
+    try {
+      const parsed = new URL(origin);
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== origin) {
+        throw new Error('invalid');
+      }
+    } catch {
+      throw new Error('ALLOWED_ORIGINS contains an invalid origin');
+    }
+  }
+}
+
+const nodeEnv = parseNodeEnv(process.env.NODE_ENV);
+const allowedOrigins = parseCsvList(process.env.ALLOWED_ORIGINS);
+validateProductionConfiguration({ nodeEnv, allowedOrigins });
+
 export const env = {
-  NODE_ENV: parseNodeEnv(process.env.NODE_ENV),
+  NODE_ENV: nodeEnv,
   PORT: parsePort(process.env.PORT),
   SESSION_COOKIE_SECURE: parseBoolean(
     process.env.SESSION_COOKIE_SECURE,
-    parseNodeEnv(process.env.NODE_ENV) === 'production',
+    nodeEnv === 'production',
   ),
   SESSION_COOKIE_SAME_SITE: parseCookieSameSite(process.env.SESSION_COOKIE_SAME_SITE),
   LOGIN_RATE_LIMIT_WINDOW_MS: parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_WINDOW_MS, 60_000),
@@ -79,5 +107,5 @@ export const env = {
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_REGISTRATION: parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_REGISTRATION, 5),
   SESSION_ABSOLUTE_TTL_MS: parsePositiveInteger(process.env.SESSION_ABSOLUTE_TTL_MS, 43_200_000),
   SESSION_IDLE_TTL_MS: parsePositiveInteger(process.env.SESSION_IDLE_TTL_MS, 1_800_000),
-  ALLOWED_ORIGINS: parseCsvList(process.env.ALLOWED_ORIGINS),
+  ALLOWED_ORIGINS: allowedOrigins,
 } as const;

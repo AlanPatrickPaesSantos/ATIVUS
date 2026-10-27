@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseBoolean, parseCsvList, parseNodeEnv, parsePositiveInteger } from './env.js';
+import {
+  parseBoolean,
+  parseCsvList,
+  parseNodeEnv,
+  parsePositiveInteger,
+  validateProductionConfiguration,
+} from './env.js';
 
 describe('parseNodeEnv', () => {
   it('rejects invalid NODE_ENV values', () => {
@@ -40,5 +46,37 @@ describe('parseCsvList', () => {
       'https://b.example',
     ]);
     expect(parseCsvList(undefined)).toEqual([]);
+  });
+});
+
+describe('validateProductionConfiguration', () => {
+  it('accepts production with explicit HTTPS origins', () => {
+    expect(() => validateProductionConfiguration({
+      nodeEnv: 'production',
+      allowedOrigins: ['https://ativus-frontend.onrender.com'],
+    })).not.toThrow();
+  });
+
+  it('rejects production without an allowed origin', () => {
+    expect(() => validateProductionConfiguration({
+      nodeEnv: 'production',
+      allowedOrigins: [],
+    })).toThrow('ALLOWED_ORIGINS must contain at least one origin in production');
+  });
+
+  it('rejects malformed or wildcard production origins', () => {
+    expect(() => validateProductionConfiguration({
+      nodeEnv: 'production',
+      allowedOrigins: ['*'],
+    })).toThrow('ALLOWED_ORIGINS contains an invalid origin');
+    expect(() => validateProductionConfiguration({
+      nodeEnv: 'production',
+      allowedOrigins: ['ativus-frontend.onrender.com'],
+    })).toThrow('ALLOWED_ORIGINS contains an invalid origin');
+  });
+
+  it('keeps empty origins valid in development and tests', () => {
+    expect(() => validateProductionConfiguration({ nodeEnv: 'development', allowedOrigins: [] })).not.toThrow();
+    expect(() => validateProductionConfiguration({ nodeEnv: 'test', allowedOrigins: [] })).not.toThrow();
   });
 });

@@ -135,6 +135,7 @@ describe('auth routes', () => {
 
   it('marks the session cookie as secure when the app runs in production mode', async () => {
     vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ALLOWED_ORIGINS', 'https://sigat.local');
     vi.resetModules();
     const { createApp: createProductionApp } = await import('../app.js');
 
@@ -158,6 +159,7 @@ describe('auth routes', () => {
 
   it('allows cross-site session cookies when explicitly configured for hosted frontend/backend origins', async () => {
     vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ALLOWED_ORIGINS', 'https://sigat.local');
     vi.stubEnv('SESSION_COOKIE_SAME_SITE', 'none');
     vi.resetModules();
     const { createApp: createProductionApp } = await import('../app.js');

@@ -4,9 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { AcTransfersPage } from './AcTransfersPage'
+import { RequestTimeoutError } from '../../../shared/api/errors'
 
-const { getAcTransferDocument } = vi.hoisted(() => ({ getAcTransferDocument: vi.fn(async () => new Blob(['document'])) }))
-vi.mock('../api/acApi', () => ({ createAcTransfer: vi.fn(), getAcTransferDocument }))
+const { createAcTransfer, getAcTransferDocument } = vi.hoisted(() => ({
+  createAcTransfer: vi.fn(),
+  getAcTransferDocument: vi.fn(async () => new Blob(['document'])),
+}))
+vi.mock('../api/acApi', () => ({ createAcTransfer, getAcTransferDocument }))
 
 const transfer = { id: 'transfer-1', origin: 'AC' as const, status: 'confirmed' as const, destinationUnit: { id: 'u1', name: 'Unidade Norte', acronym: 'UN' }, distributedAt: '2026-10-26', deliverer: { name: 'Entrega' }, receiver: { name: 'Recebe' }, materials: [{ equipmentId: '1', patrimony: 'RP-1', sourceCustody: { scope: 'AC' as const, unit: null }, equipmentUpdatedAt: '2026-10-25', equipmentVersion: 0 }], createdAt: '2026-10-26', createdBy: 'ac' }
 
@@ -41,5 +45,28 @@ describe('AcTransfersPage', () => {
     expect(screen.getByRole('button', { name: 'Exportar PDF' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Exportar DOCX' }))
     expect(getAcTransferDocument).toHaveBeenCalledWith('transfer-1', 'docx')
+  })
+
+  it('preserva a chave ao repetir uma transferência cuja resposta expirou', async () => {
+    const user = userEvent.setup()
+    createAcTransfer
+      .mockRejectedValueOnce(new RequestTimeoutError())
+      .mockResolvedValueOnce(transfer)
+
+    render(<QueryClientProvider client={new QueryClient()}><AcTransfersPage session={{ userId: 'ac', name: 'AC', registration: '1', role: 'ac_operator', unit: null }} /></QueryClientProvider>)
+    await screen.findByRole('option', { name: /Unidade Norte/ })
+    await user.selectOptions(screen.getByLabelText('Unidade de destino'), 'u1')
+    await user.type(screen.getByLabelText('Data da distribuição'), '2026-10-26')
+    await user.type(screen.getByLabelText('Entregador'), 'Entregador')
+    await user.type(screen.getByLabelText('Recebedor'), 'Recebedor')
+    await user.click(screen.getByRole('checkbox', { name: /AC-1/ }))
+    await user.click(screen.getByRole('button', { name: 'Revisar distribuição' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar baixa imediata' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('chave idempotente foi preservada')
+    await user.click(screen.getByRole('button', { name: 'Repetir com a mesma chave' }))
+
+    expect(createAcTransfer).toHaveBeenCalledTimes(2)
+    expect(createAcTransfer.mock.calls[0][1]).toBe(createAcTransfer.mock.calls[1][1])
   })
 })

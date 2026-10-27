@@ -41,4 +41,13 @@ describe('AC API', () => {
     await expect(getAcTransfer('transfer-1')).resolves.toMatchObject({ id: 'transfer-1' })
     fetchMock.mockRestore()
   })
+
+  it('keeps the same caller-provided idempotency key when the response is uncertain', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(createAcTransfer({ destinationUnit: { id: 'unit-1', name: 'Unidade 1', acronym: 'U1' }, distributedAt: '2026-10-26T12:00:00.000Z', deliverer: { name: 'Entregador' }, receiver: { name: 'Recebedor' }, equipmentIds: ['equipment-1'] }, 'same-attempt-key')).rejects.toThrow()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/ac/transfers', expect.objectContaining({ headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'same-attempt-key' } }))
+    fetchMock.mockRestore()
+  })
 })

@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { AcTransfer, AcTransferCreateInput, UnitContext } from '../../../shared/api/contracts'
 import type { SessionContext } from '../../../shared/auth/types'
-import { ApiError } from '../../../shared/api/errors'
+import { ApiError, NetworkError, RequestCancelledError, RequestTimeoutError } from '../../../shared/api/errors'
 import { createAcTransfer, getAcTransferDocument } from '../api/acApi'
 import { useAcMaterialsQuery, useAcTransferQuery, useAcTransfersQuery, useInvalidateAcQueries } from '../api/acQueries'
 import { getUnits as getAuthorizedUnits } from '../../movements/api/unitsApi'
@@ -11,7 +11,13 @@ import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { EmptyState } from '../../../shared/ui/feedback/EmptyState'
 import { Modal } from '../../../shared/ui/overlays/Modal'
 
-const errorText = (error: unknown) => error instanceof ApiError ? (error.status === 409 ? 'Conflito: algum bem já foi distribuído ou a chave foi reutilizada com outro conteúdo.' : error.message) : 'Resposta incerta da rede. A chave idempotente foi preservada; tente novamente.'
+const errorText = (error: unknown) => {
+  if (error instanceof ApiError) return error.status === 409 ? 'Conflito: algum bem já foi distribuído ou a chave foi reutilizada com outro conteúdo.' : error.message
+  if (error instanceof RequestTimeoutError) return 'A API não respondeu no prazo. A chave idempotente foi preservada; consulte o histórico antes de repetir.'
+  if (error instanceof RequestCancelledError) return 'A requisição foi cancelada. A chave idempotente foi preservada; consulte o histórico antes de repetir.'
+  if (error instanceof NetworkError) return 'Não foi possível obter resposta da API. A chave idempotente foi preservada; consulte o histórico antes de repetir.'
+  return 'Resposta incerta da rede. A chave idempotente foi preservada; consulte o histórico antes de repetir.'
+}
 
 export function AcTransfersPage({ session }: { session: SessionContext }) {
   const [selected, setSelected] = useState<string[]>([])
