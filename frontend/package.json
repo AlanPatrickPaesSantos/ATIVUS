@@ -9,7 +9,7 @@
     "build": "tsc -b --pretty false && tsc -p tsconfig.server.json && vite build",
     "preview": "vite preview",
     "start:spa": "node spa-server-out/spaStaticServer.js",
-    "test": "vitest run --exclude 'e2e/**' --exclude 'e2e-real/**'",
+    "test": "vitest run --no-file-parallelism --exclude 'e2e/**' --exclude 'e2e-real/**'",
     "test:watch": "vitest --watch",
     "test:e2e": "playwright test",
     "test:e2e:real": "playwright test -c playwright.real-backend.config.ts",
