@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ApiError } from '../../../shared/api/errors'
 import { useUpdateMaintenance } from '../api/maintenanceQueries'
-import type { MaintenanceItem, MaintenanceStatus } from '../api/maintenanceApi'
+import { getMaintenance, type MaintenanceItem, type MaintenanceStatus } from '../api/maintenanceApi'
 import { maintenanceStatusLabels } from './MaintenanceTable'
 
 type MaintenanceProgressModalProps = { item: MaintenanceItem; onClose: () => void }
@@ -105,7 +105,6 @@ export function MaintenanceProgressModal({ item, onClose }: MaintenanceProgressM
 }
 
 async function listItem(id: string): Promise<MaintenanceItem | null> {
-  const { getMaintenance } = await import('../api/maintenanceApi')
   const response = await getMaintenance()
   return response.items.find((item) => item.id === id) ?? null
 }

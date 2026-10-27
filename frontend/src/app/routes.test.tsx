@@ -93,22 +93,22 @@ test.each([
   ['DITEL', ditelSession, 'Painel estadual'],
   ['unidade', unitSession, 'Painel da Unidade'],
   ['AC', acSession, 'Materiais da AC'],
-])('resolves the root route for an authenticated %s session', (_label, session, heading) => {
+])('resolves the root route for an authenticated %s session', async (_label, session, heading) => {
   renderRoutes('/', session)
 
-  expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
 })
 
-test('sends an authenticated AC session away from the login route to AC materials', () => {
+test('sends an authenticated AC session away from the login route to AC materials', async () => {
   renderRoutes('/login', acSession)
 
-  expect(screen.getByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
 })
 
-test('keeps the AC materials route after a refresh with a restored session', () => {
+test('keeps the AC materials route after a refresh with a restored session', async () => {
   renderRoutes('/ac/materiais', acSession)
 
-  expect(screen.getByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Materiais da AC' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Acesso não autorizado' })).not.toBeInTheDocument()
 })
 
@@ -157,7 +157,7 @@ test('renders statewide inventory and calls consultation for DITEL', async () =>
 
   renderRoutes('/chamados', ditelSession)
   expect(await screen.findByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
-  expect(screen.getByText('Falha de conectividade no CIOp')).toBeInTheDocument()
+  expect(await screen.findByText('Falha de conectividade no CIOp')).toBeInTheDocument()
 })
 
 test('renders the statewide dashboard and Administration for a DITEL user', async () => {
@@ -172,7 +172,7 @@ test('loads the authenticated reports preview and exports PDF through the API', 
   const user = userEvent.setup()
   renderRoutes('/relatorios', ditelSession)
 
-  expect(screen.getByRole('heading', { name: 'Relatórios patrimoniais' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Relatórios patrimoniais' })).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: 'Pré-visualização' })).toBeInTheDocument()
   expect(screen.queryByRole('option', { name: 'Relatório de garantias' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Exportar PDF' })).toBeEnabled()
@@ -185,7 +185,7 @@ test('renders a filterable movement history without exposing Administration to a
   const user = userEvent.setup()
   renderRoutes('/movimentacoes', unitSession)
 
-  expect(screen.getByRole('heading', { name: 'Histórico de movimentações' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Histórico de movimentações' })).toBeInTheDocument()
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
   await user.selectOptions(screen.getByRole('combobox', { name: 'Tipo de movimentação' }), 'baixa')
   expect(screen.getByText('Baixa patrimonial')).toBeInTheDocument()

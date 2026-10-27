@@ -1,29 +1,31 @@
+import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { authApi } from '../features/auth/api/authApi'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { PasswordChangePage } from '../features/auth/pages/PasswordChangePage'
-import { DitelDashboardPage } from '../features/dashboard/pages/DitelDashboardPage'
-import { UnitDashboardPage } from '../features/dashboard/pages/UnitDashboardPage'
-import { UnitInventoryPage } from '../features/inventory/pages/UnitInventoryPage'
-import { CallsPage } from '../features/calls/pages/CallsPage'
-import { DitelCallsPage } from '../features/calls/pages/DitelCallsPage'
-import { MovementsPage } from '../features/movements/pages/MovementsPage'
-import { ReportsPage } from '../features/reports/pages/ReportsPage'
-import { UnitMaintenancePage } from '../features/maintenance/pages/UnitMaintenancePage'
-import { DitelMaintenancePage } from '../features/maintenance/pages/DitelMaintenancePage'
-import { EquipmentTypesPage } from '../features/inventory/pages/EquipmentTypesPage'
-import { MissionsPage } from '../features/missions/pages/MissionsPage'
-import { DitelMissionsPage } from '../features/missions/pages/DitelMissionsPage'
-import { AuditPage } from '../features/audit/pages/AuditPage'
-import { AdministrationPage } from '../features/administration/pages/AdministrationPage'
-import { AcMaterialsPage } from '../features/ac/pages/AcMaterialsPage'
-import { AcTransfersPage } from '../features/ac/pages/AcTransfersPage'
-import { AcReportsPage } from '../features/ac/pages/AcReportsPage'
 import { changeSessionPassword, clearSession, createSession } from '../shared/auth/session'
 import { can, getNavigation } from '../shared/auth/permissions'
 import type { SessionContext } from '../shared/auth/types'
 import { AppShell } from '../shared/ui/layout/AppShell'
 import { clearProtectedQueryCache } from './providers'
+
+const DitelDashboardPage = lazy(() => import('../features/dashboard/pages/DitelDashboardPage').then(({ DitelDashboardPage }) => ({ default: DitelDashboardPage })))
+const UnitDashboardPage = lazy(() => import('../features/dashboard/pages/UnitDashboardPage').then(({ UnitDashboardPage }) => ({ default: UnitDashboardPage })))
+const UnitInventoryPage = lazy(() => import('../features/inventory/pages/UnitInventoryPage').then(({ UnitInventoryPage }) => ({ default: UnitInventoryPage })))
+const CallsPage = lazy(() => import('../features/calls/pages/CallsPage').then(({ CallsPage }) => ({ default: CallsPage })))
+const DitelCallsPage = lazy(() => import('../features/calls/pages/DitelCallsPage').then(({ DitelCallsPage }) => ({ default: DitelCallsPage })))
+const MovementsPage = lazy(() => import('../features/movements/pages/MovementsPage').then(({ MovementsPage }) => ({ default: MovementsPage })))
+const ReportsPage = lazy(() => import('../features/reports/pages/ReportsPage').then(({ ReportsPage }) => ({ default: ReportsPage })))
+const UnitMaintenancePage = lazy(() => import('../features/maintenance/pages/UnitMaintenancePage').then(({ UnitMaintenancePage }) => ({ default: UnitMaintenancePage })))
+const DitelMaintenancePage = lazy(() => import('../features/maintenance/pages/DitelMaintenancePage').then(({ DitelMaintenancePage }) => ({ default: DitelMaintenancePage })))
+const EquipmentTypesPage = lazy(() => import('../features/inventory/pages/EquipmentTypesPage').then(({ EquipmentTypesPage }) => ({ default: EquipmentTypesPage })))
+const MissionsPage = lazy(() => import('../features/missions/pages/MissionsPage').then(({ MissionsPage }) => ({ default: MissionsPage })))
+const DitelMissionsPage = lazy(() => import('../features/missions/pages/DitelMissionsPage').then(({ DitelMissionsPage }) => ({ default: DitelMissionsPage })))
+const AuditPage = lazy(() => import('../features/audit/pages/AuditPage').then(({ AuditPage }) => ({ default: AuditPage })))
+const AdministrationPage = lazy(() => import('../features/administration/pages/AdministrationPage').then(({ AdministrationPage }) => ({ default: AdministrationPage })))
+const AcMaterialsPage = lazy(() => import('../features/ac/pages/AcMaterialsPage').then(({ AcMaterialsPage }) => ({ default: AcMaterialsPage })))
+const AcTransfersPage = lazy(() => import('../features/ac/pages/AcTransfersPage').then(({ AcTransfersPage }) => ({ default: AcTransfersPage })))
+const AcReportsPage = lazy(() => import('../features/ac/pages/AcReportsPage').then(({ AcReportsPage }) => ({ default: AcReportsPage })))
 
 type AppRoutesProps = {
   session: SessionContext | null
@@ -66,6 +68,32 @@ function PermissionState() {
   return <section aria-live="polite"><h1>Acesso não autorizado</h1><p>Seu perfil não possui permissão para acessar este módulo.</p></section>
 }
 
+function RouteLoadingState() {
+  return <main aria-busy="true" aria-live="polite"><h1>Carregando módulo</h1><p>Preparando o conteúdo solicitado…</p></main>
+}
+
+type RouteChunkBoundaryProps = { children: ReactNode }
+type RouteChunkBoundaryState = { hasError: boolean }
+
+class RouteChunkBoundary extends Component<RouteChunkBoundaryProps, RouteChunkBoundaryState> {
+  state: RouteChunkBoundaryState = { hasError: false }
+
+  static getDerivedStateFromError(): RouteChunkBoundaryState {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <section role="alert" aria-live="assertive"><h1>Não foi possível carregar este módulo</h1><p>Atualize a página para tentar novamente.</p><button type="button" onClick={() => window.location.reload()}>Atualizar página</button></section>
+    }
+    return this.props.children
+  }
+}
+
+function LazyRoute({ children }: RouteChunkBoundaryProps) {
+  return <RouteChunkBoundary><Suspense fallback={<RouteLoadingState />}>{children}</Suspense></RouteChunkBoundary>
+}
+
 function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext; onSessionChange: (session: SessionContext | null) => void }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -99,19 +127,19 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
   const content = permission && !can(session, permission)
     ? <PermissionState />
     : <Routes>
-        <Route path="/dashboard" element={session.role === 'ditel_admin' ? <DitelDashboardPage /> : <UnitDashboardPage session={session} />} />
-        <Route path="/inventario" element={<UnitInventoryPage session={session} />} />
-        <Route path="/chamados" element={session.role === 'ditel_admin' ? <DitelCallsPage /> : <CallsPage />} />
-        <Route path="/movimentacoes" element={<MovementsPage session={session} />} />
-        <Route path="/relatorios" element={<ReportsPage session={session} />} />
-        <Route path="/manutencao" element={session.role === 'ditel_admin' ? <DitelMaintenancePage session={session} /> : <UnitMaintenancePage session={session} />} />
-        <Route path="/missoes-tecnicas" element={session.role === 'ditel_admin' ? <DitelMissionsPage session={session} /> : <MissionsPage session={session} />} />
-        <Route path="/tipos-equipamento" element={<EquipmentTypesPage session={session} />} />
-        <Route path="/auditoria" element={<AuditPage session={session} />} />
-        <Route path="/administracao" element={<AdministrationPage />} />
-        <Route path="/ac/materiais" element={<AcMaterialsPage session={session} />} />
-        <Route path="/ac/transferencias" element={<AcTransfersPage session={session} />} />
-        <Route path="/ac/relatorios" element={<AcReportsPage session={session} />} />
+        <Route path="/dashboard" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelDashboardPage /> : <UnitDashboardPage session={session} />}</LazyRoute>} />
+        <Route path="/inventario" element={<LazyRoute><UnitInventoryPage session={session} /></LazyRoute>} />
+        <Route path="/chamados" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelCallsPage /> : <CallsPage />}</LazyRoute>} />
+        <Route path="/movimentacoes" element={<LazyRoute><MovementsPage session={session} /></LazyRoute>} />
+        <Route path="/relatorios" element={<LazyRoute><ReportsPage session={session} /></LazyRoute>} />
+        <Route path="/manutencao" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelMaintenancePage session={session} /> : <UnitMaintenancePage session={session} />}</LazyRoute>} />
+        <Route path="/missoes-tecnicas" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelMissionsPage session={session} /> : <MissionsPage session={session} />}</LazyRoute>} />
+        <Route path="/tipos-equipamento" element={<LazyRoute><EquipmentTypesPage session={session} /></LazyRoute>} />
+        <Route path="/auditoria" element={<LazyRoute><AuditPage session={session} /></LazyRoute>} />
+        <Route path="/administracao" element={<LazyRoute><AdministrationPage /></LazyRoute>} />
+        <Route path="/ac/materiais" element={<LazyRoute><AcMaterialsPage session={session} /></LazyRoute>} />
+        <Route path="/ac/transferencias" element={<LazyRoute><AcTransfersPage session={session} /></LazyRoute>} />
+        <Route path="/ac/relatorios" element={<LazyRoute><AcReportsPage session={session} /></LazyRoute>} />
         <Route path="*" element={<Navigate to={initialRouteFor(session)} replace />} />
       </Routes>
 
