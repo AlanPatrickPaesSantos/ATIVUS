@@ -3,6 +3,9 @@
   display: grid;
   gap: 1rem;
   margin-bottom: 1rem;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
 }
 
 .unit-dashboard-grid__main,
@@ -10,6 +13,13 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+  min-width: 0;
+}
+
+.unit-dashboard-grid__main > *,
+.unit-dashboard-grid__bottom > * {
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* KPIs compactos */
@@ -21,6 +31,7 @@
   background: #29313b;
   border: 1px solid var(--sigat-border);
   border-radius: var(--radius-sm);
+  min-width: 0;
 }
 
 .unit-kpi-cards__title {

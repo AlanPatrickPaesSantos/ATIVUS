@@ -324,7 +324,7 @@
 }
 
 /* Unit dashboard: operational layout used by the approved ATIVUS reference. */
-.unit-dashboard-page { color: var(--sigat-text); margin: 0 auto; max-width: 100rem; }
+.unit-dashboard-page { color: var(--sigat-text); margin: 0 auto; max-width: 100%; min-width: 0; width: 100%; }
 .unit-dashboard-page__header { align-items: center; border-bottom: 1px solid var(--sigat-border); display: flex; gap: 1.5rem; justify-content: space-between; margin-bottom: 1rem; padding: .15rem 0 1rem; }
 .unit-dashboard-page__header h1 { color: var(--sigat-text); font-family: var(--font-title); font-size: clamp(1.45rem, 2.2vw, 1.9rem); letter-spacing: 0; margin: .25rem 0; }
 .unit-dashboard-page__header p { color: var(--sigat-muted); margin: 0; }
@@ -338,8 +338,8 @@
 .unit-metric-cards__card--critical::after { background: var(--sigat-critical); }
 .unit-metric-cards__card h2 { color: var(--sigat-muted); font-family: var(--font-interface); font-size: .62rem; font-weight: 700; letter-spacing: .075em; margin: 0; text-transform: uppercase; }
 .unit-metric-cards__card p { color: var(--sigat-text); font-family: var(--font-title); font-size: 1.45rem; line-height: 1; margin: .48rem 0 .6rem; }
-.unit-operations-grid { display: grid; gap: .8rem; grid-template-columns: minmax(0, 1fr); }
-.unit-inventory-snapshot { background: #111a2a; border: 1px solid var(--sigat-border); padding: 1rem; }
+.unit-operations-grid { display: grid; gap: .8rem; grid-template-columns: minmax(0, 1fr); max-width: 100%; min-width: 0; width: 100%; }
+.unit-inventory-snapshot { background: #111a2a; border: 1px solid var(--sigat-border); max-width: 100%; min-width: 0; padding: 1rem; width: 100%; }
 .unit-operations-panel__header { align-items: start; display: flex; gap: .8rem; justify-content: space-between; }
 .unit-operations-panel__header h2 { color: var(--sigat-text); font-family: var(--font-title); font-size: .95rem; margin: 0; }
 .unit-operations-panel__header p { color: var(--sigat-muted); font-size: .72rem; margin: .35rem 0 0; }
@@ -355,7 +355,7 @@
 .unit-inventory-snapshot__situation-options { background: #101a2a; border: 1px solid var(--sigat-border-strong); box-shadow: 0 .7rem 1.5rem rgb(0 0 0 / 30%); display: grid; left: 0; padding: .2rem; position: absolute; right: 0; top: calc(100% + .3rem); z-index: 3; }
 .unit-inventory-snapshot__situation-options button { background: transparent; border: 0; color: var(--sigat-text); cursor: pointer; font-family: var(--font-interface); font-size: .72rem; font-weight: 600; min-height: 2rem; padding: .4rem .5rem; text-align: left; }
 .unit-inventory-snapshot__situation-options button:hover, .unit-inventory-snapshot__situation-options button[aria-selected='true'] { background: rgb(43 127 255 / 16%); color: var(--sigat-operational-bright); }
-.unit-inventory-snapshot__table { border: 1px solid #273249; overflow: auto; }
+.unit-inventory-snapshot__table { border: 1px solid #273249; max-width: 100%; min-width: 0; overflow: auto; }
 .unit-inventory-snapshot__row { align-items: center; border-bottom: 1px solid #202b3e; color: var(--sigat-text); display: grid; font-size: .72rem; gap: .7rem; grid-template-columns: 1.05fr 1.9fr .8fr 1fr; min-width: 37rem; padding: .72rem .7rem; text-decoration: none; transition: background var(--motion-fast), box-shadow var(--motion-fast); }
 .unit-inventory-snapshot__row:not(.unit-inventory-snapshot__row--header):hover { background: rgb(43 127 255 / 10%); }
 .unit-inventory-snapshot__row:not(.unit-inventory-snapshot__row--header):focus-visible { background: rgb(43 127 255 / 14%); box-shadow: inset 3px 0 0 var(--sigat-operational-bright); outline: var(--focus-ring); outline-offset: -3px; }
@@ -520,20 +520,21 @@
 @media (max-width: 680px) { .ditel-state-health__body, .ditel-state-health__signals { grid-template-columns: 1fr; } .ditel-state-health__ring { height: 7rem; width: 7rem; } }
 
 /* Administração DITEL: acesso institucional e cobertura estadual. */
+.administration-page { max-width: 100%; min-width: 0; width: 100%; }
 .administration-page[data-visual-variant='statewide-governance-console'] .module-page__header { background: linear-gradient(90deg, rgb(255 183 77 / 8%), transparent 58%); border-left: 3px solid var(--sigat-attention); padding-left: 1rem; }
 .administration-page__notice { background: rgb(255 183 77 / 8%); border: 1px solid rgb(255 183 77 / 22%); border-left: 3px solid var(--sigat-attention); color: var(--sigat-muted); font-size: .76rem; margin-bottom: 1rem; padding: .68rem .8rem; }
 .administration-page__tabs { border-bottom: 1px solid var(--sigat-border); display: flex; gap: .25rem; margin-bottom: 1rem; }
 .administration-page__tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--sigat-muted); cursor: pointer; font-family: var(--font-interface); font-size: .8rem; font-weight: 750; padding: .7rem .9rem; transition: background var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast); }
 .administration-page__tabs button:hover { background: rgb(22 119 255 / 7%); color: var(--sigat-text); }
 .administration-page__tabs button[aria-selected='true'] { border-bottom-color: var(--sigat-operational-bright); color: var(--sigat-text); }
-.administration-page__workspace { background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface)); border-top: 3px solid var(--sigat-operational); padding: 1.15rem; }
+.administration-page__workspace { background: linear-gradient(145deg, var(--sigat-surface-soft), var(--sigat-surface)); border-top: 3px solid var(--sigat-operational); max-width: 100%; min-width: 0; padding: 1.15rem; width: 100%; }
 .administration-page__workspace > header { align-items: start; border-bottom: 1px solid var(--sigat-border); display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; }
 .administration-page__workspace > header h2 { margin: .32rem 0; }
 .administration-page__workspace > header p:not(.page-eyebrow) { font-size: .78rem; margin: 0; }
 .administration-page__workspace > header > strong { background: rgb(22 119 255 / 10%); color: var(--sigat-operational-bright); font-family: var(--font-identifier); font-size: .7rem; padding: .42rem .55rem; white-space: nowrap; }
 .administration-page__filters { display: grid; gap: .7rem; grid-template-columns: minmax(13rem, 1.35fr) repeat(3, minmax(10rem, .7fr)); margin-bottom: 1rem; }
-.administration-page__table { border: 1px solid var(--sigat-border); overflow: auto; }
-.administration-page__table > div { align-items: center; border-bottom: 1px solid var(--sigat-border); display: grid; gap: .75rem; grid-template-columns: minmax(11rem, 1.25fr) minmax(10rem, 1fr) minmax(8rem, .85fr) minmax(7rem, .7fr) auto; min-width: 48rem; padding: .72rem .8rem; }
+.administration-page__table { border: 1px solid var(--sigat-border); contain: inline-size; max-width: 100%; min-width: 0; overflow: auto; width: 100%; }
+.administration-page__table > div { align-items: center; border-bottom: 1px solid var(--sigat-border); display: grid; gap: .75rem; grid-template-columns: minmax(11rem, 1.25fr) minmax(10rem, 1fr) minmax(8rem, .85fr) minmax(7rem, .7fr) auto; min-width: 48rem; padding: .72rem .8rem; position: relative; }
 .administration-page__table > div:last-child { border-bottom: 0; }
 .administration-page__table > div:not(.administration-page__table-header):hover { background: rgb(22 119 255 / 7%); }
 .administration-page__table-header { background: var(--sigat-night-raised); color: var(--sigat-muted); font-size: .64rem; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
