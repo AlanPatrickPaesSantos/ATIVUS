@@ -78,15 +78,25 @@ print(JSON.stringify({ created }))
   return runMongoScript(script)
 }
 
+export function buildMongoInvocation(script, environment = process.env) {
+  return {
+    command: 'mongosh',
+    args: ['--nodb', '--quiet', '--eval', script],
+    options: {
+      encoding: 'utf8',
+      env: { ...environment },
+      shell: false,
+    },
+  }
+}
+
 function runMongoScript(script) {
   if (!process.env.MONGODB_URI) {
     throw new Error('MONGODB_URI não está definida; nenhum comando foi enviado ao MongoDB.')
   }
 
-  const result = spawnSync('mongosh', ['--quiet', '--eval', script], {
-    encoding: 'utf8',
-    env: { ...process.env },
-  })
+  const invocation = buildMongoInvocation(script)
+  const result = spawnSync(invocation.command, invocation.args, invocation.options)
 
   if (result.error) throw new Error(`Não foi possível executar mongosh: ${result.error.message}`)
   if (result.status !== 0) {
@@ -100,25 +110,34 @@ function runMongoScript(script) {
   }
 }
 
-function assertTarget(report) {
+export function assertTarget(report, { apply = false } = {}) {
   if (report.database !== TARGET_DATABASE) {
     throw new Error(`Banco de destino inválido: esperado ${TARGET_DATABASE}; operação interrompida.`)
   }
-  const missingCollections = Object.entries(report.collections)
-    .filter(([, indexes]) => indexes === null)
-    .map(([collection]) => collection)
-  if (missingCollections.length > 0) {
-    throw new Error(`Coleções obrigatórias ausentes: ${missingCollections.join(', ')}; operação interrompida.`)
+  if (report.collections.equipment === null) {
+    throw new Error('equipment: coleção ausente; não é possível auditar a base operacional.')
+  }
+  if (apply && report.collections.actransfers === null) {
+    throw new Error('actransfers: coleção ausente; coleção não será criada automaticamente. Crie-a em procedimento operacional aprovado e execute novamente.')
   }
 }
 
+export function formatReport(report, comparison) {
+  const absentCollections = Object.entries(report.collections)
+    .filter(([, indexes]) => indexes === null)
+    .map(([collection]) => `${collection}: coleção ausente; índices pendentes`)
+
+  return [
+    `Banco validado: ${report.database}`,
+    ...absentCollections,
+    `Corretos: ${comparison.present.length > 0 ? comparison.present.map(({ expected }) => expected.name).join(', ') : 'nenhum'}`,
+    `Ausentes: ${comparison.missing.length > 0 ? comparison.missing.map((index) => index.name).join(', ') : 'nenhum'}`,
+    `Conflitantes: ${comparison.incompatible.length > 0 ? comparison.incompatible.map(({ expected }) => expected.name).join(', ') : 'nenhum'}`,
+  ].join('\n')
+}
+
 function printReport(report, comparison) {
-  console.log(`Banco validado: ${report.database}`)
-  console.log(`Índices presentes: ${comparison.present.length}`)
-  console.log(`Índices ausentes: ${comparison.missing.length}`)
-  console.log(`Índices incompatíveis: ${comparison.incompatible.length}`)
-  if (comparison.missing.length > 0) console.log(`Ausentes: ${comparison.missing.map((index) => index.name).join(', ')}`)
-  if (comparison.incompatible.length > 0) console.log(`Incompatíveis: ${comparison.incompatible.map(({ expected }) => expected.name).join(', ')}`)
+  console.log(formatReport(report, comparison))
 }
 
 export function main(argv = process.argv.slice(2)) {
@@ -130,8 +149,8 @@ export function main(argv = process.argv.slice(2)) {
 
   validateApplyArguments(options)
   const report = runMongoRead()
-  assertTarget(report)
-  const actual = Object.values(report.collections).flat()
+  assertTarget(report, options)
+  const actual = Object.values(report.collections).flat().filter(Boolean)
   const comparison = classifyIndexes(expectedIndexes, actual)
   printReport(report, comparison)
 
@@ -154,8 +173,8 @@ export function main(argv = process.argv.slice(2)) {
   const created = runMongoCreate(comparison.missing)
   console.log(`Índices criados: ${created.created.join(', ')}`)
   const after = runMongoRead()
-  assertTarget(after)
-  const afterComparison = classifyIndexes(expectedIndexes, Object.values(after.collections).flat())
+  assertTarget(after, options)
+  const afterComparison = classifyIndexes(expectedIndexes, Object.values(after.collections).flat().filter(Boolean))
   if (afterComparison.missing.length > 0 || afterComparison.incompatible.length > 0) {
     throw new Error('A verificação pós-criação não confirmou todos os índices esperados.')
   }

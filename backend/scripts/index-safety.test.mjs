@@ -6,6 +6,11 @@ import {
   normalizeIndex,
   validateApplyArguments,
 } from './index-safety.mjs'
+import {
+  assertTarget,
+  buildMongoInvocation,
+  formatReport,
+} from './ensure-operational-indexes.mjs'
 
 describe('index safety comparison', () => {
   it('requires exact key order and unique option for expected indexes', () => {
@@ -70,5 +75,45 @@ describe('index safety comparison', () => {
       .toThrow('restore-tested')
     expect(() => validateApplyArguments({ apply: false, backupConfirmed: false, restoreTested: false }))
       .not.toThrow()
+  })
+
+  it('starts mongosh without its implicit localhost connection', () => {
+    const invocation = buildMongoInvocation('print("ok")', { MONGODB_URI: 'mongodb+srv://secret.example/ativus' })
+
+    expect(invocation.command).toBe('mongosh')
+    expect(invocation.args.slice(0, 2)).toEqual(['--nodb', '--quiet'])
+    expect(invocation.args).not.toContain('mongodb+srv://secret.example/ativus')
+    expect(invocation.options.shell).not.toBe(true)
+    expect(invocation.options.env.MONGODB_URI).toBe('mongodb+srv://secret.example/ativus')
+  })
+
+  it('allows a missing actransfers collection in read-only mode', () => {
+    expect(() => assertTarget({
+      database: 'ativus',
+      collections: { equipment: [], actransfers: null },
+    }, { apply: false })).not.toThrow()
+  })
+
+  it('rejects applying when actransfers is absent without an approved collection procedure', () => {
+    expect(() => assertTarget({
+      database: 'ativus',
+      collections: { equipment: [], actransfers: null },
+    }, { apply: true })).toThrow('actransfers: coleção ausente')
+  })
+
+  it('reports correct, missing and conflicting indexes with the absent AC collection', () => {
+    const comparison = classifyIndexes(expectedIndexes, [
+      { key: { 'unit.id': 1, situation: 1 }, name: 'unit.id_1_situation_1' },
+      { key: { patrimony: 1 }, name: 'patrimony_1', unique: true },
+    ])
+    const report = formatReport({
+      database: 'ativus',
+      collections: { equipment: [], actransfers: null },
+    }, comparison)
+
+    expect(report).toContain('actransfers: coleção ausente; índices pendentes')
+    expect(report).toContain('Corretos: equipment_unit_situation, equipment_patrimony_unique')
+    expect(report).toContain('Ausentes: ac_transfer_material_equipment, ac_transfer_destination_date, ac_transfer_idempotency_unique')
+    expect(report).toContain('Conflitantes: nenhum')
   })
 })
