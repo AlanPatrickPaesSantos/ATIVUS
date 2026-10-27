@@ -370,7 +370,12 @@
   border-radius: var(--radius-sm);
   box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  position: relative;
+  scrollbar-color: var(--sigat-operational-bright) var(--sigat-night-raised);
+  scrollbar-width: thin;
 }
+.audit-table-wrap:focus-within { box-shadow: var(--focus-ring); }
 .audit-table__header,
 .audit-table__row {
   align-items: center;
