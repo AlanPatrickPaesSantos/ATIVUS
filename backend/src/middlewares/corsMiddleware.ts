@@ -3,7 +3,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { OriginProtectionOptions } from '../auth/securityOptions.js';
 
 const ALLOWED_METHODS = 'GET,POST,PATCH,DELETE,OPTIONS';
-const ALLOWED_HEADERS = 'Content-Type';
+const ALLOWED_HEADERS = 'Content-Type, Idempotency-Key';
 
 function requestOrigin(req: Request): string | null {
   if (typeof req.headers.origin === 'string' && req.headers.origin.trim().length > 0) {

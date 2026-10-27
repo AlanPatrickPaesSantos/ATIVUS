@@ -344,12 +344,13 @@ describe('auth security protections', () => {
     const preflight = await request(app)
       .options('/api/v1/auth/login')
       .set('Origin', 'https://sigat.local')
-      .set('Access-Control-Request-Method', 'POST');
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'Content-Type, Idempotency-Key');
 
     expect(preflight.status).toBe(204);
     expect(preflight.headers['access-control-allow-origin']).toBe('https://sigat.local');
     expect(preflight.headers['access-control-allow-credentials']).toBe('true');
-    expect(preflight.headers['access-control-allow-headers']).toBe('Content-Type');
+    expect(preflight.headers['access-control-allow-headers']).toBe('Content-Type, Idempotency-Key');
     expect(preflight.headers['access-control-allow-methods']).toBe('GET,POST,PATCH,DELETE,OPTIONS');
     expect(String(preflight.headers.vary)).toContain('Origin');
   });
