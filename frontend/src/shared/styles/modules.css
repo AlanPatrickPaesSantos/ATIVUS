@@ -323,6 +323,28 @@
   .ditel-call-filters { grid-template-columns: 1fr; }
 }
 
+/* Chamados: contenção dos controles e ações sem reduzir o conteúdo operacional. */
+.call-form, .call-form__grid, .ditel-call-filters, .ditel-triage { min-width: 0; }
+.call-form { grid-template-columns: minmax(0, 1fr); max-width: 100%; width: 100%; }
+.call-form__grid { max-width: 100%; width: 100%; }
+.call-form__grid > *, .ditel-call-filters > *, .ditel-calls-page .movement-item > * { max-width: 100%; min-width: 0; }
+.call-form input, .call-form select, .call-form textarea { max-width: 100%; min-width: 0; width: 100%; }
+.call-form__grid input, .call-form__grid select, .call-form__grid textarea,
+.ditel-call-filters input, .ditel-call-filters select, .ditel-triage select { max-width: 100%; min-width: 0; width: 100%; }
+.calls-overview__filters button { min-height: 2.4rem; }
+
+@media (max-width: 900px) {
+  .ditel-call-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .call-form__grid { grid-template-columns: minmax(0, 1fr); }
+  .ditel-call-filters { grid-template-columns: minmax(0, 1fr); }
+  .ditel-calls-page .movement-item .button-link,
+  .call-review__actions .button-link { min-height: 2.75rem; width: 100%; }
+  .call-review__actions { flex-direction: column-reverse; }
+}
+
 /* Unit dashboard: operational layout used by the approved ATIVUS reference. */
 .unit-dashboard-page { color: var(--sigat-text); margin: 0 auto; max-width: 100%; min-width: 0; width: 100%; }
 .unit-dashboard-page__header { align-items: center; border-bottom: 1px solid var(--sigat-border); display: flex; gap: 1.5rem; justify-content: space-between; margin-bottom: 1rem; padding: .15rem 0 1rem; }
