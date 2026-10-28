@@ -16,8 +16,10 @@ packages:
         value: "true"
       - key: SESSION_COOKIE_SAME_SITE
         value: none
+      - key: MONGODB_URI
+        sync: false
       - key: ALLOWED_ORIGINS
-        value: ""
+        sync: false
   sigat-frontend@0.0.0:
     type: web
     name: ativus-frontend

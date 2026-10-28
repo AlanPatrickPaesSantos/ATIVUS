@@ -1,0 +1,16 @@
+{
+  "seed": "ATIVUS-PMPA-DEMO-2026-10-27",
+  "generatorVersion": "1.0.0",
+  "config": {
+    "eligibleUnitTypes": ["BPM", "CIPM", "SPECIALIZED", "CIME", "CIPAMB"],
+    "allowIntermediateUnitIds": [],
+    "rejectInvalidUnits": true,
+    "quantities": {
+      "BPM": { "radio": 3, "computer": 2, "monitor": 2, "network_switch": 1, "access_point": 1, "ups": 1, "desk": 2, "chair": 3 },
+      "CIPM": { "radio": 2, "computer": 1, "monitor": 1, "network_switch": 1, "access_point": 1, "ups": 1, "desk": 1, "chair": 2 },
+      "SPECIALIZED": { "radio": 3, "computer": 2, "monitor": 2, "network_switch": 1, "access_point": 2, "ups": 1, "desk": 2, "chair": 3 },
+      "CIME": { "radio": 3, "computer": 3, "monitor": 2, "network_switch": 1, "access_point": 1, "ups": 1, "desk": 2, "chair": 3 },
+      "CIPAMB": { "radio": 2, "computer": 1, "monitor": 1, "network_switch": 1, "access_point": 1, "ups": 1, "desk": 1, "chair": 2 }
+    }
+  }
+}

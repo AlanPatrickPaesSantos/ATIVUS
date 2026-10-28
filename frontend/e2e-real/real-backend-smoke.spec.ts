@@ -68,6 +68,15 @@ test.describe('real backend smoke', () => {
     await page.getByRole('link', { name: 'Administração', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
 
+    for (const viewport of [{ width: 320, height: 700 }, { width: 768, height: 1024 }]) {
+      await page.setViewportSize(viewport)
+      const dimensions = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }))
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1)
+    }
+
     const unitLogin = await unitContext.post('/api/v1/auth/login', {
       data: {
         registration: requiredEnvironment.E2E_REAL_UNIT_REGISTRATION,
@@ -78,9 +87,42 @@ test.describe('real backend smoke', () => {
     expect(unitLogin.headers()['set-cookie']).toContain('sigat_session=')
     expectNoSecrets(await unitLogin.json())
 
+    await page.goto('/login')
+    await page.setViewportSize({ width: 320, height: 700 })
+    await page.getByLabel('Matrícula').fill(requiredEnvironment.E2E_REAL_UNIT_REGISTRATION as string)
+    await page.getByLabel('Senha').fill(requiredEnvironment.E2E_REAL_UNIT_PASSWORD as string)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await expect(page.getByRole('heading', { name: 'Painel da Unidade' })).toBeVisible()
+    const unitDimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(unitDimensions.scrollWidth).toBeLessThanOrEqual(unitDimensions.clientWidth + 1)
+
     const forbiddenAdminList = await unitContext.get('/api/v1/admin/users')
     expect(forbiddenAdminList.status()).toBe(403)
     expectNoSecrets(await forbiddenAdminList.json())
+
+    const unitSession = await unitContext.get('/api/v1/session')
+    expect(unitSession.status()).toBe(200)
+    const unitSessionBody = await unitSession.json()
+    expect(unitSessionBody.role).toBe('unit_user')
+    expect(unitSessionBody.unit?.id).toBeTruthy()
+    expectNoSecrets(unitSessionBody)
+
+    const crossUnitInventory = await unitContext.get('/api/v1/inventory?page=1&pageSize=20&unitId=pmpa:unit:external')
+    expect([200, 404]).toContain(crossUnitInventory.status())
+    if (crossUnitInventory.status() === 200) {
+      const inventoryBody = await crossUnitInventory.json()
+      for (const item of inventoryBody.items ?? []) expect(item.unit?.id).toBe(unitSessionBody.unit.id)
+      expectNoSecrets(inventoryBody)
+    }
+
+    const logout = await unitContext.post('/api/v1/auth/logout')
+    expect(logout.status()).toBe(204)
+    const afterLogout = await unitContext.get('/api/v1/session')
+    expect(afterLogout.status()).toBe(401)
+    expectNoSecrets(await afterLogout.json())
 
     await ditelContext.dispose()
     await unitContext.dispose()

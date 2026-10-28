@@ -1,0 +1,10 @@
+{
+  "dataSha256": "8e368e8c9d330f0eaa9d840a0e803c81540fb7890bf74a56198a8133484c4dbd",
+  "eligibleUnitCount": 81,
+  "equipmentCount": 1151,
+  "generator": "ativus-pmpa-demonstrative-equipment",
+  "generatorVersion": "1.0.0",
+  "importBatchId": "demo-0e66fd8f9f8078ab",
+  "schemaVersion": "1.0",
+  "seed": "ATIVUS-PMPA-DEMO-2026-10-27"
+}

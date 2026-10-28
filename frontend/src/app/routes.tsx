@@ -26,6 +26,7 @@ const AdministrationPage = lazy(() => import('../features/administration/pages/A
 const AcMaterialsPage = lazy(() => import('../features/ac/pages/AcMaterialsPage').then(({ AcMaterialsPage }) => ({ default: AcMaterialsPage })))
 const AcTransfersPage = lazy(() => import('../features/ac/pages/AcTransfersPage').then(({ AcTransfersPage }) => ({ default: AcTransfersPage })))
 const AcReportsPage = lazy(() => import('../features/ac/pages/AcReportsPage').then(({ AcReportsPage }) => ({ default: AcReportsPage })))
+const OrganizationalStructurePage = lazy(() => import('../features/organizationalStructure/pages/OrganizationalStructurePage').then(({ OrganizationalStructurePage }) => ({ default: OrganizationalStructurePage })))
 
 type AppRoutesProps = {
   session: SessionContext | null
@@ -46,6 +47,7 @@ const routePermissions: Record<string, string> = {
   '/ac/materiais': 'ac_materials',
   '/ac/transferencias': 'ac_transfers',
   '/ac/relatorios': 'ac_reports',
+  '/estrutura-estadual': 'statewide_structure',
 }
 
 let ignoreNextLoginDestination = false
@@ -140,6 +142,7 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
         <Route path="/ac/materiais" element={<LazyRoute><AcMaterialsPage session={session} /></LazyRoute>} />
         <Route path="/ac/transferencias" element={<LazyRoute><AcTransfersPage session={session} /></LazyRoute>} />
         <Route path="/ac/relatorios" element={<LazyRoute><AcReportsPage session={session} /></LazyRoute>} />
+        <Route path="/estrutura-estadual" element={<LazyRoute><OrganizationalStructurePage session={session} /></LazyRoute>} />
         <Route path="*" element={<Navigate to={initialRouteFor(session)} replace />} />
       </Routes>
 

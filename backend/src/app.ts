@@ -23,6 +23,7 @@ import { createMovementRoutes } from './routes/movementRoutes.js';
 import { createUnitRoutes } from './routes/unitRoutes.js';
 import { createEquipmentTypeRoutes } from './routes/equipmentTypeRoutes.js';
 import { createMissionRoutes } from './routes/missionRoutes.js';
+import { createOrganizationalStructureRoutes } from './routes/organizationalStructureRoutes.js';
 import { createAdminUserRoutes } from './routes/adminUserRoutes.js';
 import { createAuditRoutes } from './routes/auditRoutes.js';
 import { createReportRoutes } from './routes/reportRoutes.js';
@@ -158,6 +159,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use('/api/v1', createAuditRoutes(requireSession));
   app.use('/api/v1', createEquipmentTypeRoutes(requireSession));
   app.use('/api/v1', createMissionRoutes(requireSession));
+  app.use('/api/v1', createOrganizationalStructureRoutes(requireSession));
 
   app.use((_req: Request, res: Response) => {
     res.status(404).json({

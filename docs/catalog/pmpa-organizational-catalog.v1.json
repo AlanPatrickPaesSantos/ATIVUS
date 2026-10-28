@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "catalogVersion": "2026-10-27",
+  "jurisdiction": "PMPA",
+  "rawRecordCount": 88,
+  "sources": [
+    {
+      "id": "decreto-1017-2025",
+      "title": "Decreto nº 1.017 — alterações dos anexos I, II, III e IV",
+      "url": "https://www.pm.pa.gov.br/images/PM1/DECRETO_N%C2%BA_1.017_-_ALTERA%C3%87%C3%95ES_DOS_ANEXOS_I_II_III_E_IV_-_20-10-2025.pdf",
+      "date": "2025-10-20",
+      "authority": "PMPA"
+    },
+    {
+      "id": "orgaos-execucao-pmpa",
+      "title": "Órgãos de Execução",
+      "url": "https://www.pm.pa.gov.br/component/content/article/129-institucional/4229-orgaos-de-execucao.html",
+      "date": "2023-03-17",
+      "accessedAt": "2026-10-27",
+      "authority": "PMPA"
+    },
+    {
+      "id": "bg-14-2025",
+      "title": "Boletim Geral nº 14, de 21 de janeiro de 2025",
+      "url": "https://www.pm.pa.gov.br/phocadownload/userupload/userupload/jaqueline.38111/BG%20N.%2014%20de%2021%20JAN%202025.pdf",
+      "date": "2025-01-21",
+      "authority": "PMPA"
+    },
+    {
+      "id": "bg-7-2025",
+      "title": "Boletim Geral nº 7, de 10 de janeiro de 2025",
+      "url": "https://www.pm.pa.gov.br/phocadownload/userupload/userupload/sales.44248/BG%20N.%207%20de%2010%20JAN%202025.pdf",
+      "date": "2025-01-10",
+      "authority": "PMPA"
+    }
+  ],
+  "commands": [
+    { "id": "pmpa:command:cpc-i", "name": "Comando de Policiamento da Capital I", "acronym": "CPC I", "kind": "intermediate_command", "seatMunicipality": "Belém", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpc-ii", "name": "Comando de Policiamento da Capital II", "acronym": "CPC II", "kind": "intermediate_command", "seatMunicipality": "Belém", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cprm", "name": "Comando de Policiamento da Região Metropolitana", "acronym": "CPRM", "kind": "intermediate_command", "seatMunicipality": "Ananindeua", "verificationStatus": "confirmed", "sourceIds": ["orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpe", "name": "Comando de Policiamento Especializado", "acronym": "CPE", "kind": "intermediate_command", "seatMunicipality": "Belém", "verificationStatus": "confirmed", "sourceIds": ["orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cme", "name": "Comando de Missões Especiais", "acronym": "CME", "kind": "intermediate_command", "seatMunicipality": "Belém", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpa", "name": "Comando de Policiamento Ambiental", "acronym": "CPA", "kind": "intermediate_command", "seatMunicipality": "Belém", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-i", "name": "Comando de Policiamento Regional I", "acronym": "CPR I", "kind": "intermediate_command", "seatMunicipality": "Santarém", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-ii", "name": "Comando de Policiamento Regional II", "acronym": "CPR II", "kind": "intermediate_command", "seatMunicipality": "Marabá", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-iii", "name": "Comando de Policiamento Regional III", "acronym": "CPR III", "kind": "intermediate_command", "seatMunicipality": "Castanhal", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-iv", "name": "Comando de Policiamento Regional IV", "acronym": "CPR IV", "kind": "intermediate_command", "seatMunicipality": "Tucuruí", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-v", "name": "Comando de Policiamento Regional V", "acronym": "CPR V", "kind": "intermediate_command", "seatMunicipality": "Redenção", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-vi", "name": "Comando de Policiamento Regional VI", "acronym": "CPR VI", "kind": "intermediate_command", "seatMunicipality": "Paragominas", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-vii", "name": "Comando de Policiamento Regional VII", "acronym": "CPR VII", "kind": "intermediate_command", "seatMunicipality": "Capanema", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-viii", "name": "Comando de Policiamento Regional VIII", "acronym": "CPR VIII", "kind": "intermediate_command", "seatMunicipality": "Tucumã", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-ix", "name": "Comando de Policiamento Regional IX", "acronym": "CPR IX", "kind": "intermediate_command", "seatMunicipality": "Abaetetuba", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-x", "name": "Comando de Policiamento Regional X", "acronym": "CPR X", "kind": "intermediate_command", "seatMunicipality": "Itaituba", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-xi", "name": "Comando de Policiamento Regional XI", "acronym": "CPR XI", "kind": "intermediate_command", "seatMunicipality": "Soure", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-xii", "name": "Comando de Policiamento Regional XII", "acronym": "CPR XII", "kind": "intermediate_command", "seatMunicipality": "Breves", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-xiii", "name": "Comando de Policiamento Regional XIII", "acronym": "CPR XIII", "kind": "intermediate_command", "seatMunicipality": "São Félix do Xingu", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] },
+    { "id": "pmpa:command:cpr-xiv", "name": "Comando de Policiamento Regional XIV", "acronym": "CPR XIV", "kind": "intermediate_command", "seatMunicipality": "Parauapebas", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "orgaos-execucao-pmpa"] }
+  ],
+  "pendingCommands": [
+    { "id": "pmpa:command:cpr-xv", "name": "Comando de Policiamento Regional XV", "acronym": "CPR XV", "kind": "intermediate_command", "seatMunicipality": null, "verificationStatus": "pending", "sourceIds": ["orgaos-execucao-pmpa"], "note": "Mencionado em publicação institucional recente, sem ato estrutural e composição confirmados nesta fase." }
+  ],
+  "unitGroups": [
+    { "commandId": "pmpa:command:cpc-i", "type": "BPM", "codes": ["01", "02", "20", "27", "28"] },
+    { "commandId": "pmpa:command:cpc-ii", "type": "BPM", "codes": ["10", "24", "25", "26"] },
+    { "commandId": "pmpa:command:cprm", "type": "BPM", "codes": ["06", "21", "29", "30", "39"] },
+    { "commandId": "pmpa:command:cpe", "type": "SPECIALIZED", "codes": ["CIPOE", "BPTUR", "CIEPAS", "BPE", "BPRV"] },
+    { "commandId": "pmpa:command:cme", "type": "SPECIALIZED", "codes": ["BPCHOQ", "BAC", "BOPE", "ROTAM", "BME-01"] },
+    { "commandId": "pmpa:command:cpa", "type": "SPECIALIZED", "codes": ["BPA", "CIPFLU", "CIPAMB"] },
+    { "commandId": "pmpa:command:cpr-i", "type": "BPM", "codes": ["03", "18", "35", "41"] },
+    { "commandId": "pmpa:command:cpr-ii", "type": "BPM", "codes": ["04", "23", "34"], "extraCodes": ["CIPM-11", "CIPM-24", "CIPM-25", "CIPAMB-03", "BME-01"] },
+    { "commandId": "pmpa:command:cpr-iii", "type": "BPM", "codes": ["05", "12", "42", "48"], "extraCodes": ["CIPM-03", "BME-03"] },
+    { "commandId": "pmpa:command:cpr-iv", "type": "BPM", "codes": ["13", "45", "50"], "extraCodes": ["CIPM-23"] },
+    { "commandId": "pmpa:command:cpr-v", "type": "BPM", "codes": ["07", "22"], "extraCodes": ["CIPM-30"] },
+    { "commandId": "pmpa:command:cpr-vi", "type": "BPM", "codes": ["19", "51"], "extraCodes": ["CIPAMB-04"] },
+    { "commandId": "pmpa:command:cpr-vii", "type": "BPM", "codes": ["11", "33", "44"], "extraCodes": ["CIPM-10", "CIPM-15", "CIPM-19"] },
+    { "commandId": "pmpa:command:cpr-viii", "type": "BPM", "codes": ["16", "17", "36", "49"], "extraCodes": ["CIPM-16", "CIME-04"] },
+    { "commandId": "pmpa:command:cpr-ix", "type": "BPM", "codes": ["14", "31", "32", "47"], "extraCodes": ["CIPM-04"] },
+    { "commandId": "pmpa:command:cpr-x", "type": "BPM", "codes": ["15", "46"], "extraCodes": ["CIPM-01", "CIPM-17"] },
+    { "commandId": "pmpa:command:cpr-xi", "type": "BPM", "codes": ["08"], "extraCodes": ["CIPM-20"] },
+    { "commandId": "pmpa:command:cpr-xii", "type": "BPM", "codes": ["09"], "extraCodes": ["CIPM-22", "CIPM-32"] },
+    { "commandId": "pmpa:command:cpr-xiii", "type": "BPM", "codes": ["17", "36"], "extraCodes": ["CIPM-31", "CIPAMB-02"] },
+    { "commandId": "pmpa:command:cpr-xiv", "type": "BPM", "codes": ["23", "40"], "extraCodes": ["CIPM-25"] }
+  ],
+  "additionalUnits": [
+    { "code": "BPM-37", "name": "37º Batalhão de Polícia Militar", "acronym": "37º BPM", "type": "BPM", "parentCommandId": "pmpa:command:cpc-i", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "BPM-38", "name": "38º Batalhão de Polícia Militar", "acronym": "38º BPM", "type": "BPM", "parentCommandId": "pmpa:command:cpc-ii", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "BPM-43", "name": "43º Batalhão de Polícia Militar", "acronym": "43º BPM", "type": "BPM", "parentCommandId": "pmpa:command:cprm", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "BPM-52", "name": "52º Batalhão de Polícia Militar", "acronym": "52º BPM", "type": "BPM", "parentCommandId": "pmpa:command:cpr-viii", "seatMunicipality": "Altamira", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-14-2025"] },
+    { "code": "CIME-01", "name": "1ª Companhia Independente de Missões Especiais", "acronym": "1ª CIME", "type": "CIME", "parentCommandId": "pmpa:command:cme", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "CIME-02", "name": "2ª Companhia Independente de Missões Especiais", "acronym": "2ª CIME", "type": "CIME", "parentCommandId": "pmpa:command:cme", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "CIME-03", "name": "3ª Companhia Independente de Missões Especiais", "acronym": "3ª CIME", "type": "CIME", "parentCommandId": "pmpa:command:cme", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025", "bg-7-2025"] },
+    { "code": "CIME-04", "name": "4ª Companhia Independente de Missões Especiais", "type": "CIME", "parentCommandId": "pmpa:command:cme", "seatMunicipality": "Altamira", "activationStatus": "active", "verificationStatus": "confirmed", "sourceIds": ["decreto-1017-2025"] }
+  ],
+  "overrides": {
+    "BPM-17": { "parentCommandId": "pmpa:command:cpr-xiii", "verificationStatus": "divergent", "observedParentCommandIds": ["pmpa:command:cpr-viii", "pmpa:command:cpr-xiii"], "note": "A página de Órgãos de Execução lista o 17º BPM no CPR VIII e CPR XIII; o vínculo exige confirmação documental específica." },
+    "BPM-23": { "parentCommandId": "pmpa:command:cpr-xiv", "verificationStatus": "divergent", "observedParentCommandIds": ["pmpa:command:cpr-ii", "pmpa:command:cpr-xiv"], "note": "A página complementar apresenta o 23º BPM em CPR II e CPR XIV; mantido sem promoção a vínculo definitivo." },
+    "BPM-36": { "parentCommandId": "pmpa:command:cpr-xiii", "verificationStatus": "divergent", "observedParentCommandIds": ["pmpa:command:cpr-viii", "pmpa:command:cpr-xiii"], "note": "Registro duplicado em dois comandos na fonte complementar." },
+    "CIPM-25": { "parentCommandId": "pmpa:command:cpr-ii", "verificationStatus": "divergent", "observedParentCommandIds": ["pmpa:command:cpr-ii", "pmpa:command:cpr-xiv"], "note": "A 25ª CIPM aparece em CPR II e CPR XIV na fonte complementar; exige confirmação do ato vigente." },
+    "BME-01": { "parentCommandId": null, "verificationStatus": "pending", "activationStatus": "pending", "note": "A fonte complementar lista BME-01 em contexto regional; o Decreto prioritário trata CIME, não confirma este vínculo." },
+    "BME-03": { "parentCommandId": null, "verificationStatus": "pending", "activationStatus": "pending", "note": "Registro da página complementar sem ato estrutural localizado nesta fase." },
+    "CIPAMB-02": { "parentCommandId": null, "verificationStatus": "pending", "activationStatus": "pending", "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário." },
+    "CIPAMB-03": { "parentCommandId": null, "verificationStatus": "pending", "activationStatus": "pending", "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário." },
+    "CIPAMB-04": { "parentCommandId": null, "verificationStatus": "pending", "activationStatus": "pending", "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário." }
+  }
+}

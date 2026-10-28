@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import mongoose from 'mongoose';
 
 const { connectToDatabase } = vi.hoisted(() => ({
   connectToDatabase: vi.fn(),
@@ -34,6 +35,23 @@ describe('startServer', () => {
     expect(listen).toHaveBeenCalledWith(4310, expect.any(Function));
     expect(connectToDatabase.mock.invocationCallOrder[0]).toBeLessThan(listen.mock.invocationCallOrder[0]);
     expect(logger.log).toHaveBeenCalledWith('ATIVUS backend listening on port 4310');
+  });
+
+  it('disables automatic index changes during server startup', async () => {
+    mongoose.set('autoIndex', true);
+    connectToDatabase.mockResolvedValue({} as never);
+    const listen = vi.fn((port: number, callback?: () => void) => {
+      callback?.();
+      return { close: vi.fn() };
+    });
+
+    await startServer({
+      app: { listen } as never,
+      port: 4310,
+      connectionString: 'mongodb://127.0.0.1:27018/ativus_homolog?directConnection=true&replicaSet=rs0',
+    });
+
+    expect(mongoose.get('autoIndex')).toBe(false);
   });
 
   it('fails early and does not start listening when MongoDB connection setup fails', async () => {

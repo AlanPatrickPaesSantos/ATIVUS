@@ -39,6 +39,10 @@ function equipmentLabel(total: number) {
 
 const periodLabel = (period: string) => periodOptions.find((option) => option.value === period)?.label ?? 'Agosto de 2026'
 
+export function reportScopeFromQuery(searchParams: URLSearchParams, isDitel: boolean) {
+  return isDitel ? searchParams.get('unitId') || 'statewide' : 'statewide'
+}
+
 function buildQuery(isDitel: boolean, selectedScope: string, situation: '' | InventoryReportSituation, period: string): InventoryReportQuery {
   return {
     ...(isDitel && selectedScope !== 'statewide' ? { unitId: selectedScope } : {}),
@@ -57,10 +61,11 @@ export function ReportsPage({ session }: { session: SessionContext }) {
 
 function ReportsContent({ session }: { session: SessionContext }) {
   const isDitel = session.role === 'ditel_admin'
+  const initialScope = reportScopeFromQuery(new URLSearchParams(window.location.search), isDitel)
   const [reportKind, setReportKind] = useState<ReportKind>('inventory')
   const [draftKind, setDraftKind] = useState<ReportKind>('inventory')
-  const [selectedScope, setSelectedScope] = useState('statewide')
-  const [draftScope, setDraftScope] = useState('statewide')
+  const [selectedScope, setSelectedScope] = useState(initialScope)
+  const [draftScope, setDraftScope] = useState(initialScope)
   const [period, setPeriod] = useState(periodOptions[0].value)
   const periodRef = useRef(period)
   const [draftPeriod, setDraftPeriod] = useState(periodOptions[0].value)

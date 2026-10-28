@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import mongoose from 'mongoose';
 
 import { env } from './config/env.js';
 import { connectToDatabase } from './database/mongoose.js';
@@ -18,6 +19,7 @@ export async function startServer(options: StartServerOptions = {}) {
   const port = options.port ?? env.PORT;
   const connectionString = options.connectionString ?? process.env.MONGODB_URI;
 
+  mongoose.set('autoIndex', false);
   await connectToDatabase(connectionString);
 
   const app = options.app ?? createApp();

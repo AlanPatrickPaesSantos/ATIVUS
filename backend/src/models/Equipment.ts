@@ -9,6 +9,14 @@ export interface EquipmentCustody {
   unit: UnitReference | null;
 }
 
+export interface EquipmentProvenance {
+  synthetic: boolean;
+  generator?: string;
+  generatorVersion?: string;
+  importBatchId?: string;
+  source?: string;
+}
+
 export function isValidEquipmentCustody(value: unknown): value is EquipmentCustody {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
@@ -57,6 +65,17 @@ const equipmentCustodySchema = new Schema<EquipmentCustody>(
   { _id: false },
 );
 
+const equipmentProvenanceSchema = new Schema<EquipmentProvenance>(
+  {
+    synthetic: { type: Boolean, required: true },
+    generator: { type: String, trim: true },
+    generatorVersion: { type: String, trim: true },
+    importBatchId: { type: String, trim: true },
+    source: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const equipmentSchema = new Schema(
   {
     patrimony: { type: String, required: true, trim: true },
@@ -71,6 +90,7 @@ const equipmentSchema = new Schema(
     location: { type: String, required: true, trim: true },
     unit: { type: unitReferenceSchema, default: null },
     custody: { type: equipmentCustodySchema, default: null },
+    provenance: { type: equipmentProvenanceSchema },
     serialNumber: { type: String, trim: true }, category: { type: String, trim: true, default: '' }, warranty: { type: String, trim: true }, observations: { type: String, trim: true }, createdBy: { type: String, trim: true, default: '' }, updatedBy: { type: String, trim: true }, history: { type: [historyEntrySchema], default: [] }, attachments: { type: [attachmentSchema], default: [] },
   },
   {
@@ -111,6 +131,11 @@ equipmentSchema.pre('validate', function validateCustodyConsistency(next) {
   }
   next();
 });
+
+equipmentSchema.path('provenance').validate(function validateSyntheticProvenance(value: unknown) {
+  const provenance = value as EquipmentProvenance | undefined;
+  return !provenance?.synthetic || Boolean(provenance.generator && provenance.generatorVersion && provenance.importBatchId && provenance.source);
+}, 'Proveniência sintética deve informar gerador, versão, lote e fonte.');
 
 equipmentSchema.path('custody').validate(function validateCustodyPath(value: unknown) {
   if (value === null || value === undefined) return isValidUnitReference(this.unit);

@@ -11,7 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "migrate:user-situation": "tsx src/database/migrations/backfillUserSituation.ts",
     "ops:homolog:verify": "tsx src/operations/homologation.ts verify",
-    "ops:homolog:bootstrap": "tsx src/operations/homologation.ts bootstrap"
+    "ops:homolog:bootstrap": "tsx src/operations/homologation.ts bootstrap",
+    "ops:pmpa-users": "node --import tsx src/operations/pmpaDemonstrativeUsersCli.ts"
   },
   "dependencies": {
     "@types/multer": "^2.0.0",

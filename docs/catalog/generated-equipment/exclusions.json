@@ -1,0 +1,49 @@
+{
+  "exclusions": [
+    {
+      "code": "BME-01",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:bme-01"
+    },
+    {
+      "code": "BME-03",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:bme-03"
+    },
+    {
+      "code": "BPM-17",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:bpm-17"
+    },
+    {
+      "code": "BPM-23",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:bpm-23"
+    },
+    {
+      "code": "BPM-36",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:bpm-36"
+    },
+    {
+      "code": "CIPAMB-02",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:cipamb-02"
+    },
+    {
+      "code": "CIPAMB-03",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:cipamb-03"
+    },
+    {
+      "code": "CIPAMB-04",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:cipamb-04"
+    },
+    {
+      "code": "CIPM-25",
+      "reason": "verification_status_not_confirmed",
+      "unitId": "pmpa:unit:cipm-25"
+    }
+  ]
+}

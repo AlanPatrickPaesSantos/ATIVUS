@@ -54,10 +54,29 @@ export interface AuditEventFilters {
   to?: Date;
 }
 
+export type AuditPersistenceDiagnosticCode = 'validation_failed' | 'collection_unavailable' | 'duplicate_key' | 'write_failed';
+
 export class AuditPersistenceError extends Error {
-  constructor() {
+  readonly diagnosticCode: AuditPersistenceDiagnosticCode;
+  readonly operation: string;
+  readonly field: string | null;
+  readonly eventIndex: number | null;
+  readonly mongoCode: number | null;
+  readonly errorName: string;
+  readonly causeName: string | null;
+  readonly indexName: string | null;
+
+  constructor(diagnosticCode: AuditPersistenceDiagnosticCode = 'write_failed', field: string | null = null, operation = 'audit.create', eventIndex: number | null = null, mongoCode: number | null = null, errorName = 'Error', causeName: string | null = null, indexName: string | null = null) {
     super('Não foi possível registrar auditoria.');
     this.name = 'AuditPersistenceError';
+    this.diagnosticCode = diagnosticCode;
+    this.operation = operation;
+    this.field = field;
+    this.eventIndex = eventIndex;
+    this.mongoCode = mongoCode;
+    this.errorName = errorName;
+    this.causeName = causeName;
+    this.indexName = indexName;
   }
 }
 
@@ -85,6 +104,10 @@ function isSensitiveString(value: string): boolean {
 }
 
 function sanitizeAuditValue(value: unknown): unknown {
+  if (isRecord(value) && typeof value.toObject === 'function') {
+    return sanitizeAuditValue(value.toObject({ depopulate: true, virtuals: false }));
+  }
+
   if (Array.isArray(value)) {
     return value.map((item) => sanitizeAuditValue(item));
   }
@@ -116,7 +139,62 @@ function sanitizeNullableObject<T>(value: T | null | undefined): T | null {
 }
 
 function isDuplicateKeyError(error: unknown): boolean {
-  return isRecord(error) && error.code === 11000;
+  return errorCode(error) === 11000;
+}
+
+function validationField(error: unknown): string | null {
+  if (!isRecord(error) || !isRecord(error.errors)) return null;
+  const field = Object.keys(error.errors)[0];
+  return field && /^[a-zA-Z][a-zA-Z0-9_.]*$/.test(field) ? field : null;
+}
+
+function isCollectionUnavailableError(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  const code = errorCode(error);
+  if (code === 26 || code === 263) return true;
+  return typeof error.message === 'string' && /namespace|collection.*transaction|create.*collection/i.test(error.message);
+}
+
+function errorCode(error: unknown): number | null {
+  let current = error;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!isRecord(current)) return null;
+    const rawCode = current.code;
+    const code = typeof rawCode === 'number' ? rawCode : typeof rawCode === 'string' && /^\d+$/.test(rawCode) ? Number(rawCode) : null;
+    if (code !== null && Number.isSafeInteger(code) && code >= 0 && code <= 999999) return code;
+    current = current.cause;
+  }
+  return null;
+}
+
+function safeMongoCode(error: unknown): number | null {
+  return errorCode(error);
+}
+
+function safeErrorName(error: unknown): string {
+  if (!isRecord(error) || typeof error.name !== 'string' || !/^[A-Za-z][A-Za-z0-9_]*$/.test(error.name)) return 'UnknownError';
+  return error.name;
+}
+
+function safeCauseName(error: unknown): string | null {
+  if (!isRecord(error) || !error.cause) return null;
+  return safeErrorName(error.cause);
+}
+
+function safeIndexName(error: unknown): string | null {
+  let current = error;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!isRecord(current)) return null;
+    for (const candidate of [current.indexName, current.index]) {
+      if (typeof candidate === 'string' && /^[A-Za-z0-9_.-]+$/.test(candidate)) return candidate;
+    }
+    if (typeof current.message === 'string') {
+      const match = current.message.match(/\bindex:\s*([A-Za-z0-9_.-]+)/i);
+      if (match) return match[1];
+    }
+    current = current.cause;
+  }
+  return null;
 }
 
 function toRecordedAuditEvent(document: any): RecordedAuditEvent {
@@ -163,7 +241,16 @@ export async function recordAuditEvent(input: RecordAuditEventInput): Promise<Re
       const existing = await AuditEventModel.findOne({ idempotencyKey }).lean().exec();
       if (existing) return toRecordedAuditEvent(existing);
     }
-    throw new AuditPersistenceError();
+    if (error instanceof Error && error.name === 'ValidationError') {
+      throw new AuditPersistenceError('validation_failed', validationField(error), 'audit.create', null, safeMongoCode(error), safeErrorName(error), safeCauseName(error), safeIndexName(error));
+    }
+    if (isCollectionUnavailableError(error)) {
+      throw new AuditPersistenceError('collection_unavailable', null, 'audit.create', null, safeMongoCode(error), safeErrorName(error), safeCauseName(error), safeIndexName(error));
+    }
+    if (isDuplicateKeyError(error)) {
+      throw new AuditPersistenceError('duplicate_key', null, 'audit.create', null, safeMongoCode(error), safeErrorName(error), safeCauseName(error), safeIndexName(error));
+    }
+    throw new AuditPersistenceError('write_failed', null, 'audit.create', null, safeMongoCode(error), safeErrorName(error), safeCauseName(error), safeIndexName(error));
   }
 }
 

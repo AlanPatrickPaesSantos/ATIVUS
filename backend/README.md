@@ -1,6 +1,6 @@
-# SIGAT backend
+# ATIVUS backend
 
-API Node.js/TypeScript do SIGAT. A API é versionada em `/api/v1` e mantém a autoridade sobre autenticação, autorização, escopo e persistência. O contrato vigente está em [`../docs/api/openapi.yaml`](../docs/api/openapi.yaml).
+API Node.js/TypeScript do ATIVUS. A API é versionada em `/api/v1` e mantém a autoridade sobre autenticação, autorização, escopo e persistência. O contrato vigente está em [`../docs/api/openapi.yaml`](../docs/api/openapi.yaml).
 
 ## Pré-requisitos
 
@@ -15,14 +15,14 @@ Copie `.env.example` para `.env` e ajuste os valores. O backend não carrega arq
 | --- | --- | --- | --- |
 | `NODE_ENV` | não | `development` | Aceita `development`, `test` ou `production`; padrão `development`. |
 | `PORT` | não | `3000` | Porta HTTP; padrão `3000`. |
-| `MONGODB_URI` | para acesso ao MongoDB | `mongodb://127.0.0.1:27017/sigat` | URI usada por `connectToDatabase`; não há valor padrão seguro. |
+| `MONGODB_URI` | para acesso ao MongoDB | `mongodb://127.0.0.1:27018/ativus_homolog?directConnection=true&replicaSet=rs0` | URI usada por `connectToDatabase`; não há valor padrão seguro. |
 | `SESSION_COOKIE_SECURE` | não | `false` | `true` exige HTTPS para o cookie; padrão `true` em produção e `false` nos demais ambientes. |
 | `LOGIN_RATE_LIMIT_WINDOW_MS` | não | `60000` | Janela do rate limit de login em milissegundos. |
 | `LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_IP` | não | `10` | Máximo de falhas por IP dentro da janela do rate limit. |
 | `LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_REGISTRATION` | não | `5` | Máximo de falhas por matrícula dentro da janela do rate limit. |
 | `SESSION_ABSOLUTE_TTL_MS` | não | `43200000` | Vida absoluta da sessão em milissegundos. |
 | `SESSION_IDLE_TTL_MS` | não | `1800000` | Tempo máximo de inatividade da sessão em milissegundos. |
-| `ALLOWED_ORIGINS` | não | `https://sigat.exemplo.gov.br` | Lista separada por vírgula de origens aceitas para requisições mutáveis com cookie. |
+| `ALLOWED_ORIGINS` | não | `https://ativus.exemplo.gov.br` | Lista separada por vírgula de origens aceitas para requisições mutáveis com cookie. |
 
 ## Comandos
 
@@ -41,6 +41,27 @@ npm run ops:homolog:bootstrap
 
 `npm test` usa MongoDB Memory Server nos testes e não substitui uma instância MongoDB para desenvolvimento. `npm run build` gera `dist/`; os testes ignoram esse diretório para evitar duplicação.
 
+### Homologação local do provisionador demonstrativo
+
+A partir da raiz do repositório, usando Fish e somente o banco local de homologação:
+
+```fish
+set -lx MONGODB_URI 'mongodb://127.0.0.1:27018/ativus_homolog?directConnection=true&replicaSet=rs0'
+node scripts/pmpa-users.mjs
+```
+
+A aplicação exige `age`, backup confirmado, chave pública, batch confirmado e um arquivo de saída criptografado fora do repositório:
+
+```fish
+set -lx MONGODB_URI 'mongodb://127.0.0.1:27018/ativus_homolog?directConnection=true&replicaSet=rs0'
+node scripts/pmpa-users.mjs apply \
+  --confirm-batch BATCH_ID \
+  --backup-id BACKUP_ID \
+  --age-recipient AGE_PUBLIC_KEY \
+  --credentials-output /tmp/ativus-demo-credentials.age \
+  --authorize-apply
+```
+
 ### Runbooks operacionais
 
 - [Backfill da situação de usuários](docs/runbook-user-situation-migration.md)
@@ -48,6 +69,7 @@ npm run ops:homolog:bootstrap
 
 ### Bootstrap e verificação de homologação
 
+- A inicialização normal do servidor desativa `autoIndex`; ela conecta e escuta, sem seed, bootstrap, migração ou criação automática de índices.
 - `npm run ops:homolog:verify` faz checagem read-only de prontidão do MongoDB, suporte a transações e presença dos índices esperados pelo schema.
 - `npm run ops:homolog:bootstrap` garante localmente as coleções/índices esperados e falha se o MongoDB não suportar transações.
 - `npm run ops:homolog:bootstrap -- --seed-non-prod` adiciona um seed sintético mínimo apenas quando `HOMOLOGATION_SEED_PASSWORD` estiver definida e `NODE_ENV` não for `production`.

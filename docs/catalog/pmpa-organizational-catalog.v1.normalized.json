@@ -1,0 +1,2017 @@
+{
+  "schemaVersion": "1.0",
+  "catalogVersion": "2026-10-27",
+  "jurisdiction": "PMPA",
+  "rawRecordCount": 88,
+  "sources": [
+    {
+      "id": "decreto-1017-2025",
+      "title": "Decreto nº 1.017 — alterações dos anexos I, II, III e IV",
+      "url": "https://www.pm.pa.gov.br/images/PM1/DECRETO_N%C2%BA_1.017_-_ALTERA%C3%87%C3%95ES_DOS_ANEXOS_I_II_III_E_IV_-_20-10-2025.pdf",
+      "date": "2025-10-20",
+      "authority": "PMPA"
+    },
+    {
+      "id": "orgaos-execucao-pmpa",
+      "title": "Órgãos de Execução",
+      "url": "https://www.pm.pa.gov.br/component/content/article/129-institucional/4229-orgaos-de-execucao.html",
+      "date": "2023-03-17",
+      "accessedAt": "2026-10-27",
+      "authority": "PMPA"
+    },
+    {
+      "id": "bg-14-2025",
+      "title": "Boletim Geral nº 14, de 21 de janeiro de 2025",
+      "url": "https://www.pm.pa.gov.br/phocadownload/userupload/userupload/jaqueline.38111/BG%20N.%2014%20de%2021%20JAN%202025.pdf",
+      "date": "2025-01-21",
+      "authority": "PMPA"
+    },
+    {
+      "id": "bg-7-2025",
+      "title": "Boletim Geral nº 7, de 10 de janeiro de 2025",
+      "url": "https://www.pm.pa.gov.br/phocadownload/userupload/userupload/sales.44248/BG%20N.%207%20de%2010%20JAN%202025.pdf",
+      "date": "2025-01-10",
+      "authority": "PMPA"
+    }
+  ],
+  "commands": [
+    {
+      "id": "pmpa:command:cpc-i",
+      "name": "Comando de Policiamento da Capital I",
+      "acronym": "CPC I",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Belém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpc-ii",
+      "name": "Comando de Policiamento da Capital II",
+      "acronym": "CPC II",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Belém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cprm",
+      "name": "Comando de Policiamento da Região Metropolitana",
+      "acronym": "CPRM",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Ananindeua",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpe",
+      "name": "Comando de Policiamento Especializado",
+      "acronym": "CPE",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Belém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cme",
+      "name": "Comando de Missões Especiais",
+      "acronym": "CME",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Belém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpa",
+      "name": "Comando de Policiamento Ambiental",
+      "acronym": "CPA",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Belém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-i",
+      "name": "Comando de Policiamento Regional I",
+      "acronym": "CPR I",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Santarém",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-ii",
+      "name": "Comando de Policiamento Regional II",
+      "acronym": "CPR II",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Marabá",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-iii",
+      "name": "Comando de Policiamento Regional III",
+      "acronym": "CPR III",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Castanhal",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-iv",
+      "name": "Comando de Policiamento Regional IV",
+      "acronym": "CPR IV",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Tucuruí",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-v",
+      "name": "Comando de Policiamento Regional V",
+      "acronym": "CPR V",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Redenção",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-vi",
+      "name": "Comando de Policiamento Regional VI",
+      "acronym": "CPR VI",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Paragominas",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-vii",
+      "name": "Comando de Policiamento Regional VII",
+      "acronym": "CPR VII",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Capanema",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-viii",
+      "name": "Comando de Policiamento Regional VIII",
+      "acronym": "CPR VIII",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Tucumã",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-ix",
+      "name": "Comando de Policiamento Regional IX",
+      "acronym": "CPR IX",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Abaetetuba",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-x",
+      "name": "Comando de Policiamento Regional X",
+      "acronym": "CPR X",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Itaituba",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-xi",
+      "name": "Comando de Policiamento Regional XI",
+      "acronym": "CPR XI",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Soure",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-xii",
+      "name": "Comando de Policiamento Regional XII",
+      "acronym": "CPR XII",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Breves",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-xiii",
+      "name": "Comando de Policiamento Regional XIII",
+      "acronym": "CPR XIII",
+      "kind": "intermediate_command",
+      "seatMunicipality": "São Félix do Xingu",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    },
+    {
+      "id": "pmpa:command:cpr-xiv",
+      "name": "Comando de Policiamento Regional XIV",
+      "acronym": "CPR XIV",
+      "kind": "intermediate_command",
+      "seatMunicipality": "Parauapebas",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "orgaos-execucao-pmpa"
+      ]
+    }
+  ],
+  "pendingCommands": [
+    {
+      "id": "pmpa:command:cpr-xv",
+      "name": "Comando de Policiamento Regional XV",
+      "acronym": "CPR XV",
+      "kind": "intermediate_command",
+      "seatMunicipality": null,
+      "verificationStatus": "pending",
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Mencionado em publicação institucional recente, sem ato estrutural e composição confirmados nesta fase."
+    }
+  ],
+  "units": [
+    {
+      "id": "pmpa:unit:bac",
+      "code": "BAC",
+      "name": "Batalhão de Ações com Cães",
+      "acronym": "BAC",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cme",
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bme-01",
+      "code": "BME-01",
+      "name": "1º Batalhão de Missões Especiais",
+      "acronym": "BME-01",
+      "type": "SPECIALIZED",
+      "parentCommandId": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cme",
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "pending",
+      "verificationStatus": "pending",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "A fonte complementar lista BME-01 em contexto regional; o Decreto prioritário trata CIME, não confirma este vínculo."
+    },
+    {
+      "id": "pmpa:unit:bme-03",
+      "code": "BME-03",
+      "name": "3º Batalhão de Missões Especiais",
+      "acronym": "BME-03",
+      "type": "SPECIALIZED",
+      "parentCommandId": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "pending",
+      "verificationStatus": "pending",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Registro da página complementar sem ato estrutural localizado nesta fase."
+    },
+    {
+      "id": "pmpa:unit:bope",
+      "code": "BOPE",
+      "name": "Batalhão de Operações Especiais",
+      "acronym": "BOPE",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cme",
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpa",
+      "code": "BPA",
+      "name": "Batalhão de Polícia Ambiental",
+      "acronym": "BPA",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpa",
+      "observedParentCommandIds": [
+        "pmpa:command:cpa"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpchoq",
+      "code": "BPCHOQ",
+      "name": "Batalhão de Polícia de Choque",
+      "acronym": "BPCHOQ",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cme",
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpe",
+      "code": "BPE",
+      "name": "Batalhão de Policiamento Escolar",
+      "acronym": "BPE",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpe",
+      "observedParentCommandIds": [
+        "pmpa:command:cpe"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-01",
+      "code": "BPM-01",
+      "name": "1º Batalhão de Polícia Militar",
+      "acronym": "1º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-02",
+      "code": "BPM-02",
+      "name": "2º Batalhão de Polícia Militar",
+      "acronym": "2º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-03",
+      "code": "BPM-03",
+      "name": "3º Batalhão de Polícia Militar",
+      "acronym": "3º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-04",
+      "code": "BPM-04",
+      "name": "4º Batalhão de Polícia Militar",
+      "acronym": "4º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-05",
+      "code": "BPM-05",
+      "name": "5º Batalhão de Polícia Militar",
+      "acronym": "5º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-06",
+      "code": "BPM-06",
+      "name": "6º Batalhão de Polícia Militar",
+      "acronym": "6º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-07",
+      "code": "BPM-07",
+      "name": "7º Batalhão de Polícia Militar",
+      "acronym": "7º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-v",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-v"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-08",
+      "code": "BPM-08",
+      "name": "8º Batalhão de Polícia Militar",
+      "acronym": "8º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xi",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xi"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-09",
+      "code": "BPM-09",
+      "name": "9º Batalhão de Polícia Militar",
+      "acronym": "9º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-10",
+      "code": "BPM-10",
+      "name": "10º Batalhão de Polícia Militar",
+      "acronym": "10º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-11",
+      "code": "BPM-11",
+      "name": "11º Batalhão de Polícia Militar",
+      "acronym": "11º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-12",
+      "code": "BPM-12",
+      "name": "12º Batalhão de Polícia Militar",
+      "acronym": "12º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-13",
+      "code": "BPM-13",
+      "name": "13º Batalhão de Polícia Militar",
+      "acronym": "13º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-14",
+      "code": "BPM-14",
+      "name": "14º Batalhão de Polícia Militar",
+      "acronym": "14º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ix",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ix"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-15",
+      "code": "BPM-15",
+      "name": "15º Batalhão de Polícia Militar",
+      "acronym": "15º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-x",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-x"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-16",
+      "code": "BPM-16",
+      "name": "16º Batalhão de Polícia Militar",
+      "acronym": "16º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-viii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-17",
+      "code": "BPM-17",
+      "name": "17º Batalhão de Polícia Militar",
+      "acronym": "17º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xiii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii",
+        "pmpa:command:cpr-xiii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "divergent",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "A página de Órgãos de Execução lista o 17º BPM no CPR VIII e CPR XIII; o vínculo exige confirmação documental específica."
+    },
+    {
+      "id": "pmpa:unit:bpm-18",
+      "code": "BPM-18",
+      "name": "18º Batalhão de Polícia Militar",
+      "acronym": "18º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-19",
+      "code": "BPM-19",
+      "name": "19º Batalhão de Polícia Militar",
+      "acronym": "19º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-vi",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vi"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-20",
+      "code": "BPM-20",
+      "name": "20º Batalhão de Polícia Militar",
+      "acronym": "20º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-21",
+      "code": "BPM-21",
+      "name": "21º Batalhão de Polícia Militar",
+      "acronym": "21º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-22",
+      "code": "BPM-22",
+      "name": "22º Batalhão de Polícia Militar",
+      "acronym": "22º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-v",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-v"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-23",
+      "code": "BPM-23",
+      "name": "23º Batalhão de Polícia Militar",
+      "acronym": "23º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xiv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii",
+        "pmpa:command:cpr-xiv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "divergent",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "A página complementar apresenta o 23º BPM em CPR II e CPR XIV; mantido sem promoção a vínculo definitivo."
+    },
+    {
+      "id": "pmpa:unit:bpm-24",
+      "code": "BPM-24",
+      "name": "24º Batalhão de Polícia Militar",
+      "acronym": "24º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-25",
+      "code": "BPM-25",
+      "name": "25º Batalhão de Polícia Militar",
+      "acronym": "25º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-26",
+      "code": "BPM-26",
+      "name": "26º Batalhão de Polícia Militar",
+      "acronym": "26º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-27",
+      "code": "BPM-27",
+      "name": "27º Batalhão de Polícia Militar",
+      "acronym": "27º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-28",
+      "code": "BPM-28",
+      "name": "28º Batalhão de Polícia Militar",
+      "acronym": "28º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-29",
+      "code": "BPM-29",
+      "name": "29º Batalhão de Polícia Militar",
+      "acronym": "29º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-30",
+      "code": "BPM-30",
+      "name": "30º Batalhão de Polícia Militar",
+      "acronym": "30º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-31",
+      "code": "BPM-31",
+      "name": "31º Batalhão de Polícia Militar",
+      "acronym": "31º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ix",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ix"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-32",
+      "code": "BPM-32",
+      "name": "32º Batalhão de Polícia Militar",
+      "acronym": "32º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ix",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ix"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-33",
+      "code": "BPM-33",
+      "name": "33º Batalhão de Polícia Militar",
+      "acronym": "33º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-34",
+      "code": "BPM-34",
+      "name": "34º Batalhão de Polícia Militar",
+      "acronym": "34º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-35",
+      "code": "BPM-35",
+      "name": "35º Batalhão de Polícia Militar",
+      "acronym": "35º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-36",
+      "code": "BPM-36",
+      "name": "36º Batalhão de Polícia Militar",
+      "acronym": "36º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xiii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii",
+        "pmpa:command:cpr-xiii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "divergent",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Registro duplicado em dois comandos na fonte complementar."
+    },
+    {
+      "independent": false,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-i"
+      ],
+      "note": null,
+      "code": "BPM-37",
+      "name": "37º Batalhão de Polícia Militar",
+      "acronym": "37º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-i",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:bpm-37"
+    },
+    {
+      "independent": false,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpc-ii"
+      ],
+      "note": null,
+      "code": "BPM-38",
+      "name": "38º Batalhão de Polícia Militar",
+      "acronym": "38º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpc-ii",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:bpm-38"
+    },
+    {
+      "id": "pmpa:unit:bpm-39",
+      "code": "BPM-39",
+      "name": "39º Batalhão de Polícia Militar",
+      "acronym": "39º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-40",
+      "code": "BPM-40",
+      "name": "40º Batalhão de Polícia Militar",
+      "acronym": "40º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-xiv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xiv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-41",
+      "code": "BPM-41",
+      "name": "41º Batalhão de Polícia Militar",
+      "acronym": "41º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-i",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-i"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-42",
+      "code": "BPM-42",
+      "name": "42º Batalhão de Polícia Militar",
+      "acronym": "42º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "independent": false,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cprm"
+      ],
+      "note": null,
+      "code": "BPM-43",
+      "name": "43º Batalhão de Polícia Militar",
+      "acronym": "43º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cprm",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:bpm-43"
+    },
+    {
+      "id": "pmpa:unit:bpm-44",
+      "code": "BPM-44",
+      "name": "44º Batalhão de Polícia Militar",
+      "acronym": "44º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-45",
+      "code": "BPM-45",
+      "name": "45º Batalhão de Polícia Militar",
+      "acronym": "45º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-46",
+      "code": "BPM-46",
+      "name": "46º Batalhão de Polícia Militar",
+      "acronym": "46º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-x",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-x"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-47",
+      "code": "BPM-47",
+      "name": "47º Batalhão de Polícia Militar",
+      "acronym": "47º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-ix",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ix"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-48",
+      "code": "BPM-48",
+      "name": "48º Batalhão de Polícia Militar",
+      "acronym": "48º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-49",
+      "code": "BPM-49",
+      "name": "49º Batalhão de Polícia Militar",
+      "acronym": "49º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-viii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-50",
+      "code": "BPM-50",
+      "name": "50º Batalhão de Polícia Militar",
+      "acronym": "50º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-iv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bpm-51",
+      "code": "BPM-51",
+      "name": "51º Batalhão de Polícia Militar",
+      "acronym": "51º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-vi",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vi"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "independent": false,
+      "seatMunicipality": "Altamira",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii"
+      ],
+      "note": null,
+      "code": "BPM-52",
+      "name": "52º Batalhão de Polícia Militar",
+      "acronym": "52º BPM",
+      "type": "BPM",
+      "parentCommandId": "pmpa:command:cpr-viii",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-14-2025"
+      ],
+      "id": "pmpa:unit:bpm-52"
+    },
+    {
+      "id": "pmpa:unit:bprv",
+      "code": "BPRV",
+      "name": "Batalhão de Polícia Rodoviária",
+      "acronym": "BPRV",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpe",
+      "observedParentCommandIds": [
+        "pmpa:command:cpe"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:bptur",
+      "code": "BPTUR",
+      "name": "Batalhão de Policiamento Turístico",
+      "acronym": "BPTUR",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpe",
+      "observedParentCommandIds": [
+        "pmpa:command:cpe"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:ciepas",
+      "code": "CIEPAS",
+      "name": "Companhia Independente Especial de Polícia Assistencial",
+      "acronym": "CIEPAS",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpe",
+      "observedParentCommandIds": [
+        "pmpa:command:cpe"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "independent": true,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "note": null,
+      "code": "CIME-01",
+      "name": "1ª Companhia Independente de Missões Especiais",
+      "acronym": "1ª CIME",
+      "type": "CIME",
+      "parentCommandId": "pmpa:command:cme",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:cime-01"
+    },
+    {
+      "independent": true,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "note": null,
+      "code": "CIME-02",
+      "name": "2ª Companhia Independente de Missões Especiais",
+      "acronym": "2ª CIME",
+      "type": "CIME",
+      "parentCommandId": "pmpa:command:cme",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:cime-02"
+    },
+    {
+      "independent": true,
+      "seatMunicipality": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "note": null,
+      "code": "CIME-03",
+      "name": "3ª Companhia Independente de Missões Especiais",
+      "acronym": "3ª CIME",
+      "type": "CIME",
+      "parentCommandId": "pmpa:command:cme",
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "sourceIds": [
+        "decreto-1017-2025",
+        "bg-7-2025"
+      ],
+      "id": "pmpa:unit:cime-03"
+    },
+    {
+      "id": "pmpa:unit:cime-04",
+      "code": "CIME-04",
+      "name": "4ª Companhia Independente de Missões Especiais",
+      "acronym": "CIME-04",
+      "type": "CIME",
+      "parentCommandId": "pmpa:command:cpr-viii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii",
+        "pmpa:command:cme"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa",
+        "decreto-1017-2025"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipamb",
+      "code": "CIPAMB",
+      "name": "Companhia Independente de Policiamento Ambiental",
+      "acronym": "CIPAMB",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpa",
+      "observedParentCommandIds": [
+        "pmpa:command:cpa"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipamb-02",
+      "code": "CIPAMB-02",
+      "name": "2ª Companhia Independente de Policiamento Ambiental",
+      "acronym": "CIPAMB-02",
+      "type": "CIPAMB",
+      "parentCommandId": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xiii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "pending",
+      "verificationStatus": "pending",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário."
+    },
+    {
+      "id": "pmpa:unit:cipamb-03",
+      "code": "CIPAMB-03",
+      "name": "3ª Companhia Independente de Policiamento Ambiental",
+      "acronym": "CIPAMB-03",
+      "type": "CIPAMB",
+      "parentCommandId": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "pending",
+      "verificationStatus": "pending",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário."
+    },
+    {
+      "id": "pmpa:unit:cipamb-04",
+      "code": "CIPAMB-04",
+      "name": "4ª Companhia Independente de Policiamento Ambiental",
+      "acronym": "CIPAMB-04",
+      "type": "CIPAMB",
+      "parentCommandId": null,
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vi"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "pending",
+      "verificationStatus": "pending",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "Unidade especializada listada, mas sem vínculo formal fechado no catálogo prioritário."
+    },
+    {
+      "id": "pmpa:unit:cipflu",
+      "code": "CIPFLU",
+      "name": "Companhia Independente de Polícia Fluvial",
+      "acronym": "CIPFLU",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpa",
+      "observedParentCommandIds": [
+        "pmpa:command:cpa"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-01",
+      "code": "CIPM-01",
+      "name": "1ª Companhia Independente de Polícia Militar",
+      "acronym": "1ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-x",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-x"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-03",
+      "code": "CIPM-03",
+      "name": "3ª Companhia Independente de Polícia Militar",
+      "acronym": "3ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-iii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-04",
+      "code": "CIPM-04",
+      "name": "4ª Companhia Independente de Polícia Militar",
+      "acronym": "4ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-ix",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ix"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-10",
+      "code": "CIPM-10",
+      "name": "10ª Companhia Independente de Polícia Militar",
+      "acronym": "10ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-11",
+      "code": "CIPM-11",
+      "name": "11ª Companhia Independente de Polícia Militar",
+      "acronym": "11ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-15",
+      "code": "CIPM-15",
+      "name": "15ª Companhia Independente de Polícia Militar",
+      "acronym": "15ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-16",
+      "code": "CIPM-16",
+      "name": "16ª Companhia Independente de Polícia Militar",
+      "acronym": "16ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-viii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-viii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-17",
+      "code": "CIPM-17",
+      "name": "17ª Companhia Independente de Polícia Militar",
+      "acronym": "17ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-x",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-x"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-19",
+      "code": "CIPM-19",
+      "name": "19ª Companhia Independente de Polícia Militar",
+      "acronym": "19ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-vii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-vii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-20",
+      "code": "CIPM-20",
+      "name": "20ª Companhia Independente de Polícia Militar",
+      "acronym": "20ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-xi",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xi"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-22",
+      "code": "CIPM-22",
+      "name": "22ª Companhia Independente de Polícia Militar",
+      "acronym": "22ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-xii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-23",
+      "code": "CIPM-23",
+      "name": "23ª Companhia Independente de Polícia Militar",
+      "acronym": "23ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-iv",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-iv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-24",
+      "code": "CIPM-24",
+      "name": "24ª Companhia Independente de Polícia Militar",
+      "acronym": "24ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-25",
+      "code": "CIPM-25",
+      "name": "25ª Companhia Independente de Polícia Militar",
+      "acronym": "25ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-ii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-ii",
+        "pmpa:command:cpr-xiv"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "divergent",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": "A 25ª CIPM aparece em CPR II e CPR XIV na fonte complementar; exige confirmação do ato vigente."
+    },
+    {
+      "id": "pmpa:unit:cipm-30",
+      "code": "CIPM-30",
+      "name": "30ª Companhia Independente de Polícia Militar",
+      "acronym": "30ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-v",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-v"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-31",
+      "code": "CIPM-31",
+      "name": "31ª Companhia Independente de Polícia Militar",
+      "acronym": "31ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-xiii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xiii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipm-32",
+      "code": "CIPM-32",
+      "name": "32ª Companhia Independente de Polícia Militar",
+      "acronym": "32ª CIPM",
+      "type": "CIPM",
+      "parentCommandId": "pmpa:command:cpr-xii",
+      "observedParentCommandIds": [
+        "pmpa:command:cpr-xii"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": true,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:cipoe",
+      "code": "CIPOE",
+      "name": "Companhia Independente de Policiamento Escolar",
+      "acronym": "CIPOE",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cpe",
+      "observedParentCommandIds": [
+        "pmpa:command:cpe"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    },
+    {
+      "id": "pmpa:unit:rotam",
+      "code": "ROTAM",
+      "name": "Batalhão de Rondas Ostensivas Táticas Motorizadas",
+      "acronym": "ROTAM",
+      "type": "SPECIALIZED",
+      "parentCommandId": "pmpa:command:cme",
+      "observedParentCommandIds": [
+        "pmpa:command:cme"
+      ],
+      "seatMunicipality": null,
+      "activationStatus": "active",
+      "verificationStatus": "confirmed",
+      "independent": false,
+      "sourceIds": [
+        "orgaos-execucao-pmpa"
+      ],
+      "note": null
+    }
+  ]
+}

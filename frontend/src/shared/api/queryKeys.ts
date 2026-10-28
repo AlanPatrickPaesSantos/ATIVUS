@@ -42,4 +42,7 @@ export const queryKeys = {
   callsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'calls-summary', reportScope(session, query)] as const,
   movementsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'movements-summary', reportScope(session, query)] as const,
   generalReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'general', reportScope(session, query)] as const,
+  organizationalStructure: (query: Record<string, unknown>) => ['organizational-structure', 'list', query] as const,
+  organizationalNode: (id: string | null) => ['organizational-structure', 'node', id] as const,
+  organizationalIndicators: (id: string | null) => ['organizational-structure', 'indicators', id] as const,
 }

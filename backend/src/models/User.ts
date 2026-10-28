@@ -25,6 +25,13 @@ export interface UnitReference {
   acronym: string;
 }
 
+export type UserProvisioningKind = 'pmpa-demonstrative-user';
+
+export interface UserProvisioning {
+  batchId: string;
+  kind: UserProvisioningKind;
+}
+
 export const UNIT_USER_UNIT_REQUIRED_ERROR = 'Usuário de unidade deve possuir uma unidade válida.';
 export const USER_SCOPE_UPDATE_UNVERIFIABLE_ERROR = 'Atualização de perfil/unidade não verificável.';
 
@@ -77,6 +84,14 @@ const unitReferenceSchema = new Schema<UnitReference>(
   { _id: false },
 );
 
+const userProvisioningSchema = new Schema<UserProvisioning>(
+  {
+    batchId: { type: String, required: true, trim: true },
+    kind: { type: String, required: true, enum: ['pmpa-demonstrative-user'] satisfies UserProvisioningKind[] },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -89,6 +104,7 @@ const userSchema = new Schema(
     situation: { type: String, required: true, enum: USER_SITUATIONS, default: 'active' },
     unit: { type: unitReferenceSchema, default: null },
     mustChangePassword: { type: Boolean, required: true, default: false },
+    provisioning: { type: userProvisioningSchema, default: undefined },
     passwordHash: { type: String, required: true, select: false },
   },
   {

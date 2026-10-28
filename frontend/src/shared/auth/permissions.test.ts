@@ -13,7 +13,7 @@ const session: SessionContext = {
 describe('menu oficial (regra: não reintroduzir módulos removidos)', () => {
   it('expõe os módulos oficiais e as consultas AC para o administrador DITEL', () => {
     const labels = getNavigation(session).map((item) => item.label)
-    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração', 'Materiais AC', 'Transferências AC', 'Relatórios AC'])
+    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração', 'Materiais AC', 'Transferências AC', 'Relatórios AC', 'Estrutura estadual'])
   })
 
   it('não inclui Manutenção, Missões técnicas, Tipos de equipamento ou Auditoria', () => {

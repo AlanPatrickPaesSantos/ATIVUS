@@ -1,7 +1,7 @@
 import type { NavigationItem, SessionContext } from './types'
 
 const permissionsByRole = {
-  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration', 'maintenance', 'missions', 'ac_materials', 'ac_transfers', 'ac_reports'],
+  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration', 'maintenance', 'missions', 'ac_materials', 'ac_transfers', 'ac_reports', 'statewide_structure'],
   unit_user: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'maintenance', 'missions'],
   ac_operator: ['ac_materials', 'ac_transfers', 'ac_reports'],
 } as const
@@ -16,6 +16,7 @@ const navigation: NavigationItem[] = [
   { label: 'Materiais AC', href: '/ac/materiais', icon: '▥', requires: 'ac_materials' },
   { label: 'Transferências AC', href: '/ac/transferencias', icon: '⇢', requires: 'ac_transfers' },
   { label: 'Relatórios AC', href: '/ac/relatorios', icon: '▤', requires: 'ac_reports' },
+  { label: 'Estrutura estadual', href: '/estrutura-estadual', icon: '⌘', requires: 'statewide_structure' },
 ]
 
 export function can(session: SessionContext, permission: string): boolean {

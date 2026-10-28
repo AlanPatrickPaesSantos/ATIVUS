@@ -12,7 +12,8 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: `http://127.0.0.1:${frontendPort}`,
-    trace: 'retain-on-failure',
+    trace: 'off',
+    video: 'off',
   },
   projects: [{ name: 'chromium-real-backend', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
