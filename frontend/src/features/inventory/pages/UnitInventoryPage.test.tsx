@@ -268,7 +268,7 @@ test('presents the inventory page as the Canva operational console', async () =>
   expect(screen.getByTestId('inventory-layout')).toHaveAttribute('data-visual-variant', 'operation-night')
   expect(screen.getByText('3º BPM • 428 equipamentos cadastrados')).toBeInTheDocument()
   expect(screen.getByText('Todos 428')).toBeInTheDocument()
-  expect(screen.getByText(/Atenção\s+1/)).toBeInTheDocument()
+  expect(screen.getByText(/Atenção\s+0/)).toBeInTheDocument()
   expect(screen.getByText('itens carregados nesta página')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: /ver detalhes de PAT-2026-004821/i }))
   expect(await screen.findByRole('dialog', { name: /equipamento PAT-2026-004821/i })).toBeInTheDocument()

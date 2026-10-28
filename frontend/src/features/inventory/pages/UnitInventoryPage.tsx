@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import type { EquipmentSummary, InventoryQuery } from '../../../shared/api/contracts'
+import { ATTENTION_SITUATIONS, type EquipmentSummary, type InventoryQuery } from '../../../shared/api/contracts'
 import type { SessionContext } from '../../../shared/auth/types'
 import { EquipmentDetailModal } from '../components/EquipmentDetailModal'
 import { EquipmentRegistrationModal } from '../components/EquipmentRegistrationModal'
@@ -70,7 +70,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
   const canRegisterEquipment = !isStatewide
   const unitName = session?.unit?.name ?? inventoryQuery.data?.items[0]?.unitName ?? 'Unidade'
   const total = inventoryQuery.data?.total ?? 0
-  const attentionTotal = inventoryQuery.data?.items.filter((item) => ['maintenance', 'inactive', 'lost', 'written_off'].includes(item.situation)).length ?? 0
+  const attentionTotal = inventoryQuery.data?.items.filter((item) => ATTENTION_SITUATIONS.includes(item.situation)).length ?? 0
   const subtitle = isStatewide ? 'Escopo estadual' : `${session?.unit?.acronym ?? unitName} • ${total} equipamentos cadastrados`
   const clearFilters = () => setSearchParams(new URLSearchParams(query.pageSize === 20 ? '' : `pageSize=${query.pageSize}`))
   const showPagination = !inventoryQuery.isLoading && !inventoryQuery.isError && total > 0

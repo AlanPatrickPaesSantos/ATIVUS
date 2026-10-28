@@ -461,6 +461,53 @@ describe('dashboard routes', () => {
     });
   });
 
+  it('returns explicit operational indicators and command aggregates without patrimonial coverage claims', async () => {
+    await seedEquipment();
+    const agent = await loginAsDitelAdmin();
+
+    const response = await agent.get('/api/v1/dashboard');
+
+    expect(response.status).toBe(200);
+    expect(response.body.operationalIndicators).toEqual({
+      total: 4,
+      active: 1,
+      maintenance: 1,
+      inactive: 1,
+      lost: 1,
+      writtenOff: 0,
+      attention: 1,
+      attentionPercent: 25,
+    });
+    expect(response.body.commandSummaries).toEqual([]);
+    expect(response.body.unitSummaries[0]).toMatchObject({
+      equipmentShare: '50%',
+      patrimonialCoverage: null,
+    });
+  });
+
+  it('aggregates command descendants into a command comparison summary', async () => {
+    await seedHierarchicalEquipment();
+    const agent = await loginAsDitelAdmin();
+
+    const response = await agent.get('/api/v1/dashboard');
+
+    expect(response.status).toBe(200);
+    expect(response.body.commandSummaries).toEqual([
+      expect.objectContaining({
+        command: { id: 'command-north', name: 'CPRM', acronym: 'CPRM' },
+        equipment: 2,
+        attention: 0,
+        attentionPercent: 0,
+      }),
+      expect.objectContaining({
+        command: { id: 'command-south', name: 'CPS', acronym: 'CPS' },
+        equipment: 1,
+        attention: 0,
+        attentionPercent: 0,
+      }),
+    ]);
+  });
+
   it('applies a DITEL unitId filter while retaining statewide response identity', async () => {
     await seedEquipment();
     const database = mongoose.connection.db;

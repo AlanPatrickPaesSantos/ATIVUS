@@ -5,7 +5,8 @@ import { MovementModel } from '../models/Movement.js';
 import { UnitModel } from '../models/Unit.js';
 import type { UnitReference } from '../models/User.js';
 import { publicAttachment, type AttachmentMetadata } from '../services/attachments.js';
-import { buildScopedEquipmentQuery, periodRange, type EquipmentFilterInput, unitReference } from './equipmentQueryFilters.js';
+import { ATTENTION_SITUATIONS, buildScopedEquipmentQuery, periodRange, type EquipmentFilterInput, unitReference } from './equipmentQueryFilters.js';
+import { descendantUnitIds } from './organizationalScopeResolver.js';
 
 export interface InventoryFilters extends Omit<EquipmentFilterInput, 'situation'> { situation?: EquipmentSituation }
 export interface InventoryScope { role: 'unit_user' | 'ditel_admin'; unitId: string | null }
@@ -138,6 +139,26 @@ export interface DashboardResponse {
   pendingMovements?: number;
   monitoredUnits?: number;
   recentMovements?: DashboardMovementActivity[];
+  operationalIndicators: DashboardOperationalIndicators;
+  commandSummaries: DashboardCommandSummary[];
+}
+
+export interface DashboardOperationalIndicators {
+  total: number;
+  active: number;
+  maintenance: number;
+  inactive: number;
+  lost: number;
+  writtenOff: number;
+  attention: number;
+  attentionPercent: number;
+}
+
+export interface DashboardCommandSummary {
+  command: UnitReference;
+  equipment: number;
+  attention: number;
+  attentionPercent: number;
 }
 
 export interface DashboardReadScope {
@@ -158,8 +179,6 @@ function labelForSituation(situation: DashboardSituationSummary['situation']): s
       return 'Requer atenção';
   }
 }
-
-const ATTENTION_SITUATIONS = ['lost', 'written_off'] as const;
 
 async function readUnitSummaries(
   equipmentFilter: Record<string, unknown>,
@@ -189,6 +208,46 @@ async function readUnitSummaries(
       organizationType,
     };
   }).sort((left, right) => left.unit.name.localeCompare(right.unit.name) || left.unit.id.localeCompare(right.unit.id));
+}
+
+async function readCommandSummaries(
+  equipmentFilter: Record<string, unknown>,
+  unitIds: string[] | null,
+  commandId?: string,
+): Promise<DashboardCommandSummary[]> {
+  const organizations = await UnitModel.find({ active: true })
+    .select({ id: 1, name: 1, acronym: 1, parentUnitId: 1, kind: 1, _id: 0 })
+    .lean()
+    .exec();
+  const organizationalUnits = organizations.map((unit) => ({
+    ...unit,
+    kind: unit.kind ?? 'other',
+    active: Boolean(unit.active),
+    parentUnitId: unit.parentUnitId ?? null,
+  }));
+  const commands = organizationalUnits.filter((unit) => unit.kind === 'intermediate_command' && (!commandId || unit.id === commandId));
+  const grouped = await EquipmentModel.aggregate([
+    { $match: equipmentFilter },
+    { $group: { _id: '$unit.id', equipment: { $sum: 1 }, attention: { $sum: { $cond: [{ $in: ['$situation', [...ATTENTION_SITUATIONS]] }, 1, 0] } } } },
+  ]).exec();
+  const counts = new Map(grouped.map((item) => [String(item._id), { equipment: Number(item.equipment), attention: Number(item.attention) }]));
+  const allowed = unitIds === null ? null : new Set(unitIds);
+
+  return commands
+    .map((command) => {
+      const descendants = descendantUnitIds(organizationalUnits, command.id).filter((id) => allowed === null || allowed.has(id));
+      const totals = descendants.reduce((result, id) => {
+        const count = counts.get(id);
+        return { equipment: result.equipment + (count?.equipment ?? 0), attention: result.attention + (count?.attention ?? 0) };
+      }, { equipment: 0, attention: 0 });
+      return {
+        command: unitReference(command),
+        equipment: totals.equipment,
+        attention: totals.attention,
+        attentionPercent: totals.equipment > 0 ? Math.round((totals.attention / totals.equipment) * 100) : 0,
+      };
+    })
+    .sort((left, right) => left.command.name.localeCompare(right.command.name) || left.command.id.localeCompare(right.command.id));
 }
 
 const CALL_STATUS_ORDER = ['Aberto', 'Em análise', 'Em atendimento', 'Aguardando informação', 'Resolvido', 'Encerrado'];
@@ -359,6 +418,16 @@ export async function readDashboardByScope(scope: DashboardReadScope, filters: E
   ]);
 
   const attention = lost + writtenOff;
+  const operationalIndicators: DashboardOperationalIndicators = {
+    total,
+    active,
+    maintenance,
+    inactive,
+    lost,
+    writtenOff,
+    attention,
+    attentionPercent: total > 0 ? Math.round((attention / total) * 100) : 0,
+  };
 
   return {
     unit: scope.unit,
@@ -392,6 +461,8 @@ export async function readDashboardByScope(scope: DashboardReadScope, filters: E
     ],
     recentActivity: await readRecentActivity(activityFilter),
     unitSummaries: await readUnitSummaries(filter, unitIds),
+    operationalIndicators,
+    commandSummaries: scope.role === 'ditel_admin' ? await readCommandSummaries(filter, unitIds, filters.commandId) : [],
     callsByStatus: await readCallsByStatus(activityFilter),
     criticalCalls: await readCriticalCalls(activityFilter),
     pendingMovements: await readPendingMovements(movementUnitIds, filters.period),

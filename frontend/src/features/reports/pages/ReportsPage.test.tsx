@@ -245,7 +245,7 @@ test('renders the general DITEL report consolidating inventory, calls and moveme
       filters: { situation: null },
     },
     inventory: {
-      totals: { total: 5, active: 1, maintenance: 1, inactive: 1, lost: 1, writtenOff: 1, attention: 3 },
+    totals: { total: 5, active: 1, maintenance: 1, inactive: 1, lost: 1, writtenOff: 1, attention: 2 },
       units: [],
     },
     calls: { totals: { total: 4, open: 1, critical: 1, attention: 2, resolved: 2 }, byStatus: [], byPriority: [] },

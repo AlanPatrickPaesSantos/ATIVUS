@@ -2367,7 +2367,7 @@ components:
         downloadUrl: { type: string, format: uri-reference }
     DashboardResponse:
       type: object
-      required: [unit, metrics, situations, recentActivity]
+      required: [unit, metrics, situations, recentActivity, operationalIndicators, commandSummaries]
       properties:
         unit: { $ref: '#/components/schemas/UnitContext' }
         metrics:
@@ -2391,6 +2391,28 @@ components:
               label: { type: string }
               count: { type: integer, minimum: 0 }
         recentActivity: { type: array, items: { $ref: '#/components/schemas/HistoryEntry' } }
+        operationalIndicators:
+          type: object
+          required: [total, active, maintenance, inactive, lost, writtenOff, attention, attentionPercent]
+          properties:
+            total: { type: integer, minimum: 0 }
+            active: { type: integer, minimum: 0 }
+            maintenance: { type: integer, minimum: 0 }
+            inactive: { type: integer, minimum: 0 }
+            lost: { type: integer, minimum: 0 }
+            writtenOff: { type: integer, minimum: 0 }
+            attention: { type: integer, minimum: 0, description: Equipamentos perdidos ou baixados que exigem acompanhamento. }
+            attentionPercent: { type: number, minimum: 0, maximum: 100 }
+        commandSummaries:
+          type: array
+          items:
+            type: object
+            required: [command, equipment, attention, attentionPercent]
+            properties:
+              command: { $ref: '#/components/schemas/UnitContext' }
+              equipment: { type: integer, minimum: 0 }
+              attention: { type: integer, minimum: 0 }
+              attentionPercent: { type: number, minimum: 0, maximum: 100 }
         unitSummaries:
           type: array
           items:

@@ -14,6 +14,7 @@ export type InventoryQuery = {
 }
 
 export type EquipmentSituation = 'active' | 'maintenance' | 'inactive' | 'lost' | 'written_off'
+export const ATTENTION_SITUATIONS: EquipmentSituation[] = ['lost', 'written_off']
 export type DashboardSituation = EquipmentSituation | 'attention'
 export type DashboardPeriod = '30d' | '90d' | '2026-08'
 
@@ -27,6 +28,24 @@ export type DashboardFilters = {
   model?: string
   section?: string
   period?: DashboardPeriod
+}
+
+export type DashboardOperationalIndicators = {
+  total: number
+  active: number
+  maintenance: number
+  inactive: number
+  lost: number
+  writtenOff: number
+  attention: number
+  attentionPercent: number
+}
+
+export type DashboardCommandSummary = {
+  command: UnitContext
+  equipment: number
+  attention: number
+  attentionPercent: number
 }
 
 export type EquipmentSummary = {

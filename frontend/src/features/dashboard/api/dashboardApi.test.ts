@@ -32,6 +32,8 @@ describe('getUnitDashboard with the MSW API boundary', () => {
       unitSummaries: [
         { unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, coverage: '100%', equipment: 428, attention: 0 },
       ],
+      operationalIndicators: { total: 428, active: 7, maintenance: 1, inactive: 1, lost: 0, writtenOff: 0, attention: 0, attentionPercent: 0 },
+      commandSummaries: [],
       callsByStatus: [
         { status: 'Aberto', label: 'Aberto', count: 1 },
       ],
@@ -74,6 +76,10 @@ describe('getUnitDashboard with the MSW API boundary', () => {
       ]),
       unitSummaries: expect.arrayContaining([
         expect.objectContaining({ unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, equipment: expect.any(Number), attention: expect.any(Number) }),
+      ]),
+      operationalIndicators: expect.objectContaining({ attentionPercent: expect.any(Number) }),
+      commandSummaries: expect.arrayContaining([
+        expect.objectContaining({ command: expect.objectContaining({ id: 'command-north' }), attentionPercent: expect.any(Number) }),
       ]),
     })
   })

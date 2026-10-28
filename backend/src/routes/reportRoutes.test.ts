@@ -161,10 +161,10 @@ describe('report routes', () => {
 
     expect(statewide.status).toBe(200);
     expect(statewide.body.report.scope).toEqual({ id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' });
-    expect(statewide.body.totals).toMatchObject({ total: 5, active: 1, maintenance: 1, inactive: 1, lost: 1, writtenOff: 1, attention: 3 });
+    expect(statewide.body.totals).toMatchObject({ total: 5, active: 1, maintenance: 1, inactive: 1, lost: 1, writtenOff: 1, attention: 2 });
     expect(statewide.body.units.map((item: { unit: { id: string } }) => item.unit.id)).toEqual(['unit-1', 'unit-2']);
     expect(unitOnly.body.report.scope).toEqual(unit2);
-    expect(unitOnly.body.totals).toMatchObject({ total: 3, active: 0, maintenance: 0, inactive: 1, lost: 1, writtenOff: 1, attention: 3 });
+    expect(unitOnly.body.totals).toMatchObject({ total: 3, active: 0, maintenance: 0, inactive: 1, lost: 1, writtenOff: 1, attention: 2 });
   });
 
   it('exports the authenticated inventory summary as CSV without leaking secrets or other units', async () => {
@@ -317,7 +317,7 @@ describe('report routes', () => {
       title: 'Relatório geral DITEL',
       scope: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
     });
-    expect(response.body.inventory.totals).toMatchObject({ total: 5, active: 1, maintenance: 1, attention: 3 });
+    expect(response.body.inventory.totals).toMatchObject({ total: 5, active: 1, maintenance: 1, attention: 2 });
     expect(response.body.calls.totals).toMatchObject({ total: 4, open: 1, critical: 1 });
     expect(response.body.movements.totals).toMatchObject({ total: 3, pending: 1, approved: 1, rejected: 1 });
     expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);

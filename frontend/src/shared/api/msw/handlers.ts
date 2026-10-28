@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { clearSession, getSession } from '../../../shared/auth/session'
-import type { EquipmentDetails, EquipmentSummary, EquipmentSituation } from '../contracts'
+import { ATTENTION_SITUATIONS, type EquipmentDetails, type EquipmentSummary, type EquipmentSituation } from '../contracts'
 import { MAX_ATTACHMENT_SIZE_BYTES, MAX_ATTACHMENT_SIZE_LABEL, MAX_CALL_ATTACHMENTS, type CallDetails, type CallHistoryEntry, type CallQueueItem, type ResponsibleSection } from '../../../features/calls/api/callsApi'
 import { CALL_ATTACHMENT_RULES, EQUIPMENT_ATTACHMENT_RULES, isAllowedAttachmentFile } from '../attachmentValidation'
 import { ditelFixture } from '../../fixtures/moduleFixtures'
@@ -352,7 +352,23 @@ function incrementReportCounters(counters: ReturnType<typeof emptyReportCounters
   counters.total += 1
   if (situation === 'written_off') counters.writtenOff += 1
   else counters[situation] += 1
-  if (['inactive', 'lost', 'written_off'].includes(situation)) counters.attention += 1
+  if (ATTENTION_SITUATIONS.includes(situation)) counters.attention += 1
+}
+
+function dashboardIndicators(items: FixtureEquipment[], total = items.length) {
+  const lost = items.filter((item) => item.situation === 'lost').length
+  const writtenOff = items.filter((item) => item.situation === 'written_off').length
+  const attention = lost + writtenOff
+  return {
+    total,
+    active: items.filter((item) => item.situation === 'active').length,
+    maintenance: items.filter((item) => item.situation === 'maintenance').length,
+    inactive: items.filter((item) => item.situation === 'inactive').length,
+    lost,
+    writtenOff,
+    attention,
+    attentionPercent: total > 0 ? Math.round((attention / total) * 100) : 0,
+  }
 }
 
 function buildInventoryReportResponse(session: SessionContext, requestUrl: string) {
@@ -789,7 +805,7 @@ export const handlers = [
 
     if (session.role === 'ditel_admin') {
       const inactiveEquipment = equipment.filter((item) => item.situation === 'inactive')
-      const attentionEquipment = equipment.filter((item) => ['lost', 'written_off'].includes(item.situation))
+      const attentionEquipment = equipment.filter((item) => ATTENTION_SITUATIONS.includes(item.situation))
       const response = {
         unit: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
         metrics: {
@@ -806,13 +822,21 @@ export const handlers = [
         ],
         unitSummaries: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units].map((unit) => {
           const scopedEquipment = equipment.filter((item) => item.unitId === unit.id)
-          const scopedAttention = scopedEquipment.filter((item) => ['lost', 'written_off'].includes(item.situation)).length
+          const scopedAttention = scopedEquipment.filter((item) => ATTENTION_SITUATIONS.includes(item.situation)).length
           return {
             unit,
             coverage: scopedEquipment.length ? '100%' : '0%',
             equipment: scopedEquipment.length,
             attention: scopedAttention,
           }
+        }),
+        operationalIndicators: dashboardIndicators(equipment),
+        commandSummaries: [
+          { id: 'command-north', name: 'CPRM', acronym: 'CPRM', unitIds: ['unit-centro', 'unit-norte', 'unit-sul'] },
+        ].map((command) => {
+          const commandEquipment = equipment.filter((item) => command.unitIds.includes(item.unitId))
+          const indicators = dashboardIndicators(commandEquipment)
+          return { command: { id: command.id, name: command.name, acronym: command.acronym }, equipment: indicators.total, attention: indicators.attention, attentionPercent: indicators.attentionPercent }
         }),
         callsByStatus: [
           { status: 'Aberto', label: 'Aberto', count: 2 },
@@ -841,7 +865,7 @@ export const handlers = [
     const scopedEquipment = equipment.filter((item) => item.unitId === unit.id)
     const inventoryTotal = unit.id === 'unit-centro' ? 428 : scopedEquipment.length
     const inactiveEquipment = scopedEquipment.filter((item) => item.situation === 'inactive')
-    const attentionEquipment = scopedEquipment.filter((item) => ['lost', 'written_off'].includes(item.situation))
+    const attentionEquipment = scopedEquipment.filter((item) => ATTENTION_SITUATIONS.includes(item.situation))
     const response = {
       unit,
       metrics: {
@@ -858,6 +882,8 @@ export const handlers = [
       ],
       recentActivity: recentActivityByUnit[unit.id as keyof typeof recentActivityByUnit] ?? [],
       unitSummaries: [{ unit, coverage: '100%', equipment: inventoryTotal, attention: attentionEquipment.length }],
+      operationalIndicators: dashboardIndicators(scopedEquipment, inventoryTotal),
+      commandSummaries: [],
       callsByStatus: [
         { status: 'Aberto', label: 'Aberto', count: 1 },
       ],

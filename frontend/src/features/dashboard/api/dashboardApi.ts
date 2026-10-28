@@ -1,7 +1,7 @@
 import { httpClient } from '../../../shared/api/httpClient'
 import { getSession } from '../../../shared/auth/session'
 import type { SessionContext } from '../../../shared/auth/types'
-import type { DashboardFilters } from '../../../shared/api/contracts'
+import type { DashboardCommandSummary, DashboardFilters, DashboardOperationalIndicators } from '../../../shared/api/contracts'
 
 export type UnitContext = NonNullable<SessionContext['unit']>
 
@@ -52,6 +52,8 @@ export type UnitDashboard = {
     occurredAt: string
   }>
   recentActivity: Activity[]
+  operationalIndicators?: DashboardOperationalIndicators
+  commandSummaries?: DashboardCommandSummary[]
 }
 
 type LegacyDashboardResponse = {
@@ -118,6 +120,8 @@ export function getDashboard(filters: DashboardFilters = {}): Promise<UnitDashbo
       ...(response.pendingMovements !== undefined ? { pendingMovements: response.pendingMovements } : {}),
       ...(response.monitoredUnits !== undefined ? { monitoredUnits: response.monitoredUnits } : {}),
       ...(response.recentMovements ? { recentMovements: response.recentMovements } : {}),
+      ...(response.operationalIndicators ? { operationalIndicators: response.operationalIndicators } : {}),
+      ...(response.commandSummaries ? { commandSummaries: response.commandSummaries } : {}),
       recentActivity: response.recentActivity ?? [],
     }))
   }

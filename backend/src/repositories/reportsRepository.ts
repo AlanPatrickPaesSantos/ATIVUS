@@ -2,7 +2,7 @@ import { CallModel, CALL_PRIORITIES } from '../models/Call.js';
 import { EquipmentModel, type EquipmentSituation } from '../models/Equipment.js';
 import { MovementModel, MOVEMENT_STATUSES } from '../models/Movement.js';
 import type { UnitReference } from '../models/User.js';
-import { resolveScopedUnitIds } from './equipmentQueryFilters.js';
+import { ATTENTION_SITUATIONS, resolveScopedUnitIds } from './equipmentQueryFilters.js';
 
 export const REPORT_SITUATIONS = ['active', 'maintenance', 'inactive', 'lost', 'written_off'] as const satisfies EquipmentSituation[];
 
@@ -75,7 +75,7 @@ function increment(counters: InventoryReportCounters, situation: EquipmentSituat
     counters[situation] += 1;
   }
 
-  if (['inactive', 'lost', 'written_off'].includes(situation)) {
+  if (ATTENTION_SITUATIONS.includes(situation as typeof ATTENTION_SITUATIONS[number])) {
     counters.attention += 1;
   }
 }

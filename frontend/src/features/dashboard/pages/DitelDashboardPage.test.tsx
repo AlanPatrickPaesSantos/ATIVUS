@@ -104,6 +104,21 @@ test('renders API-backed metrics when the dashboard query has data', () => {
   expect(within(metricsGrid).getByText('Em manutenção')).toBeInTheDocument()
 })
 
+test('renders explicit operational indicators and attention percentage', () => {
+  setQueryResult({ data: {
+    ...dashboard,
+    operationalIndicators: { total: 428, active: 360, maintenance: 47, inactive: 12, lost: 7, writtenOff: 2, attention: 9, attentionPercent: 2 },
+  } })
+
+  renderPage()
+
+  const metricsGrid = screen.getByLabelText('Indicadores estaduais')
+  expect(within(metricsGrid).getByText('Equipamentos em atenção')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('2%')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('Perdidos')).toBeInTheDocument()
+  expect(within(metricsGrid).getByText('Baixados')).toBeInTheDocument()
+})
+
 test('renders detailed statewide dashboard panels from real API data', () => {
   setQueryResult({ data: dashboard })
 
@@ -117,13 +132,67 @@ test('renders detailed statewide dashboard panels from real API data', () => {
 
   const ranking = screen.getByTestId('ditel-unit-ranking')
   expect(within(ranking).getByText('3º BPM')).toBeInTheDocument()
-  expect(within(ranking).getByText('9 pendências')).toBeInTheDocument()
+  expect(within(ranking).getByText('9 de 128 · 7%')).toBeInTheDocument()
 
   const calls = screen.getByTestId('ditel-calls-dashboard')
   expect(within(calls).getByText('Aberto')).toBeInTheDocument()
   expect(within(calls).getByText('4')).toBeInTheDocument()
   expect(within(calls).getByText('Em atendimento')).toBeInTheDocument()
   expect(within(calls).getByText('2')).toBeInTheDocument()
+})
+
+test('renders command comparison from backend aggregates', () => {
+  setQueryResult({ data: {
+    ...dashboard,
+    commandSummaries: [
+      { command: { id: 'command-north', name: 'CPRM', acronym: 'CPRM' }, equipment: 200, attention: 4, attentionPercent: 2 },
+    ],
+  } })
+
+  renderPage()
+
+  const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
+  expect(within(comparison).getByText('CPRM')).toBeInTheDocument()
+  expect(within(comparison).getByText('200')).toBeInTheDocument()
+  expect(within(comparison).getByText('2%')).toBeInTheDocument()
+})
+
+test('ranks commands and units by descriptive attention percentage with zero denominators', () => {
+  setQueryResult({ data: {
+    ...dashboard,
+    unitSummaries: [
+      { unit: { id: 'unit-a', name: 'Unidade A', acronym: 'A' }, coverage: '50%', equipment: 100, attention: 2 },
+      { unit: { id: 'unit-b', name: 'Unidade B', acronym: 'B' }, coverage: '50%', equipment: 10, attention: 5 },
+    ],
+    commandSummaries: [
+      { command: { id: 'command-zero', name: 'Comando sem equipamentos', acronym: 'CSE' }, equipment: 0, attention: 0, attentionPercent: 0 },
+      { command: { id: 'command-high', name: 'Comando prioritário', acronym: 'CP' }, equipment: 10, attention: 5, attentionPercent: 50 },
+    ],
+  } })
+
+  renderPage()
+
+  const ranking = screen.getByTestId('ditel-unit-ranking')
+  expect(within(ranking).getByText('Unidade B')).toBeInTheDocument()
+  expect(within(ranking).getByText('5 de 10 · 50%')).toBeInTheDocument()
+  expect(within(ranking).getByText(/indicador descritivo/i)).toBeInTheDocument()
+
+  const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
+  expect(within(comparison).getByText('Comando prioritário')).toBeInTheDocument()
+  expect(within(comparison).getByText('0%')).toBeInTheDocument()
+  expect(within(comparison).getByText(/não representa avaliação automática de desempenho/i)).toBeInTheDocument()
+})
+
+test('navigates to inventory preserving supported dashboard filters', async () => {
+  const user = userEvent.setup()
+  setQueryResult({ data: dashboard })
+  renderPage()
+
+  await user.selectOptions(screen.getByLabelText('Comando intermediário'), 'command-north')
+  await user.click(screen.getByRole('button', { name: 'Filtros avançados' }))
+  await user.selectOptions(screen.getByLabelText('Tipo de equipamento'), 'Notebook')
+
+  expect(screen.getByRole('link', { name: 'Consultar inventário estadual' })).toHaveAttribute('href', '/inventario?commandId=command-north&type=Notebook')
 })
 
 test('does not render simulated operational data when the dashboard query has no data', () => {
@@ -137,12 +206,14 @@ test('does not render simulated operational data when the dashboard query has no
   expect(screen.queryByText('12')).not.toBeInTheDocument()
 })
 
-test('renders unit coverage table from the dashboard API contract', () => {
+test('renders unit participation and attention table from the dashboard API contract', () => {
   setQueryResult({ data: dashboard })
 
   renderPage()
 
   expect(screen.getByRole('columnheader', { name: 'Unidade' })).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: 'Participação no recorte' })).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: '% em atenção' })).toBeInTheDocument()
   expect(screen.getByRole('row', { name: /3º BPM/ })).toBeInTheDocument()
   expect(screen.getByText('128')).toBeInTheDocument()
   expect(screen.getByRole('row', { name: /3º BPM84%1289/ })).toBeInTheDocument()

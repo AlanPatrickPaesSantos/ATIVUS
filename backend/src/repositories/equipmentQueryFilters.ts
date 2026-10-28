@@ -6,6 +6,7 @@ import type { UnitReference } from '../models/User.js';
 import { resolveOrganizationalScopeFromDatabase } from './organizationalScopeResolver.js';
 
 export type DashboardPeriod = '30d' | '90d' | '2026-08';
+export const ATTENTION_SITUATIONS = ['lost', 'written_off'] as const satisfies EquipmentSituation[];
 
 export interface EquipmentFilterInput {
   search?: string;
