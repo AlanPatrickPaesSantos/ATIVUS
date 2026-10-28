@@ -87,6 +87,19 @@ test('renders inventory filters from authorized facets and exposes the page-size
   expect(screen.getByTestId('location')).not.toHaveTextContent('page=3')
 })
 
+test('keeps wide pagination controls usable for a large filtered result set', () => {
+  queryState.result.data = { items: [{ id: 'eq-001', patrimony: 'UC-001', type: 'Notebook', model: 'ProBook', brand: 'HP', situation: 'active', location: 'Sala Administrativa', unitName: 'Unidade Centro' }], total: 7487, page: 375, pageSize: 20 }
+
+  renderPage('/inventario?page=375&pageSize=20', ditelSession)
+
+  const pagination = screen.getByRole('navigation', { name: 'Paginação do inventário' })
+  expect(pagination).toHaveClass('inventory-pagination')
+  expect(within(pagination).getByText('Itens por página')).toBeInTheDocument()
+  expect(within(pagination).getByRole('button', { name: 'Página 375' })).toHaveClass('is-active')
+  expect(within(pagination).getByRole('button', { name: 'Página 375' })).toBeInTheDocument()
+  expect(within(pagination).getByRole('button', { name: 'Próxima página' })).toBeDisabled()
+})
+
 test('shows a retryable facets error without inventing filter options', async () => {
   const user = userEvent.setup()
   facetsState.result.isError = true

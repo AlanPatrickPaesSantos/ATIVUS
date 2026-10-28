@@ -105,38 +105,6 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
 
         <InventoryToolbar filters={filters} onChange={update} facets={facetsQuery.data} facetsError={facetsQuery.isError} onRetryFacets={() => { void facetsQuery.refetch() }} organizationOptions={organizationalOptionsQuery.data} organizationOptionsLoading={organizationalOptionsQuery.isLoading} isStatewide={isStatewide} scopeName={isStatewide ? 'Escopo estadual' : unitName} />
 
-        {showPagination ? (
-          <nav className="inventory-sidebar-pagination" aria-label="Paginação do inventário">
-            <label>Quantidade por página<select aria-label="Quantidade por página" value={query.pageSize} onChange={(event) => update({ page: 1, pageSize: Number(event.target.value) })}><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label>
-            <button
-              type="button"
-              className="inventory-sidebar-pagination__arrow"
-              disabled={query.page <= 1}
-              onClick={() => update({ page: query.page - 1 })}
-              aria-label="Página anterior"
-            >
-              ‹
-            </button>
-            <div className="inventory-sidebar-pagination__numbers">
-              {Array.from({ length: Math.ceil(total / query.pageSize) }, (_, i) => i + 1).filter((pageNum, _index, pages) => pageNum === 1 || pageNum === pages[pages.length - 1] || Math.abs(pageNum - query.page) <= 2).map((pageNum, _index, pages) => {
-                const previous = pages[pages.indexOf(pageNum) - 1]
-                const gap = previous !== undefined && pageNum - previous > 1
-                return (
-                  <span key={pageNum}>{gap ? <span className="inventory-sidebar-pagination__dots">...</span> : null}<button type="button" className={`inventory-sidebar-pagination__number-btn ${query.page === pageNum ? 'is-active' : ''}`} onClick={() => update({ page: pageNum })} aria-label={`Página ${pageNum}`}>{pageNum}</button></span>
-                )
-              })}
-            </div>
-            <button
-              type="button"
-              className="inventory-sidebar-pagination__arrow"
-              disabled={query.page * query.pageSize >= total}
-              onClick={() => update({ page: query.page + 1 })}
-              aria-label="Próxima página"
-            >
-              ›
-            </button>
-          </nav>
-        ) : null}
       </aside>
 
       {/* Área principal direita */}
@@ -164,6 +132,41 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
             onClearFilters={clearFilters}
           />
         </div>
+
+        {showPagination ? (
+          <nav className="inventory-pagination" aria-label="Paginação do inventário">
+            <label className="inventory-pagination__page-size"><span>Itens por página</span><select aria-label="Quantidade por página" value={query.pageSize} onChange={(event) => update({ page: 1, pageSize: Number(event.target.value) })}><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label>
+            <div className="inventory-pagination__controls">
+              <button
+                type="button"
+                className="inventory-pagination__arrow"
+                disabled={query.page <= 1}
+                onClick={() => update({ page: query.page - 1 })}
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+              <div className="inventory-pagination__numbers">
+                {Array.from({ length: Math.ceil(total / query.pageSize) }, (_, i) => i + 1).filter((pageNum, _index, pages) => pageNum === 1 || pageNum === pages[pages.length - 1] || Math.abs(pageNum - query.page) <= 2).map((pageNum, _index, pages) => {
+                  const previous = pages[pages.indexOf(pageNum) - 1]
+                  const gap = previous !== undefined && pageNum - previous > 1
+                  return (
+                    <span key={pageNum}>{gap ? <span className="inventory-pagination__dots">...</span> : null}<button type="button" className={`inventory-pagination__number-btn ${query.page === pageNum ? 'is-active' : ''}`} onClick={() => update({ page: pageNum })} aria-label={`Página ${pageNum}`}>{pageNum}</button></span>
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                className="inventory-pagination__arrow"
+                disabled={query.page * query.pageSize >= total}
+                onClick={() => update({ page: query.page + 1 })}
+                aria-label="Próxima página"
+              >
+                ›
+              </button>
+            </div>
+          </nav>
+        ) : null}
       </main>
     </div>
 
