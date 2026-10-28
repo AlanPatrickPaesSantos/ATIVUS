@@ -2,17 +2,19 @@ import { EquipmentModel } from '../models/Equipment.js';
 import { MovementModel, type MovementDocument, type MovementStatus } from '../models/Movement.js';
 import type { UnitReference } from '../models/User.js';
 import mongoose, { type ClientSession } from 'mongoose';
+import { assertOperationalWritesOpen } from './operationalMaintenanceRepository.js';
 
 export interface MovementCreateInput { equipmentId: string; origin: UnitReference; destination: UnitReference; requestedBy: string }
 type MovementViewDocument = MovementDocument & { _id?: unknown; createdAt: Date; updatedAt: Date };
 export function movementView(document: MovementViewDocument) { return { id: String(document._id), type: document.type, equipmentId: document.equipmentId, origin: document.origin, destination: document.destination, requestedBy: document.requestedBy, status: document.status, ...(document.decisionReason ? { decisionReason: document.decisionReason } : {}), createdAt: document.createdAt.toISOString(), updatedAt: document.updatedAt.toISOString() }; }
-export async function createMovement(input: MovementCreateInput, session?: ClientSession) { const [document] = await MovementModel.create([{ ...input, type: 'Transferência definitiva', status: 'Pendente' }], session ? { session } : undefined); return movementView(document); }
+export async function createMovement(input: MovementCreateInput, session?: ClientSession) { if (session) await assertOperationalWritesOpen(session); const [document] = await MovementModel.create([{ ...input, type: 'Transferência definitiva', status: 'Pendente' }], session ? { session } : undefined); return movementView(document); }
 export async function listMovements(scope: { role: 'unit_user' | 'ditel_admin'; unitId: string | null }) { const filter = scope.role === 'unit_user' ? { $or: [{ 'origin.id': scope.unitId }, { 'destination.id': scope.unitId }] } : {}; const docs = await MovementModel.find(filter).sort({ createdAt: -1, _id: 1 }).lean().exec(); return { items: docs.map(movementView) }; }
 export async function movementExists(id: string) { return Boolean(await MovementModel.exists({ _id: id })); }
 async function decideMovementWithinSession(
   session: ClientSession,
   input: { id: string; updatedAt: Date; status: Exclude<MovementStatus, 'Pendente'>; reason?: string; decidedBy: string },
 ) {
+  await assertOperationalWritesOpen(session);
   const current = await MovementModel.findOne({ _id: input.id, status: 'Pendente', updatedAt: input.updatedAt }).session(session).lean().exec();
   if (!current) return null;
   if (input.status === 'Aprovada') {

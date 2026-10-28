@@ -452,6 +452,34 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/operational-maintenance:
+    get:
+      tags: [Administration]
+      summary: Consulta a janela compartilhada de manutenção patrimonial
+      operationId: getOperationalMaintenance
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Estado atual da janela operacional
+          content: { application/json: { schema: { $ref: '#/components/schemas/OperationalMaintenanceWindow' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Administration]
+      summary: Ativa ou desativa a janela compartilhada de manutenção patrimonial
+      operationId: updateOperationalMaintenance
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/OperationalMaintenanceUpdateRequest' } } }
+      responses:
+        '200':
+          description: Janela atualizada
+          content: { application/json: { schema: { $ref: '#/components/schemas/OperationalMaintenanceWindow' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
   /admin/users/{userId}:
     patch:
       tags: [Administration]
@@ -1626,6 +1654,23 @@ components:
         userId: { type: string }
         temporaryPassword: { type: string, minLength: 20, writeOnly: true }
         mustChangePassword: { type: boolean, const: true }
+    OperationalMaintenanceWindow:
+      type: object
+      required: [active, reason, actorId, activatedAt, deactivatedAt, revision]
+      properties:
+        active: { type: boolean }
+        reason: { type: string }
+        actorId: { type: string }
+        activatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        deactivatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        revision: { type: integer, minimum: 0 }
+    OperationalMaintenanceUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [active, reason]
+      properties:
+        active: { type: boolean }
+        reason: { type: string, minLength: 1, maxLength: 500 }
     AuditActor:
       type: object
       required: [id]

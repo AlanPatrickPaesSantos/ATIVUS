@@ -30,6 +30,14 @@ describe('OpenAPI contract', () => {
     expect(schema).toMatch(/EquipmentCreateRequest:[\s\S]*category:\s*\{ type: string \}/);
   });
 
+  it('documents the operational maintenance window', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    expect(schema).toContain('/admin/operational-maintenance:');
+    expect(schema).toContain('operationId: getOperationalMaintenance');
+    expect(schema).toContain('operationId: updateOperationalMaintenance');
+    expect(schema).toContain('OperationalMaintenanceWindow:');
+  });
+
   it('documents the AC patrimonial material contract and its restricted operations', async () => {
     const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
     const collection = pathBlock(schema, '/ac/materials');

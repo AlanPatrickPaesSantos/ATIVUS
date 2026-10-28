@@ -33,6 +33,8 @@ import { createAcMaterialRoutes } from './routes/acMaterialRoutes.js';
 import { createAcTransferRoutes } from './routes/acTransferRoutes.js';
 import { createAcReportRoutes } from './routes/acReportRoutes.js';
 import { createAcTransferDocumentRoutes } from './routes/acTransferDocumentRoutes.js';
+import { createOperationalMaintenanceRoutes } from './routes/operationalMaintenanceRoutes.js';
+import { OperationalMaintenanceActiveError } from './repositories/operationalMaintenanceRepository.js';
 
 type ErrorLogger = Pick<Console, 'error'>;
 export interface CreateAppOptions {
@@ -64,6 +66,11 @@ export function createErrorHandler(logger: ErrorLogger = console) {
         code: 'AUDIT_UNAVAILABLE',
         message: 'Não foi possível registrar auditoria.',
       });
+      return;
+    }
+
+    if (error instanceof OperationalMaintenanceActiveError) {
+      res.status(503).json({ code: 'OPERATIONAL_MAINTENANCE_ACTIVE', message: error.message });
       return;
     }
 
@@ -140,6 +147,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
     sessionCookieSecure,
     sessionService,
   }));
+  app.use('/api/v1', createOperationalMaintenanceRoutes(requireSession));
 
   app.use('/api/v1', createDashboardRoutes({
     requireSession,
