@@ -75,6 +75,7 @@ test('renders the statewide operations console with filters and API-backed metri
   renderPage()
 
   expect(screen.getByTestId('ditel-operations-console')).toHaveAttribute('data-visual-variant', 'statewide-operations-console')
+  expect(screen.getByRole('region', { name: 'Filtros estaduais' })).toHaveClass('ditel-filters--compact')
   expect(screen.getByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(screen.queryByText('Gestão estadual · DITEL')).not.toBeInTheDocument()
   expect(screen.queryByText(/Leitura consolidada da cobertura patrimonial/i)).not.toBeInTheDocument()
@@ -147,19 +148,37 @@ test('renders detailed statewide dashboard panels from real API data', () => {
 
   expect(screen.queryByRole('heading', { name: 'Cobertura por unidade' })).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Ranking de atenção' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()
 
-  const ranking = screen.getByTestId('ditel-unit-ranking')
-  expect(within(ranking).getByText('3º BPM')).toBeInTheDocument()
-  expect(within(ranking).getByText('9 de 128 · 7%')).toBeInTheDocument()
+  const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
+  expect(within(unitsPanel).getByText('3º BPM')).toBeInTheDocument()
+  expect(within(unitsPanel).getByText('9')).toBeInTheDocument()
 
   const calls = screen.getByTestId('ditel-calls-dashboard')
   expect(within(calls).getByText('Aberto')).toBeInTheDocument()
   expect(within(calls).getByText('4')).toBeInTheDocument()
   expect(within(calls).getByText('Em atendimento')).toBeInTheDocument()
   expect(within(calls).getByText('2')).toBeInTheDocument()
+})
+
+test('consolidates unit monitoring and attention ranking with explicit sorting', async () => {
+  const user = userEvent.setup()
+  const manyUnits = [
+    { unit: { id: 'unit-a', name: 'Unidade A', acronym: 'A' }, coverage: '50%', equipment: 100, attention: 2 },
+    { unit: { id: 'unit-b', name: 'Unidade B', acronym: 'B' }, coverage: '50%', equipment: 10, attention: 5 },
+  ]
+  setQueryResult({ data: { ...dashboard, unitSummaries: manyUnits } })
+
+  renderPage()
+
+  const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
+  expect(within(unitsPanel).getByLabelText('Ordenar unidades por')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Ranking de atenção' })).not.toBeInTheDocument()
+
+  await user.selectOptions(within(unitsPanel).getByLabelText('Ordenar unidades por'), 'equipment')
+  expect(within(unitsPanel).getByRole('row', { name: /Unidade A/ })).toBeInTheDocument()
+  expect(within(unitsPanel).getByText('Ordenadas por total de equipamentos')).toBeInTheDocument()
 })
 
 test('limits unit and attention lists to five items until expanded', async () => {
@@ -173,14 +192,12 @@ test('limits unit and attention lists to five items until expanded', async () =>
   renderPage()
 
   const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
-  expect(within(unitsPanel).getByText('Unidade 5')).toBeInTheDocument()
-  expect(within(unitsPanel).queryByText('Unidade 6')).not.toBeInTheDocument()
+  expect(within(unitsPanel).getAllByRole('row')).toHaveLength(6)
   await user.click(within(unitsPanel).getByRole('button', { name: 'Ver todas as unidades' }))
   expect(within(unitsPanel).getByText('Unidade 6')).toBeInTheDocument()
+  expect(within(unitsPanel).getAllByRole('row')).toHaveLength(8)
   expect(within(unitsPanel).getByRole('button', { name: 'Mostrar menos unidades' })).toBeInTheDocument()
 
-  const ranking = screen.getByTestId('ditel-unit-ranking')
-  expect(within(ranking).getByRole('button', { name: 'Ver ranking completo' })).toBeInTheDocument()
 })
 
 test('renders command comparison from backend aggregates', () => {
@@ -196,6 +213,7 @@ test('renders command comparison from backend aggregates', () => {
   const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
   expect(within(comparison).getByText('CPRM')).toBeInTheDocument()
   expect(within(comparison).getByText('4 de 200 equipamentos · 2%')).toBeInTheDocument()
+  expect(comparison.querySelector('.ditel-command-row__track span')).toHaveStyle({ width: '2%' })
 })
 
 test('ranks commands and units by descriptive attention percentage with zero denominators', () => {
@@ -213,10 +231,9 @@ test('ranks commands and units by descriptive attention percentage with zero den
 
   renderPage()
 
-  const ranking = screen.getByTestId('ditel-unit-ranking')
-  expect(within(ranking).getByText('Unidade B')).toBeInTheDocument()
-  expect(within(ranking).getByText('5 de 10 · 50%')).toBeInTheDocument()
-  expect(within(ranking).getByText(/indicador descritivo/i)).toBeInTheDocument()
+  const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
+  const unitBRow = within(unitsPanel).getByRole('row', { name: /Unidade B/ })
+  expect(unitBRow).toHaveTextContent('50%')
 
   const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
   expect(within(comparison).getByText('Comando prioritário')).toBeInTheDocument()

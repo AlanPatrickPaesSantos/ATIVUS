@@ -8,6 +8,7 @@ import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
 
 type Tone = 'operational' | 'available' | 'attention' | 'critical'
+type UnitSort = 'attentionPercent' | 'attention' | 'equipment'
 
 type Situation = {
   situation: string
@@ -68,11 +69,15 @@ function barWidth(value: number, max: number) {
   return `${Math.max(6, Math.round((value / max) * 100))}%`
 }
 
+function percentageBarWidth(value: number) {
+  return `${Math.min(100, Math.max(0, Math.round(value)))}%`
+}
+
 export function DitelDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false)
   const [showAllUnits, setShowAllUnits] = useState(false)
-  const [showAllRanking, setShowAllRanking] = useState(false)
+  const [unitSort, setUnitSort] = useState<UnitSort>('attentionPercent')
   const filters = useMemo<DashboardFilters>(() => ({
     unitId: searchParams.get('unitId') || undefined,
     commandId: searchParams.get('commandId') || undefined,
@@ -92,8 +97,15 @@ export function DitelDashboardPage() {
   const unitAttentionPercent = (unit: UnitSummary) => unit.attentionPercent ?? percent(unit.attention, unit.equipment)
 
   const sortedUnits = useMemo(() => {
-    return [...units].sort((a, b) => unitAttentionPercent(b) - unitAttentionPercent(a) || b.attention - a.attention || b.equipment - a.equipment || a.unit.name.localeCompare(b.unit.name))
-  }, [units])
+    return [...units].sort((a, b) => {
+      const difference = unitSort === 'equipment'
+        ? b.equipment - a.equipment
+        : unitSort === 'attention'
+          ? b.attention - a.attention
+          : unitAttentionPercent(b) - unitAttentionPercent(a)
+      return difference || b.attention - a.attention || b.equipment - a.equipment || a.unit.name.localeCompare(b.unit.name)
+    })
+  }, [unitSort, units])
 
   const callsByStatus = (data?.callsByStatus ?? []) as CallsByStatus[]
   const recentMovements = (data?.recentMovements ?? []) as RecentMovement[]
@@ -157,9 +169,12 @@ export function DitelDashboardPage() {
         { label: 'Movimentações pendentes', value: formatNumber(data.pendingMovements ?? 0), tone: 'operational' as Tone },
       ]
     : []
-  const visibleUnits = showAllUnits ? units : units.slice(0, 5)
-  const visibleRanking = showAllRanking ? sortedUnits : sortedUnits.slice(0, 5)
-  const maxCommandAttention = Math.max(...sortedCommandSummaries.map((item) => item.attentionPercent), 0)
+  const visibleUnits = showAllUnits ? sortedUnits : sortedUnits.slice(0, 5)
+  const unitSortDescription = unitSort === 'equipment'
+    ? 'Ordenadas por total de equipamentos'
+    : unitSort === 'attention'
+      ? 'Ordenadas por quantidade em atenção'
+      : 'Ordenadas por percentual em atenção'
 
   function clearAdvancedFilters() { setSearchParams(new URLSearchParams()) }
 
@@ -189,7 +204,7 @@ export function DitelDashboardPage() {
         />
       ) : null}
 
-      <section className="module-panel ditel-filters" aria-label="Filtros estaduais">
+      <section className="module-panel ditel-filters ditel-filters--compact" aria-label="Filtros estaduais">
         <div className="ditel-filters__primary">
           <label>
             Comando intermediário
@@ -315,6 +330,7 @@ export function DitelDashboardPage() {
                   <span className="ditel-panel-kicker">Recorte hierárquico</span>
                   <h2>Comparação patrimonial por comando</h2>
                   <p>Equipamentos e atenção nos descendentes autorizados do recorte atual.</p>
+                  <p>Barras representam o percentual de equipamentos em atenção no comando.</p>
                   <p>Indicador descritivo; não representa avaliação automática de desempenho.</p>
                 </div>
                 <span className="ditel-panel-caption">Indicador descritivo</span>
@@ -327,7 +343,7 @@ export function DitelDashboardPage() {
                       <span>{formatNumber(summary.attention)} de {formatNumber(summary.equipment)} equipamentos · {summary.attentionPercent}%</span>
                     </div>
                     <div className="ditel-command-row__track" aria-hidden="true">
-                      <span style={{ width: barWidth(summary.attentionPercent, maxCommandAttention) }} />
+                      <span style={{ width: percentageBarWidth(summary.attentionPercent) }} />
                     </div>
                   </div>
                 ))}
@@ -401,7 +417,14 @@ export function DitelDashboardPage() {
                     <span className="ditel-panel-kicker">Visão operacional</span>
                     <h2>Unidades monitoradas</h2>
                   </div>
-                  <span className="ditel-panel-caption">{formatNumber(units.length)} unidades</span>
+                  <label className="ditel-unit-sort">
+                    Ordenar unidades por
+                    <select aria-label="Ordenar unidades por" value={unitSort} onChange={(event) => setUnitSort(event.target.value as UnitSort)}>
+                      <option value="attentionPercent">Percentual em atenção</option>
+                      <option value="attention">Quantidade em atenção</option>
+                      <option value="equipment">Total de equipamentos</option>
+                    </select>
+                  </label>
                 </div>
               </div>
               <div className="ditel-units__table" role="table" aria-label="Resumo por unidade">
@@ -422,6 +445,7 @@ export function DitelDashboardPage() {
                   </div>
                 ))}
               </div>
+              <p className="ditel-unit-sort__description">{unitSortDescription}</p>
               {!units.length ? <p className="ditel-dashboard-empty">Nenhuma Unidade corresponde ao recorte atual.</p> : null}
               <div className="ditel-list-actions">
                 {units.length > 5 ? (
@@ -433,38 +457,6 @@ export function DitelDashboardPage() {
                   Consultar inventário estadual
                 </Link>
               </div>
-            </section>
-            <section className="module-panel ditel-ranking" data-testid="ditel-unit-ranking" aria-label="Ranking de atenção">
-              <div className="ditel-panel-heading">
-                <div>
-                  <span className="ditel-panel-kicker">Prioridade relativa</span>
-                  <h2>Ranking de atenção</h2>
-                </div>
-                <span className="ditel-panel-caption">Top 5</span>
-              </div>
-              <p className="ditel-panel-note">Indicador descritivo; não representa avaliação automática de desempenho.</p>
-              {sortedUnits.length === 0 ? (
-                <p className="ditel-dashboard-empty">Nenhuma Unidade corresponde ao recorte atual.</p>
-              ) : (
-                <ol className="ditel-ranking__list">
-                  {visibleRanking.map((unit) => (
-                    <li key={unit.unit.id}>
-                      <div>
-                        <strong>{unit.unit.name}</strong>
-                        <span>{formatNumber(unit.attention)} de {formatNumber(unit.equipment)} · {unitAttentionPercent(unit)}%</span>
-                      </div>
-                      <div className="ditel-ranking__track">
-                        <span style={{ width: barWidth(unitAttentionPercent(unit), 100) }} />
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {sortedUnits.length > 5 ? (
-                <button className="button-link" type="button" onClick={() => setShowAllRanking((visible) => !visible)}>
-                  {showAllRanking ? 'Mostrar menos unidades' : 'Ver ranking completo'}
-                </button>
-              ) : null}
             </section>
           </div>
 
