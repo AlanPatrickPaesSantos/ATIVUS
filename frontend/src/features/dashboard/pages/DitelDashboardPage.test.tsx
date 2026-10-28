@@ -94,14 +94,34 @@ test('renders API-backed metrics when the dashboard query has data', () => {
 
   renderPage()
 
-  const metricsGrid = screen.getByLabelText('Indicadores estaduais')
-  expect(within(metricsGrid).getByText('428')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('47')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('21')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('Inativos')).toBeInTheDocument()
-  expect(within(metricsGrid).queryByText('Requer atenção')).not.toBeInTheDocument()
-  expect(within(metricsGrid).queryByText('1.248')).not.toBeInTheDocument()
-  expect(within(metricsGrid).getByText('Em manutenção')).toBeInTheDocument()
+  const primaryKpis = screen.getByTestId('ditel-primary-kpis')
+  const secondaryIndicators = screen.getByTestId('ditel-secondary-indicators')
+  expect(within(primaryKpis).getByText('428')).toBeInTheDocument()
+  expect(within(primaryKpis).getByText('Em operação')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('47')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('21')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Inativos')).toBeInTheDocument()
+  expect(within(primaryKpis).queryByText('Requer atenção')).not.toBeInTheDocument()
+  expect(within(primaryKpis).queryByText('1.248')).not.toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Em manutenção')).toBeInTheDocument()
+})
+
+test('organizes the dashboard into four primary KPIs and compact secondary indicators', () => {
+  setQueryResult({ data: dashboard })
+
+  renderPage()
+
+  const primaryKpis = screen.getByTestId('ditel-primary-kpis')
+  expect(within(primaryKpis).getByText('Equipamentos cadastrados')).toBeInTheDocument()
+  expect(within(primaryKpis).getByText('Em operação')).toBeInTheDocument()
+  expect(within(primaryKpis).getByText('Equipamentos em atenção')).toBeInTheDocument()
+  expect(within(primaryKpis).getByText('% em atenção')).toBeInTheDocument()
+  expect(within(primaryKpis).queryByText('Em manutenção')).not.toBeInTheDocument()
+
+  const secondaryIndicators = screen.getByTestId('ditel-secondary-indicators')
+  expect(within(secondaryIndicators).getByText('Em manutenção')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Perdidos')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Baixados')).toBeInTheDocument()
 })
 
 test('renders explicit operational indicators and attention percentage', () => {
@@ -112,11 +132,12 @@ test('renders explicit operational indicators and attention percentage', () => {
 
   renderPage()
 
-  const metricsGrid = screen.getByLabelText('Indicadores estaduais')
-  expect(within(metricsGrid).getByText('Equipamentos em atenção')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('2%')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('Perdidos')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('Baixados')).toBeInTheDocument()
+  const primaryKpis = screen.getByTestId('ditel-primary-kpis')
+  const secondaryIndicators = screen.getByTestId('ditel-secondary-indicators')
+  expect(within(primaryKpis).getByText('Equipamentos em atenção')).toBeInTheDocument()
+  expect(within(primaryKpis).getByText('2%')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Perdidos')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('Baixados')).toBeInTheDocument()
 })
 
 test('renders detailed statewide dashboard panels from real API data', () => {
@@ -141,6 +162,27 @@ test('renders detailed statewide dashboard panels from real API data', () => {
   expect(within(calls).getByText('2')).toBeInTheDocument()
 })
 
+test('limits unit and attention lists to five items until expanded', async () => {
+  const user = userEvent.setup()
+  const manyUnits = Array.from({ length: 7 }, (_, index) => ({
+    unit: { id: `unit-${index}`, name: `Unidade ${index + 1}`, acronym: `U${index + 1}` },
+    coverage: '10%', equipment: 10 + index, attention: index,
+  }))
+  setQueryResult({ data: { ...dashboard, unitSummaries: manyUnits } })
+
+  renderPage()
+
+  const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
+  expect(within(unitsPanel).getByText('Unidade 5')).toBeInTheDocument()
+  expect(within(unitsPanel).queryByText('Unidade 6')).not.toBeInTheDocument()
+  await user.click(within(unitsPanel).getByRole('button', { name: 'Ver todas as unidades' }))
+  expect(within(unitsPanel).getByText('Unidade 6')).toBeInTheDocument()
+  expect(within(unitsPanel).getByRole('button', { name: 'Mostrar menos unidades' })).toBeInTheDocument()
+
+  const ranking = screen.getByTestId('ditel-unit-ranking')
+  expect(within(ranking).getByRole('button', { name: 'Ver ranking completo' })).toBeInTheDocument()
+})
+
 test('renders command comparison from backend aggregates', () => {
   setQueryResult({ data: {
     ...dashboard,
@@ -153,8 +195,7 @@ test('renders command comparison from backend aggregates', () => {
 
   const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
   expect(within(comparison).getByText('CPRM')).toBeInTheDocument()
-  expect(within(comparison).getByText('200')).toBeInTheDocument()
-  expect(within(comparison).getByText('2%')).toBeInTheDocument()
+  expect(within(comparison).getByText('4 de 200 equipamentos · 2%')).toBeInTheDocument()
 })
 
 test('ranks commands and units by descriptive attention percentage with zero denominators', () => {
@@ -179,7 +220,7 @@ test('ranks commands and units by descriptive attention percentage with zero den
 
   const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
   expect(within(comparison).getByText('Comando prioritário')).toBeInTheDocument()
-  expect(within(comparison).getByText('0%')).toBeInTheDocument()
+  expect(within(comparison).getByText('0 de 0 equipamentos · 0%')).toBeInTheDocument()
   expect(within(comparison).getByText(/não representa avaliação automática de desempenho/i)).toBeInTheDocument()
 })
 
@@ -250,9 +291,9 @@ test('renders real call and movement indicators from the dashboard API', () => {
 
   renderPage()
 
-  const metricsGrid = screen.getByLabelText('Indicadores estaduais')
-  expect(within(metricsGrid).getByText('1')).toBeInTheDocument()
-  expect(within(metricsGrid).getByText('3')).toBeInTheDocument()
+  const secondaryIndicators = screen.getByTestId('ditel-secondary-indicators')
+  expect(within(secondaryIndicators).getByText('1')).toBeInTheDocument()
+  expect(within(secondaryIndicators).getByText('3')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
   expect(screen.getByText('Aberto', { selector: 'li span' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()

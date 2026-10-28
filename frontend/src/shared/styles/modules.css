@@ -490,13 +490,20 @@
 .ditel-dashboard-page .module-panel { border-color: rgb(148 163 184 / 32%); }
 .ditel-dashboard-page .module-panel h2 { color: var(--sigat-text); font-family: var(--font-title); font-size: clamp(1rem, 1.4vw, 1.22rem); margin: 0 0 .18rem; }
 .ditel-dashboard-page .module-panel p { color: var(--sigat-muted); font-size: .82rem; line-height: 1.45; margin: 0; }
-.ditel-metric-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.ditel-primary-kpis { display: grid; gap: .8rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: .65rem; }
 .ditel-metric { background: linear-gradient(145deg, rgb(43 60 82 / 88%), rgb(30 43 61 / 96%)); min-height: 6rem; padding: .9rem 1rem; }
 .ditel-metric--available::before { background: var(--sigat-available); }
 .ditel-metric--operational::before { background: var(--sigat-operational-bright); }
 .ditel-metric--attention::before { background: var(--sigat-attention); }
 .ditel-metric--critical::before { background: var(--sigat-critical); }
 .ditel-metric strong { font-size: 1.65rem; margin-top: .8rem; }
+.ditel-secondary-indicators { align-items: stretch; background: rgb(13 22 35 / 64%); border: 1px solid rgb(148 163 184 / 18%); display: grid; gap: 0; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 1rem; overflow: hidden; }
+.ditel-secondary-indicator { border-right: 1px solid rgb(148 163 184 / 16%); display: flex; flex-direction: column; gap: .3rem; justify-content: center; min-height: 3.9rem; padding: .65rem .8rem; }
+.ditel-secondary-indicator:last-child { border-right: 0; }
+.ditel-secondary-indicator span { color: var(--sigat-muted); font-size: .66rem; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.ditel-secondary-indicator strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: 1rem; }
+.ditel-secondary-indicator--attention strong { color: var(--sigat-attention); }
+.ditel-secondary-indicator--critical strong { color: rgb(248 113 113); }
 .ditel-state-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1.2fr) minmax(24rem, .8fr); margin-bottom: 1rem; }
 .ditel-state-health, .ditel-park-distribution, .ditel-calls-dashboard, .ditel-flow-dashboard, .ditel-ranking { background: linear-gradient(145deg, rgb(45 64 88 / 92%), rgb(30 43 61 / 98%)); padding: 1.15rem; }
 .ditel-state-health { overflow: hidden; position: relative; }
@@ -525,12 +532,21 @@
 .ditel-park-distribution__list li { align-items: center; background: rgb(15 23 42 / 42%); display: flex; justify-content: space-between; padding: .65rem .75rem; }
 .ditel-park-distribution__list span, .ditel-bar-list span, .ditel-ranking__list span { color: var(--sigat-muted); font-size: .78rem; }
 .ditel-park-distribution__list strong, .ditel-bar-list strong, .ditel-ranking__list strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: .82rem; }
-.ditel-dashboard-page__grid { align-items: stretch; grid-template-columns: minmax(0, 1fr); margin-bottom: 1rem; }
+.ditel-dashboard-page__grid { align-items: stretch; grid-template-columns: minmax(0, 1.18fr) minmax(20rem, .82fr); margin-bottom: 1rem; }
 .ditel-command-comparison { background: linear-gradient(145deg, rgb(45 64 88 / 92%), rgb(30 43 61 / 98%)); margin-bottom: 1rem; padding: 1.15rem; }
-.ditel-command-comparison__table { border: 1px solid var(--sigat-border); border-radius: var(--radius-sm); margin-top: 1rem; overflow: hidden; }
-.ditel-command-comparison__table > div { align-items: center; border-bottom: 1px solid var(--sigat-border); display: grid; gap: 1rem; grid-template-columns: 1.5fr 1fr 1fr 1fr; min-height: 3rem; padding: .65rem .8rem; }
-.ditel-command-comparison__table > div:last-child { border-bottom: 0; }
-.ditel-command-comparison__table > div:not(.ditel-units__header):hover { background: rgb(22 119 255 / 7%); }
+.ditel-command-list { display: grid; gap: .85rem; margin-top: 1.1rem; }
+.ditel-command-row { display: grid; gap: .45rem; }
+.ditel-command-row__label { align-items: baseline; display: flex; gap: .7rem; justify-content: space-between; }
+.ditel-command-row__label strong { color: var(--sigat-text); font-size: .86rem; }
+.ditel-command-row__label span { color: var(--sigat-muted); font-family: var(--font-identifier); font-size: .68rem; text-align: right; }
+.ditel-command-row__track { background: rgb(15 23 42 / 70%); border: 1px solid rgb(96 165 250 / 14%); border-radius: 999px; height: .58rem; overflow: hidden; }
+.ditel-command-row__track span { background: linear-gradient(90deg, var(--sigat-operational-bright), rgb(167 139 250)); border-radius: inherit; display: block; height: 100%; min-width: .2rem; }
+.ditel-panel-kicker { color: var(--sigat-operational-bright); display: block; font-size: .62rem; font-weight: 850; letter-spacing: .11em; margin-bottom: .25rem; text-transform: uppercase; }
+.ditel-panel-caption { color: var(--sigat-muted); font-family: var(--font-identifier); font-size: .68rem; white-space: nowrap; }
+.ditel-panel-note { border-left: 2px solid var(--sigat-attention); margin-bottom: .75rem !important; padding-left: .6rem; }
+.ditel-list-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+.ditel-list-actions .button-link { margin-top: 0; }
+.button-link--quiet { color: var(--sigat-muted); }
 .ditel-bar-list li, .ditel-ranking__list li { display: grid; gap: .42rem; }
 .ditel-bar-list li > div:first-child, .ditel-ranking__list li > div:first-child { align-items: center; display: flex; justify-content: space-between; }
 .ditel-analysis-grid { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -542,8 +558,9 @@
 .ditel-flow-dashboard .ditel-movement-list li { gap: .75rem; }
 .ditel-ranking { border-left: 3px solid var(--sigat-critical); }
 .ditel-admin { margin: 0; }
-@media (max-width: 1100px) { .ditel-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ditel-state-grid, .ditel-analysis-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .ditel-primary-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ditel-secondary-indicators { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ditel-secondary-indicator:nth-child(3) { border-right: 0; } .ditel-secondary-indicator:nth-child(n + 4) { border-top: 1px solid rgb(148 163 184 / 16%); } .ditel-state-grid, .ditel-analysis-grid { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .ditel-state-health__body, .ditel-state-health__signals { grid-template-columns: 1fr; } .ditel-state-health__ring { height: 7rem; width: 7rem; } }
+@media (max-width: 560px) { .ditel-primary-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ditel-primary-kpis .ditel-metric:last-child { grid-column: auto; } .ditel-secondary-indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ditel-secondary-indicator:nth-child(3) { border-right: 1px solid rgb(148 163 184 / 16%); } .ditel-secondary-indicator:nth-child(2n) { border-right: 0; } .ditel-secondary-indicator:nth-child(n + 3) { border-top: 1px solid rgb(148 163 184 / 16%); } .ditel-command-row__label { align-items: start; flex-direction: column; gap: .2rem; } .ditel-command-row__label span { text-align: left; } .ditel-panel-heading { gap: .6rem; } }
 
 /* Administração DITEL: acesso institucional e cobertura estadual. */
 .administration-page { max-width: 100%; min-width: 0; width: 100%; }
