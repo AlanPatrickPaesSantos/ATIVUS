@@ -147,6 +147,7 @@ test('renders detailed statewide dashboard panels from real API data', () => {
   renderPage()
 
   expect(screen.queryByRole('heading', { name: 'Cobertura por unidade' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Comparação por comando' })).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()
@@ -200,7 +201,7 @@ test('limits unit and attention lists to five items until expanded', async () =>
 
 })
 
-test('renders command comparison from backend aggregates', () => {
+test('does not render the removed command comparison panel', () => {
   setQueryResult({ data: {
     ...dashboard,
     commandSummaries: [
@@ -210,22 +211,15 @@ test('renders command comparison from backend aggregates', () => {
 
   renderPage()
 
-  const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
-  expect(within(comparison).getByText('CPRM')).toBeInTheDocument()
-  expect(within(comparison).getByText('4 de 200 equipamentos · 2%')).toBeInTheDocument()
-  expect(comparison.querySelector('.ditel-command-row__track span')).toHaveStyle({ width: '2%' })
+  expect(screen.queryByRole('region', { name: 'Comparação por comando' })).not.toBeInTheDocument()
 })
 
-test('ranks commands and units by descriptive attention percentage with zero denominators', () => {
+test('sorts units by descriptive attention percentage with zero denominators', () => {
   setQueryResult({ data: {
     ...dashboard,
     unitSummaries: [
       { unit: { id: 'unit-a', name: 'Unidade A', acronym: 'A' }, coverage: '50%', equipment: 100, attention: 2 },
       { unit: { id: 'unit-b', name: 'Unidade B', acronym: 'B' }, coverage: '50%', equipment: 10, attention: 5 },
-    ],
-    commandSummaries: [
-      { command: { id: 'command-zero', name: 'Comando sem equipamentos', acronym: 'CSE' }, equipment: 0, attention: 0, attentionPercent: 0 },
-      { command: { id: 'command-high', name: 'Comando prioritário', acronym: 'CP' }, equipment: 10, attention: 5, attentionPercent: 50 },
     ],
   } })
 
@@ -234,11 +228,6 @@ test('ranks commands and units by descriptive attention percentage with zero den
   const unitsPanel = screen.getByRole('region', { name: 'Unidades monitoradas' })
   const unitBRow = within(unitsPanel).getByRole('row', { name: /Unidade B/ })
   expect(unitBRow).toHaveTextContent('50%')
-
-  const comparison = screen.getByRole('region', { name: 'Comparação por comando' })
-  expect(within(comparison).getByText('Comando prioritário')).toBeInTheDocument()
-  expect(within(comparison).getByText('0 de 0 equipamentos · 0%')).toBeInTheDocument()
-  expect(within(comparison).getByText(/não representa avaliação automática de desempenho/i)).toBeInTheDocument()
 })
 
 test('navigates to inventory preserving supported dashboard filters', async () => {

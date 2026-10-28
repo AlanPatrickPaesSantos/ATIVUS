@@ -32,13 +32,6 @@ type CallsByStatus = {
   count: number
 }
 
-type CommandSummary = {
-  command: { id: string; name: string; acronym: string }
-  equipment: number
-  attention: number
-  attentionPercent: number
-}
-
 type RecentMovement = {
   id: string
   equipmentId: string
@@ -67,10 +60,6 @@ function percent(part: number, total: number) {
 function barWidth(value: number, max: number) {
   if (max <= 0) return '0%'
   return `${Math.max(6, Math.round((value / max) * 100))}%`
-}
-
-function percentageBarWidth(value: number) {
-  return `${Math.min(100, Math.max(0, Math.round(value)))}%`
 }
 
 export function DitelDashboardPage() {
@@ -109,7 +98,6 @@ export function DitelDashboardPage() {
 
   const callsByStatus = (data?.callsByStatus ?? []) as CallsByStatus[]
   const recentMovements = (data?.recentMovements ?? []) as RecentMovement[]
-  const commandSummaries = (data?.commandSummaries ?? []) as CommandSummary[]
   const situations = (data?.situations ?? []) as Situation[]
   const monitoredUnits = data?.monitoredUnits ?? 0
   const total = data?.metrics.total ?? 0
@@ -140,9 +128,6 @@ export function DitelDashboardPage() {
     }
     return next.toString() ? `?${next.toString()}` : ''
   }, [filters, searchParams])
-  const sortedCommandSummaries = useMemo(() => {
-    return [...commandSummaries].sort((a, b) => b.attentionPercent - a.attentionPercent || b.attention - a.attention || b.equipment - a.equipment || a.command.name.localeCompare(b.command.name))
-  }, [commandSummaries])
   const setFilter = (key: keyof DashboardFilters, value: string) => {
     const next = new URLSearchParams(searchParams)
     if (!value || value === 'all' || value === 'statewide') next.delete(key)
@@ -322,34 +307,6 @@ export function DitelDashboardPage() {
               </div>
             ))}
           </section>
-
-          {commandSummaries.length ? (
-            <section className="module-panel ditel-command-comparison" aria-label="Comparação por comando">
-              <div className="ditel-panel-heading">
-                <div>
-                  <span className="ditel-panel-kicker">Recorte hierárquico</span>
-                  <h2>Comparação patrimonial por comando</h2>
-                  <p>Equipamentos e atenção nos descendentes autorizados do recorte atual.</p>
-                  <p>Barras representam o percentual de equipamentos em atenção no comando.</p>
-                  <p>Indicador descritivo; não representa avaliação automática de desempenho.</p>
-                </div>
-                <span className="ditel-panel-caption">Indicador descritivo</span>
-              </div>
-              <div className="ditel-command-list" role="list" aria-label="Ranking de comandos por atenção">
-                {sortedCommandSummaries.map((summary) => (
-                  <div key={summary.command.id} className="ditel-command-row" role="listitem">
-                    <div className="ditel-command-row__label">
-                      <strong>{summary.command.name}</strong>
-                      <span>{formatNumber(summary.attention)} de {formatNumber(summary.equipment)} equipamentos · {summary.attentionPercent}%</span>
-                    </div>
-                    <div className="ditel-command-row__track" aria-hidden="true">
-                      <span style={{ width: percentageBarWidth(summary.attentionPercent) }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           <section className="ditel-state-grid" aria-label="Visão estadual consolidada">
             <article className="module-panel ditel-state-health" data-testid="ditel-state-health">
