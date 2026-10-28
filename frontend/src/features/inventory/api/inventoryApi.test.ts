@@ -4,7 +4,7 @@ import { clearSession, createSession } from '../../../shared/auth/session'
 import { fixtureSessionAdapter } from '../../auth/data/sessionFixture'
 import { server } from '../../../shared/api/msw/server'
 import { validateEquipmentAttachments } from './equipmentAttachments'
-import { getEquipmentDetails, getInventory } from './inventoryApi'
+import { getEquipmentDetails, getInventory, getInventoryFacets } from './inventoryApi'
 
 describe('inventory API', () => {
   beforeAll(async () => {
@@ -19,10 +19,22 @@ describe('inventory API', () => {
   })
 
   it('sends allowed list filters and server pagination', async () => {
-    const response = await getInventory({ search: 'dell', type: 'Computador portátil', model: 'Latitude 5420', situation: 'active', page: 1, pageSize: 1 })
+    const response = await getInventory({ search: 'dell', commandId: 'command-north', type: 'Computador portátil', model: 'Latitude 5420', situation: 'active', page: 1, pageSize: 1 })
 
     expect(response).toMatchObject({ total: 1, page: 1, pageSize: 1 })
     expect(response.items).toEqual([expect.objectContaining({ patrimony: 'PAT-2026-004827', model: 'Latitude 5420' })])
+  })
+
+  it('returns authorized dynamic inventory facets', async () => {
+    await expect(getInventoryFacets()).resolves.toMatchObject({
+      units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }],
+      types: expect.arrayContaining(['Computador portátil', 'Rádio portátil']),
+      models: expect.arrayContaining(['APX 2000', 'Latitude 5420']),
+      situations: expect.arrayContaining(['active', 'maintenance']),
+      municipalities: ['Belém'],
+      regions: ['Metropolitana'],
+      sections: ['Suporte'],
+    })
   })
 
   it('returns session-scoped equipment details without accepting an unknown id', async () => {

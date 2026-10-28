@@ -2,6 +2,7 @@ import { CallModel, CALL_PRIORITIES } from '../models/Call.js';
 import { EquipmentModel, type EquipmentSituation } from '../models/Equipment.js';
 import { MovementModel, MOVEMENT_STATUSES } from '../models/Movement.js';
 import type { UnitReference } from '../models/User.js';
+import { resolveScopedUnitIds } from './equipmentQueryFilters.js';
 
 export const REPORT_SITUATIONS = ['active', 'maintenance', 'inactive', 'lost', 'written_off'] as const satisfies EquipmentSituation[];
 
@@ -14,6 +15,7 @@ export interface InventoryReportScope {
 
 export interface InventoryReportFilters {
   unitId?: string;
+  commandId?: string;
   situation?: InventoryReportSituation;
   period?: InventoryReportPeriod;
 }
@@ -78,13 +80,10 @@ function increment(counters: InventoryReportCounters, situation: EquipmentSituat
   }
 }
 
-function filterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
+async function filterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
   const filter: Record<string, unknown> = { 'custody.scope': { $ne: 'AC' } };
-  if (scope.role === 'unit_user') filter['unit.id'] = scope.unitId;
-
-  if (scope.role === 'ditel_admin' && filters.unitId) {
-    filter['unit.id'] = filters.unitId;
-  }
+  const unitIds = await resolveScopedUnitIds({ commandId: scope.role === 'ditel_admin' ? filters.commandId : undefined, unitId: scope.role === 'ditel_admin' ? filters.unitId : undefined }, scope);
+  if (unitIds !== null) filter['unit.id'] = { $in: unitIds };
 
   if (filters.situation) {
     filter.situation = filters.situation;
@@ -101,7 +100,7 @@ export async function readInventoryReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<InventoryReport> {
-  const documents = await EquipmentModel.find(filterFor(filters, scope))
+  const documents = await EquipmentModel.find(await filterFor(filters, scope))
     .select('unit situation')
     .sort({ 'unit.name': 1, 'unit.id': 1, createdAt: -1, _id: 1 })
     .lean()
@@ -155,21 +154,16 @@ function emptyCallsCounters(): CallsReportCounters {
   return { total: 0, open: 0, critical: 0, attention: 0, resolved: 0 };
 }
 
-function callsFilterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
-  const filter: Record<string, unknown> = scope.role === 'unit_user' ? { 'unit.id': scope.unitId } : {};
-
-  if (scope.role === 'ditel_admin' && filters.unitId) {
-    filter['unit.id'] = filters.unitId;
-  }
-
-  return filter;
+async function callsFilterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
+  const unitIds = await resolveScopedUnitIds({ commandId: scope.role === 'ditel_admin' ? filters.commandId : undefined, unitId: scope.role === 'ditel_admin' ? filters.unitId : undefined }, scope);
+  return unitIds === null ? {} : { 'unit.id': { $in: unitIds } };
 }
 
 export async function readCallsReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<CallsReport> {
-  const documents = await CallModel.find(callsFilterFor(filters, scope))
+  const documents = await CallModel.find(await callsFilterFor(filters, scope))
     .select('status priority')
     .lean()
     .exec();
@@ -217,12 +211,9 @@ function emptyMovementsCounters(): MovementsReportCounters {
   return { total: 0, pending: 0, approved: 0, rejected: 0 };
 }
 
-function movementsFilterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
+async function movementsFilterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
   const filter: Record<string, unknown> = {};
-
-  const unitIds = scope.role === 'unit_user'
-    ? [scope.unitId]
-    : filters.unitId ? [filters.unitId] : null;
+  const unitIds = await resolveScopedUnitIds({ commandId: scope.role === 'ditel_admin' ? filters.commandId : undefined, unitId: scope.role === 'ditel_admin' ? filters.unitId : undefined }, scope);
 
   if (unitIds) {
     filter.$or = [{ 'origin.id': { $in: unitIds } }, { 'destination.id': { $in: unitIds } }];
@@ -235,7 +226,7 @@ export async function readMovementsReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<MovementsReport> {
-  const documents = await MovementModel.find(movementsFilterFor(filters, scope))
+  const documents = await MovementModel.find(await movementsFilterFor(filters, scope))
     .select('status')
     .lean()
     .exec();

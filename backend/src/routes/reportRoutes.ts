@@ -41,12 +41,14 @@ async function scope(context: SessionContext | undefined): Promise<ActiveUnitAcc
 function parseFilters(query: Record<string, unknown>): InventoryReportFilters {
   const filters: InventoryReportFilters = {};
   const unitId = typeof query.unitId === 'string' && query.unitId.trim() ? query.unitId.trim() : undefined;
+  const commandId = typeof query.commandId === 'string' && query.commandId.trim() ? query.commandId.trim() : undefined;
   const situation = typeof query.situation === 'string' && query.situation.trim() ? query.situation.trim() : undefined;
   const period = typeof query.period === 'string' && query.period.trim() ? query.period.trim() : undefined;
 
   if (unitId) {
     filters.unitId = unitId;
   }
+  if (commandId) filters.commandId = commandId;
 
   if (situation) {
     if (!REPORT_SITUATIONS.includes(situation as InventoryReportSituation)) {

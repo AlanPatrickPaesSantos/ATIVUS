@@ -25,11 +25,17 @@ function inventoryRequest(context: SessionContext) {
     .get('/api/v1/inventory').set('Cookie', 'sigat_session=test');
 }
 
+function inventoryFacetsRequest(context: SessionContext) {
+  return request(createApp({ sessionService: sessionServiceFor(context) }))
+    .get('/api/v1/inventory/facets').set('Cookie', 'sigat_session=test');
+}
+
 async function seedUnits() {
   await UnitModel.deleteMany({});
   await UnitModel.create([
-    { ...unit1, active: true },
-    { ...unit2, active: true },
+    { ...unit1, active: true, municipality: 'Belém', region: 'Metropolitana' },
+    { ...unit2, active: true, municipality: 'Santarém', region: 'Baixo Amazonas' },
+    { id: 'unit-3', name: 'Comando Intermediário', acronym: 'CI', active: true, kind: 'intermediate_command', municipality: 'Marabá', region: 'Sudeste' },
   ]);
 }
 
@@ -51,6 +57,7 @@ async function seed() {
       observations: 'Equipamento operacional',
       createdBy: 'user-creator',
       updatedBy: 'user-updater',
+      section: 'Telecom',
       history: [
         { id: 'initial', description: 'Cadastro inicial', occurredAt: new Date('2026-08-20T10:00:00.000Z') },
         { id: 'movement-1', description: 'Transferência para 1ª Companhia', occurredAt: new Date('2026-08-21T11:00:00.000Z') },
@@ -58,8 +65,8 @@ async function seed() {
       createdAt: new Date('2026-08-20T10:00:00.000Z'),
       updatedAt: new Date('2026-08-21T11:00:00.000Z'),
     },
-    { patrimony: 'PAT-002', type: 'Notebook', model: 'Latitude', brand: 'Dell', situation: 'maintenance', location: 'Suporte', unit: unit1, createdAt: new Date('2026-08-21') },
-    { patrimony: 'PAT-003', type: 'Impressora', model: 'LaserJet', brand: 'HP', situation: 'inactive', location: 'Almoxarifado', unit: unit2, createdAt: new Date('2026-08-22') },
+    { patrimony: 'PAT-002', type: 'Notebook', model: 'Latitude', brand: 'Dell', situation: 'maintenance', location: 'Suporte', section: 'Suporte', unit: unit1, createdAt: new Date('2026-08-21') },
+    { patrimony: 'PAT-003', type: 'Impressora', model: 'LaserJet', brand: 'HP', situation: 'inactive', location: 'Almoxarifado', section: 'Administrativo', unit: unit2, createdAt: new Date('2026-08-22') },
   ]);
 
   const equipment = await EquipmentModel.findOne({ patrimony: 'PAT-001' }).orFail();
@@ -107,8 +114,7 @@ describe('inventory routes', () => {
     await seed();
     const response = await inventoryRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: unit1 }).query({ search: 'motor', page: 1, pageSize: 1, unitId: 'unit-2' });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ items: [{ id: expect.any(String), patrimony: 'PAT-001', type: 'Rádio', model: 'APX 2000', brand: 'Motorola', situation: 'active', location: 'Sala', unitName: '1ª Companhia' }], total: 1, page: 1, pageSize: 1 });
-    expect(response.body.items[0]).not.toHaveProperty('unit');
+    expect(response.body).toEqual({ items: [], total: 0, page: 1, pageSize: 1 });
   });
 
   it('allows DITEL to filter by unit and returns deterministic order', async () => {
@@ -184,5 +190,61 @@ describe('inventory routes', () => {
     expect((await inventoryRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: null }).query({ page: 0, pageSize: 20 })).status).toBe(403);
     expect((await inventoryRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: unit1 }).query({ page: 0, pageSize: 20 })).status).toBe(400);
     expect((await inventoryRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: unit1 }).query({ page: 1, pageSize: 101 })).status).toBe(400);
+  });
+
+  it('returns dynamic facets including organizations without equipment and keeps them unit-scoped', async () => {
+    await seed();
+
+    const statewide = await inventoryFacetsRequest({ userId: 'd', name: 'Carlos', registration: '2', role: 'ditel_admin', unit: null });
+    expect(statewide.status).toBe(200);
+    expect(statewide.body).toEqual({
+      units: [unit1, unit2, { id: 'unit-3', name: 'Comando Intermediário', acronym: 'CI' }],
+      types: ['Impressora', 'Notebook', 'Rádio'],
+      models: ['APX 2000', 'LaserJet', 'Latitude'],
+      situations: ['active', 'inactive', 'maintenance'],
+      municipalities: ['Belém', 'Marabá', 'Santarém'],
+      regions: ['Baixo Amazonas', 'Metropolitana', 'Sudeste'],
+      sections: ['Administrativo', 'Suporte', 'Telecom'],
+    });
+
+    const unitOnly = await inventoryFacetsRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: unit1 });
+    expect(unitOnly.status).toBe(200);
+    expect(unitOnly.body.units).toEqual([unit1]);
+    expect(unitOnly.body.types).toEqual(['Notebook', 'Rádio']);
+    expect(unitOnly.body.sections).toEqual(['Suporte', 'Telecom']);
+    expect(unitOnly.body.municipalities).toEqual(['Belém']);
+  });
+
+  it('applies metadata and section filters on the server without allowing unit escape', async () => {
+    await seed();
+
+    const response = await inventoryRequest({ userId: 'd', name: 'Carlos', registration: '2', role: 'ditel_admin', unit: null })
+      .query({ municipality: 'Belém', region: 'Metropolitana', section: 'Telecom', page: 1, pageSize: 20 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.items.map((item: { patrimony: string }) => item.patrimony)).toEqual(['PAT-001']);
+
+    const denied = await inventoryRequest({ userId: 'u', name: 'Ana', registration: '1', role: 'unit_user', unit: unit1 })
+      .query({ unitId: 'unit-2', municipality: 'Santarém', page: 1, pageSize: 20 });
+    expect(denied.status).toBe(200);
+    expect(denied.body.total).toBe(0);
+    expect(denied.body.items).toEqual([]);
+  });
+
+  it('filters inventory by command descendants without including another command', async () => {
+    await UnitModel.create([
+      { id: 'command-a', name: 'CPRM', acronym: 'CPRM', kind: 'intermediate_command', active: true },
+      { id: 'region-a', name: 'Região A', acronym: 'RA', parentUnitId: 'command-a', kind: 'other', active: true },
+      { id: 'unit-a', name: 'Unidade A', acronym: 'UA', parentUnitId: 'region-a', kind: 'bpm', active: true },
+      { id: 'command-b', name: 'CPS', acronym: 'CPS', kind: 'intermediate_command', active: true },
+      { id: 'unit-b', name: 'Unidade B', acronym: 'UB', parentUnitId: 'command-b', kind: 'bpm', active: true },
+    ]);
+    await EquipmentModel.collection.insertMany([
+      { patrimony: 'CMD-A', type: 'Rádio', model: 'A', brand: 'A', situation: 'active', location: 'Sala', unit: { id: 'unit-a', name: 'Unidade A', acronym: 'UA' }, createdAt: new Date(), updatedAt: new Date() },
+      { patrimony: 'CMD-B', type: 'Rádio', model: 'B', brand: 'B', situation: 'active', location: 'Sala', unit: { id: 'unit-b', name: 'Unidade B', acronym: 'UB' }, createdAt: new Date(), updatedAt: new Date() },
+    ]);
+    const response = await inventoryRequest({ userId: 'd', name: 'Carlos', registration: '2', role: 'ditel_admin', unit: null }).query({ commandId: 'command-a', page: 1, pageSize: 20 });
+    expect(response.status).toBe(200);
+    expect(response.body.items.map((item: { patrimony: string }) => item.patrimony)).toEqual(['CMD-A']);
   });
 });

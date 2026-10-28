@@ -5,30 +5,56 @@ import { MovementModel } from '../models/Movement.js';
 import { UnitModel } from '../models/Unit.js';
 import type { UnitReference } from '../models/User.js';
 import { publicAttachment, type AttachmentMetadata } from '../services/attachments.js';
+import { buildScopedEquipmentQuery, periodRange, type EquipmentFilterInput, unitReference } from './equipmentQueryFilters.js';
 
-export interface InventoryFilters { search?: string; type?: string; model?: string; situation?: EquipmentSituation; unitId?: string }
+export interface InventoryFilters extends Omit<EquipmentFilterInput, 'situation'> { situation?: EquipmentSituation }
 export interface InventoryScope { role: 'unit_user' | 'ditel_admin'; unitId: string | null }
-export interface EquipmentCreateInput { patrimony: string; type: string; model: string; brand: string; situation: EquipmentSituation; location: string; serialNumber?: string; category: string; warranty?: string; observations?: string; unit: UnitReference | null; custody?: EquipmentCustody; createdBy: string; attachments?: AttachmentMetadata[] }
-function filterFor(filters: InventoryFilters, scope: InventoryScope) {
-  const filter: Record<string, unknown> = { 'custody.scope': { $ne: 'AC' } };
-  if (scope.role === 'unit_user') filter['unit.id'] = scope.unitId;
-  if (scope.role === 'ditel_admin' && filters.unitId) filter['unit.id'] = filters.unitId;
-  if (filters.type) filter.type = filters.type;
-  if (filters.model) filter.model = filters.model;
-  if (filters.situation) filter.situation = filters.situation;
-  if (filters.search) { const expression = new RegExp(filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); filter.$or = [{ patrimony: expression }, { type: expression }, { model: expression }, { brand: expression }]; }
-  return filter;
-}
+export interface EquipmentCreateInput { patrimony: string; type: string; model: string; brand: string; situation: EquipmentSituation; location: string; section?: string; serialNumber?: string; category: string; warranty?: string; observations?: string; unit: UnitReference | null; custody?: EquipmentCustody; createdBy: string; attachments?: AttachmentMetadata[] }
+function filterFor(filters: InventoryFilters, scope: InventoryScope) { return buildScopedEquipmentQuery(filters, scope); }
 function summary(document: any) { return { id: String(document._id), patrimony: document.patrimony, type: document.type, model: document.model, brand: document.brand, situation: document.situation, location: document.location, unitName: document.unit?.name ?? null }; }
 export async function createEquipment(input: EquipmentCreateInput, session?: ClientSession) { const [document] = await EquipmentModel.create([{ ...input, ...(input.custody || input.unit === null ? {} : { custody: unitEquipmentCustody(input.unit) }), history: [{ id: `equipment-created-${Date.now()}`, description: 'Cadastro inicial', occurredAt: new Date() }] }], session ? { session } : undefined); return { ...summary(document), serialNumber: document.serialNumber, category: document.category, ...(document.warranty ? { warranty: document.warranty } : {}), ...(document.observations ? { observations: document.observations } : {}), createdAt: document.createdAt?.toISOString(), createdBy: document.createdBy, updatedAt: document.updatedAt?.toISOString(), updatedBy: document.updatedBy, allocation: { location: document.location }, history: document.history.map((entry: any) => ({ id: entry.id, description: entry.description, occurredAt: new Date(entry.occurredAt).toISOString() })), linkedCalls: [], documents: (document.attachments ?? []).map(publicAttachment) }; }
 export async function readInventory(filters: InventoryFilters, scope: InventoryScope, page: number, pageSize: number) {
-  const filter = filterFor(filters, scope);
+  const { filter } = await filterFor(filters, scope);
   const [total, documents] = await Promise.all([EquipmentModel.countDocuments(filter).exec(), EquipmentModel.find(filter).sort({ createdAt: -1, _id: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean().exec()]);
   return { items: documents.map(summary), total, page, pageSize };
 }
+
+export interface InventoryFacets {
+  units: UnitReference[];
+  types: string[];
+  models: string[];
+  situations: EquipmentSituation[];
+  municipalities: string[];
+  regions: string[];
+  sections: string[];
+}
+
+export async function readInventoryFacets(filters: InventoryFilters = {}, scope: InventoryScope): Promise<InventoryFacets> {
+  const { filter, unitIds } = await filterFor(filters, scope);
+  const unitFilter = unitIds === null ? { active: true } : { id: { $in: unitIds }, active: true };
+  const units = await UnitModel.find(unitFilter).select({ id: 1, name: 1, acronym: 1, municipality: 1, region: 1, _id: 0 }).sort({ name: 1, id: 1 }).lean().exec();
+  const equipmentUnitIds = units.map((unit) => unit.id);
+  const scopedFilter = { ...filter, 'unit.id': { $in: equipmentUnitIds } };
+  const [types, models, situations, sections] = await Promise.all([
+    EquipmentModel.distinct('type', scopedFilter),
+    EquipmentModel.distinct('model', scopedFilter),
+    EquipmentModel.distinct('situation', scopedFilter),
+    EquipmentModel.distinct('section', { ...scopedFilter, section: { $type: 'string', $ne: '' } }),
+  ]);
+  return {
+    units: units.map(unitReference),
+    types: types.filter((value): value is string => typeof value === 'string').sort(),
+    models: models.filter((value): value is string => typeof value === 'string').sort(),
+    situations: situations.filter((value): value is EquipmentSituation => typeof value === 'string').sort() as EquipmentSituation[],
+    municipalities: [...new Set(units.map((unit) => unit.municipality).filter((value): value is string => Boolean(value)))].sort(),
+    regions: [...new Set(units.map((unit) => unit.region).filter((value): value is string => Boolean(value)))].sort(),
+    sections: sections.filter((value): value is string => typeof value === 'string').sort(),
+  };
+}
 export async function readEquipmentDetails(id: string, filters: InventoryFilters, scope: InventoryScope) {
   if (!mongoose.isValidObjectId(id)) return null;
-  const document = await EquipmentModel.findOne({ ...filterFor(filters, scope), _id: id }).lean().exec();
+  const { filter } = await filterFor(filters, scope);
+  const document = await EquipmentModel.findOne({ ...filter, _id: id }).lean().exec();
   if (!document) return null;
   const linkedCalls = await CallModel.find({ equipmentId: String(document._id) }).sort({ createdAt: -1, _id: -1 }).lean().exec();
   return {
@@ -94,8 +120,11 @@ export interface DashboardMovementActivity {
 export interface DashboardUnitSummary {
   unit: UnitReference;
   coverage: string;
+  equipmentShare: string;
+  patrimonialCoverage: null;
   equipment: number;
   attention: number;
+  organizationType: 'intermediate_command' | 'subordinate_unit';
 }
 
 export interface DashboardResponse {
@@ -117,10 +146,6 @@ export interface DashboardReadScope {
   role?: 'unit_user' | 'ditel_admin';
 }
 
-function buildEquipmentFilter(unitId: string | null) {
-  return unitId ? { 'unit.id': unitId, 'custody.scope': { $ne: 'AC' } } : { 'custody.scope': { $ne: 'AC' } };
-}
-
 function labelForSituation(situation: DashboardSituationSummary['situation']): string {
   switch (situation) {
     case 'active':
@@ -136,55 +161,39 @@ function labelForSituation(situation: DashboardSituationSummary['situation']): s
 
 const ATTENTION_SITUATIONS = ['lost', 'written_off'] as const;
 
-function isAttentionSituation(situation: string): boolean {
-  return (ATTENTION_SITUATIONS as readonly string[]).includes(situation);
-}
-
-async function readUnitSummaries(unitId?: string | null): Promise<DashboardUnitSummary[]> {
-  const scopeFilter = unitId ? { 'unit.id': unitId } : { 'custody.scope': { $ne: 'AC' } };
-  const documents = await EquipmentModel.find(scopeFilter)
-    .select({ 'unit.id': 1, 'unit.name': 1, 'unit.acronym': 1, situation: 1 })
-    .lean()
-    .exec();
-
-  const byUnit = new Map<string, DashboardUnitSummary>();
-
-  for (const document of documents) {
-    const unit = document.unit as UnitReference | null;
-    if (!unit) continue;
-    const existing = byUnit.get(unit.id) ?? {
-      unit,
-      coverage: '0%',
-      equipment: 0,
-      attention: 0,
+async function readUnitSummaries(
+  equipmentFilter: Record<string, unknown>,
+  unitIds: string[] | null,
+): Promise<DashboardUnitSummary[]> {
+  const unitFilter = unitIds === null ? { active: true } : { id: { $in: unitIds }, active: true };
+  const [units, grouped] = await Promise.all([
+    UnitModel.find(unitFilter).select({ id: 1, name: 1, acronym: 1, kind: 1, _id: 0 }).lean().exec(),
+    EquipmentModel.aggregate([
+      { $match: equipmentFilter },
+      { $group: { _id: '$unit.id', equipment: { $sum: 1 }, attention: { $sum: { $cond: [{ $in: ['$situation', [...ATTENTION_SITUATIONS]] }, 1, 0] } } } },
+    ]).exec(),
+  ]);
+  const counts = new Map(grouped.map((item) => [String(item._id), { equipment: Number(item.equipment), attention: Number(item.attention) }]));
+  const total = grouped.reduce((sum, item) => sum + Number(item.equipment), 0);
+  return units.map((unit) => {
+    const count = counts.get(unit.id) ?? { equipment: 0, attention: 0 };
+    const share = total > 0 ? `${Math.round((count.equipment / total) * 100)}%` : '0%';
+    const organizationType: DashboardUnitSummary['organizationType'] = unit.kind === 'intermediate_command' ? 'intermediate_command' : 'subordinate_unit';
+    return {
+      unit: unitReference(unit),
+      coverage: share,
+      equipmentShare: share,
+      patrimonialCoverage: null,
+      equipment: count.equipment,
+      attention: count.attention,
+      organizationType,
     };
-    existing.equipment += 1;
-    if (isAttentionSituation(document.situation as string)) {
-      existing.attention += 1;
-    }
-    byUnit.set(unit.id, existing);
-  }
-
-  const summaries = [...byUnit.values()];
-
-  if (summaries.length === 0) {
-    return [];
-  }
-
-  const total = summaries.reduce((sum, summary) => sum + summary.equipment, 0);
-
-  return summaries
-    .map((summary) => ({
-      ...summary,
-      coverage: `${Math.round((summary.equipment / total) * 100)}%`,
-    }))
-    .sort((left, right) => left.unit.name.localeCompare(right.unit.name) || left.unit.id.localeCompare(right.unit.id));
+  }).sort((left, right) => left.unit.name.localeCompare(right.unit.name) || left.unit.id.localeCompare(right.unit.id));
 }
 
 const CALL_STATUS_ORDER = ['Aberto', 'Em análise', 'Em atendimento', 'Aguardando informação', 'Resolvido', 'Encerrado'];
 
-async function readCallsByStatus(unitId?: string | null): Promise<DashboardCallStatus[]> {
-  const filter = unitId ? { 'unit.id': unitId } : {};
+async function readCallsByStatus(filter: Record<string, unknown>): Promise<DashboardCallStatus[]> {
   const documents = await CallModel.find(filter).select({ status: 1 }).lean().exec();
 
   const countsByStatus = new Map<string, number>();
@@ -199,16 +208,12 @@ async function readCallsByStatus(unitId?: string | null): Promise<DashboardCallS
     .sort((left, right) => CALL_STATUS_ORDER.indexOf(left.status) - CALL_STATUS_ORDER.indexOf(right.status));
 }
 
-async function readCriticalCalls(unitId?: string | null): Promise<number> {
-  const filter: Record<string, unknown> = { priority: 'Crítica' };
-  if (unitId) {
-    filter['unit.id'] = unitId;
-  }
+async function readCriticalCalls(baseFilter: Record<string, unknown>): Promise<number> {
+  const filter: Record<string, unknown> = { ...baseFilter, priority: 'Crítica' };
   return CallModel.countDocuments(filter).exec();
 }
 
-async function readRecentActivity(unitId?: string | null): Promise<DashboardActivity[]> {
-  const filter = unitId ? { 'unit.id': unitId } : {};
+async function readRecentActivity(filter: Record<string, unknown>): Promise<DashboardActivity[]> {
   const documents = await CallModel.find(filter)
     .select({ protocol: 1, status: 1, updatedAt: 1, createdAt: 1 })
     .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
@@ -223,24 +228,25 @@ async function readRecentActivity(unitId?: string | null): Promise<DashboardActi
   }));
 }
 
-async function readPendingMovements(unitId?: string | null): Promise<number> {
+async function readPendingMovements(unitIds: string[] | null, period: EquipmentFilterInput['period']): Promise<number> {
   const filter: Record<string, unknown> = { status: 'Pendente' };
-  if (unitId) {
-    filter['origin.id'] = unitId;
-  }
+  if (unitIds !== null) filter['origin.id'] = { $in: unitIds };
+  const createdAt = periodRange(period);
+  if (createdAt) filter.createdAt = createdAt;
   return MovementModel.countDocuments(filter).exec();
 }
 
-async function readMonitoredUnits(unitId?: string | null): Promise<number> {
-  const filter: Record<string, unknown> = {};
-  if (unitId) {
-    filter.id = unitId;
-  }
+async function readMonitoredUnits(unitIds: string[] | null): Promise<number> {
+  const filter: Record<string, unknown> = { active: true, kind: { $ne: 'intermediate_command' } };
+  if (unitIds !== null) filter.id = { $in: unitIds };
   return UnitModel.countDocuments(filter).exec();
 }
 
-async function readRecentMovements(unitId?: string | null): Promise<DashboardMovementActivity[]> {
-  const filter = unitId ? { 'origin.id': unitId } : {};
+async function readRecentMovements(unitIds: string[] | null, period: EquipmentFilterInput['period']): Promise<DashboardMovementActivity[]> {
+  const filter: Record<string, unknown> = {};
+  if (unitIds !== null) filter['origin.id'] = { $in: unitIds };
+  const createdAt = periodRange(period);
+  if (createdAt) filter.createdAt = createdAt;
   const documents = await MovementModel.find(filter)
     .sort({ createdAt: -1, _id: -1 })
     .limit(6)
@@ -258,7 +264,7 @@ async function readRecentMovements(unitId?: string | null): Promise<DashboardMov
 }
 
 async function countBySituation(
-  filter: ReturnType<typeof buildEquipmentFilter>,
+  filter: Record<string, unknown>,
   situation: EquipmentSituation,
 ): Promise<number> {
   return EquipmentModel.countDocuments({
@@ -335,8 +341,14 @@ export async function updateEquipmentSituation(
   };
 }
 
-export async function readDashboardByScope(scope: DashboardReadScope): Promise<DashboardResponse> {
-  const filter = buildEquipmentFilter(scope.unitId);
+export async function readDashboardByScope(scope: DashboardReadScope, filters: EquipmentFilterInput = {}): Promise<DashboardResponse> {
+  const { filter, unitIds } = await buildScopedEquipmentQuery(filters, { role: scope.role ?? 'ditel_admin', unitId: scope.unitId });
+  const activityFilter: Record<string, unknown> = {};
+  if (unitIds !== null) activityFilter['unit.id'] = { $in: unitIds };
+  if (filters.section) activityFilter.section = filters.section;
+  const createdAt = periodRange(filters.period);
+  if (createdAt) activityFilter.createdAt = createdAt;
+  const movementUnitIds = unitIds;
   const [total, active, maintenance, inactive, lost, writtenOff] = await Promise.all([
     EquipmentModel.countDocuments(filter).exec(),
     countBySituation(filter, 'active'),
@@ -378,12 +390,12 @@ export async function readDashboardByScope(scope: DashboardReadScope): Promise<D
         count: attention,
       },
     ],
-    recentActivity: await readRecentActivity(scope.unitId),
-    ...(scope.role === 'ditel_admin' ? { unitSummaries: await readUnitSummaries() } : { unitSummaries: await readUnitSummaries(scope.unitId) }),
-    callsByStatus: await readCallsByStatus(scope.unitId),
-    criticalCalls: await readCriticalCalls(scope.unitId),
-    pendingMovements: await readPendingMovements(scope.unitId),
-    monitoredUnits: await readMonitoredUnits(scope.unitId),
-    recentMovements: await readRecentMovements(scope.unitId),
+    recentActivity: await readRecentActivity(activityFilter),
+    unitSummaries: await readUnitSummaries(filter, unitIds),
+    callsByStatus: await readCallsByStatus(activityFilter),
+    criticalCalls: await readCriticalCalls(activityFilter),
+    pendingMovements: await readPendingMovements(movementUnitIds, filters.period),
+    monitoredUnits: await readMonitoredUnits(unitIds),
+    recentMovements: await readRecentMovements(movementUnitIds, filters.period),
   };
 }

@@ -20,7 +20,8 @@ const queryState = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../api/inventoryQueries', () => ({ useInventoryQuery: () => queryState.result }))
+const facetsState = vi.hoisted(() => ({ result: { data: { units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }], types: ['Notebook'], models: ['ProBook'], situations: ['active'], municipalities: ['Belém'], regions: ['Metropolitana'], sections: ['Suporte'] }, isLoading: false, isError: false, refetch: vi.fn() } }))
+vi.mock('../api/inventoryQueries', () => ({ useInventoryQuery: () => queryState.result, useInventoryFacetsQuery: () => facetsState.result, useOrganizationalFilterOptionsQuery: () => ({ data: { commands: [{ id: 'command-north', name: 'CPRM', acronym: 'CPRM', equipmentCount: 1, units: [{ id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN', kind: 'bpm', parentUnitId: 'command-north', equipmentCount: 1 }] }], units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM', kind: 'bpm', parentUnitId: null, equipmentCount: 9 }, { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN', kind: 'bpm', parentUnitId: 'command-north', equipmentCount: 1 }] }, isLoading: false, isError: false, refetch: vi.fn() }) }))
 const detailLoader = vi.hoisted(() => vi.fn(async () => ({ ...queryState.result.data.items[0], category: 'Informática', updatedAt: '2026-08-21T10:00:00.000Z', history: [], linkedCalls: [], documents: [], allocation: { location: 'Sala Administrativa' } })))
 const inventoryApiState = vi.hoisted(() => ({ createEquipment: vi.fn(async () => ({ id: 'eq-created' })), updateEquipmentSituation: vi.fn(async (id: string, situation: string, updatedAt: string) => ({ id, patrimony: 'UC-001', situation, unitName: 'Unidade Centro', updatedAt, updatedBy: 'Ana Souza' })) }))
 vi.mock('../api/inventoryApi', () => ({ getEquipmentDetails: detailLoader, createEquipment: inventoryApiState.createEquipment, updateEquipmentSituation: inventoryApiState.updateEquipmentSituation }))
@@ -61,12 +62,42 @@ afterEach(() => {
   queryState.result.isError = false
   queryState.result.data = { items: [{ id: 'eq-001', patrimony: 'UC-001', type: 'Notebook', model: 'ProBook', brand: 'HP', situation: 'active', location: 'Sala Administrativa', unitName: 'Unidade Centro' }], total: 20, page: 1, pageSize: 10 }
   queryState.result.refetch = vi.fn()
+  facetsState.result.isLoading = false
+  facetsState.result.isError = false
+  facetsState.result.data = { units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }], types: ['Notebook'], models: ['ProBook'], situations: ['active'], municipalities: ['Belém'], regions: ['Metropolitana'], sections: ['Suporte'] }
+  facetsState.result.refetch = vi.fn()
   detailLoader.mockReset()
   detailLoader.mockImplementation(async () => ({ ...queryState.result.data.items[0], category: 'Informática', updatedAt: '2026-08-21T10:00:00.000Z', history: [], linkedCalls: [], documents: [], allocation: { location: 'Sala Administrativa' } }))
   inventoryApiState.createEquipment.mockReset()
   inventoryApiState.createEquipment.mockResolvedValue({ id: 'eq-created' })
   inventoryApiState.updateEquipmentSituation.mockReset()
   inventoryApiState.updateEquipmentSituation.mockImplementation(async (id: string, situation: string, updatedAt: string) => ({ id, patrimony: 'UC-001', situation, unitName: 'Unidade Centro', updatedAt, updatedBy: 'Ana Souza' }))
+})
+
+test('renders inventory filters from authorized facets and exposes the page-size selector', async () => {
+  const user = userEvent.setup()
+  renderPage('/inventario?page=3&pageSize=20', ditelSession)
+
+  expect(screen.getByRole('option', { name: 'Notebook' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'ProBook' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: '3º BPM' })).toBeInTheDocument()
+
+  await user.selectOptions(screen.getByLabelText('Quantidade por página'), '50')
+  expect(screen.getByTestId('location')).toHaveTextContent('pageSize=50')
+  expect(screen.getByTestId('location')).not.toHaveTextContent('page=3')
+})
+
+test('shows a retryable facets error without inventing filter options', async () => {
+  const user = userEvent.setup()
+  facetsState.result.isError = true
+  facetsState.result.data = undefined
+  facetsState.result.refetch = vi.fn()
+  renderPage('/inventario', ditelSession)
+
+  expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar as opções do inventário.')
+  expect(screen.queryByRole('option', { name: 'Notebook' })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Tentar novamente opções' }))
+  expect(facetsState.result.refetch).toHaveBeenCalledOnce()
 })
 
 test('clears active filters from an empty inventory state', async () => {
@@ -85,7 +116,7 @@ test('offers a retry action when the inventory request fails', async () => {
   const refetch = vi.fn()
   queryState.result.isError = true
   queryState.result.refetch = refetch
-  renderPage()
+  renderPage('/inventario?pageSize=10')
 
   expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o inventário.')
   await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
@@ -114,9 +145,21 @@ test('persists type and model filters in the URL and resets pagination', async (
   expect(screen.queryByRole('combobox', { name: /unidade/i })).not.toBeInTheDocument()
 })
 
+test('synchronizes command and dependent subordinate unit filters', async () => {
+  const user = userEvent.setup()
+  renderPage('/inventario?unitId=unit-centro', ditelSession)
+
+  await user.selectOptions(screen.getByLabelText('Comando intermediário'), 'command-north')
+
+  expect(screen.getByTestId('location')).toHaveTextContent('commandId=command-north')
+  expect(screen.getByTestId('location')).not.toHaveTextContent('unitId=unit-centro')
+  expect(screen.getByRole('option', { name: 'Unidade Norte' })).toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: '3º BPM' })).not.toBeInTheDocument()
+})
+
 test('keeps server pagination in the URL and opens an equipment detail modal', async () => {
   const user = userEvent.setup()
-  renderPage()
+  renderPage('/inventario?pageSize=10')
 
   await user.click(screen.getByRole('button', { name: 'Próxima página' }))
   expect(screen.getByTestId('location')).toHaveTextContent('page=2')
@@ -243,11 +286,11 @@ test('gives DITEL a statewide inventory scope and a Unit filter', async () => {
   expect(screen.getByText('Gestão estadual · DITEL')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Inventário estadual', level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Equipamentos do estado', level: 2 })).toBeInTheDocument()
-  expect(screen.getByRole('combobox', { name: 'Unidade monitorada' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Unidade subordinada' })).toBeInTheDocument()
   expect(screen.getAllByText('Escopo estadual')).toHaveLength(2)
   expect(screen.queryByRole('button', { name: /\+ novo equipamento/i })).not.toBeInTheDocument()
 
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Unidade monitorada' }), 'unit-norte')
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Unidade subordinada' }), 'unit-norte')
   expect(screen.getByTestId('location')).toHaveTextContent('unitId=unit-norte')
 })
 

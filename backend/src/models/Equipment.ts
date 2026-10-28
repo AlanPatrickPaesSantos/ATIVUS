@@ -88,6 +88,7 @@ const equipmentSchema = new Schema(
       enum: ['active', 'maintenance', 'inactive', 'lost', 'written_off'] satisfies EquipmentSituation[],
     },
     location: { type: String, required: true, trim: true },
+    section: { type: String, trim: true },
     unit: { type: unitReferenceSchema, default: null },
     custody: { type: equipmentCustodySchema, default: null },
     provenance: { type: equipmentProvenanceSchema },
@@ -146,6 +147,7 @@ equipmentSchema.path('custody').validate(function validateCustodyPath(value: unk
 }, 'Custódia do equipamento inválida.');
 
 equipmentSchema.index({ 'unit.id': 1, situation: 1 });
+equipmentSchema.index({ section: 1, type: 1, model: 1 });
 equipmentSchema.index({ patrimony: 1 }, { unique: true });
 
 export type EquipmentDocument = InferSchemaType<typeof equipmentSchema>;

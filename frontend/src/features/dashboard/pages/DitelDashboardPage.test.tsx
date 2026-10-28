@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, expect, test, vi } from 'vitest'
 import { DitelDashboardPage } from './DitelDashboardPage'
 
@@ -17,6 +17,11 @@ const queryState = vi.hoisted(() => ({
 
 vi.mock('../api/dashboardQueries', () => ({
   useDashboardQuery: () => queryState.result,
+}))
+
+vi.mock('../../inventory/api/inventoryQueries', () => ({
+  useInventoryFacetsQuery: () => ({ data: { units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }], types: ['Notebook'], models: ['ProBook'], situations: ['active', 'maintenance'], municipalities: ['Belém'], regions: ['Metropolitana'], sections: ['Suporte'] }, isError: false, refetch: vi.fn() }),
+  useOrganizationalFilterOptionsQuery: () => ({ data: { commands: [{ id: 'command-north', name: 'CPRM', acronym: 'CPRM', equipmentCount: 9, units: [{ id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN', kind: 'bpm', parentUnitId: 'command-north', equipmentCount: 1 }] }], units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM', kind: 'bpm', parentUnitId: null, equipmentCount: 9 }] }, isLoading: false, isError: false, refetch: vi.fn() }),
 }))
 
 const dashboard = {
@@ -45,9 +50,13 @@ const dashboard = {
 }
 
 function renderPage() {
+  function LocationProbe() {
+    const location = useLocation()
+    return <div data-testid="location">{location.search}</div>
+  }
   return render(
     <MemoryRouter>
-      <DitelDashboardPage />
+      <DitelDashboardPage /><LocationProbe />
     </MemoryRouter>,
   )
 }
@@ -69,7 +78,7 @@ test('renders the statewide operations console with filters and API-backed metri
   expect(screen.getByRole('heading', { name: 'Painel estadual' })).toBeInTheDocument()
   expect(screen.queryByText('Gestão estadual · DITEL')).not.toBeInTheDocument()
   expect(screen.queryByText(/Leitura consolidada da cobertura patrimonial/i)).not.toBeInTheDocument()
-  expect(screen.getByLabelText('Unidade monitorada')).toHaveValue('statewide')
+  expect(screen.getByLabelText('Unidade subordinada')).toHaveValue('statewide')
   expect(screen.getByLabelText('Situação do parque')).toHaveValue('all')
   expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Distribuição estadual do parque' })).toBeInTheDocument()
@@ -194,5 +203,37 @@ test('does not render protected data in empty or error states', async () => {
 
   expect(screen.queryByLabelText('Chamados por status')).not.toBeInTheDocument()
   expect(screen.queryByText('Movimentações recentes')).not.toBeInTheDocument()
+})
+
+test('synchronizes dashboard filters with the URL and requests a server recorte', async () => {
+  const user = userEvent.setup()
+  setQueryResult({ data: dashboard })
+  renderPage()
+
+  await user.selectOptions(screen.getByLabelText('Unidade subordinada'), 'unit-centro')
+  await user.click(screen.getByRole('button', { name: 'Filtros avançados' }))
+  await user.selectOptions(screen.getByLabelText('Município'), 'Belém')
+  await user.selectOptions(screen.getByLabelText('Tipo de equipamento'), 'Notebook')
+  await user.selectOptions(screen.getByLabelText('Período'), '90d')
+
+  expect(screen.getByTestId('location')).toHaveTextContent('unitId=unit-centro')
+  expect(screen.getByTestId('location')).toHaveTextContent('municipality=Bel%C3%A9m')
+  expect(screen.getByTestId('location')).toHaveTextContent('type=Notebook')
+  expect(screen.getByTestId('location')).toHaveTextContent('period=90d')
+})
+
+test('keeps subordinate options dependent on the command and clears an incompatible unit', async () => {
+  const user = userEvent.setup()
+  setQueryResult({ data: dashboard })
+  renderPage()
+
+  await user.selectOptions(screen.getByLabelText('Unidade subordinada'), 'unit-centro')
+  await user.selectOptions(screen.getByLabelText('Comando intermediário'), 'command-north')
+
+  expect(screen.getByTestId('location')).toHaveTextContent('commandId=command-north')
+  expect(screen.getByTestId('location')).not.toHaveTextContent('unitId=unit-centro')
+  expect(screen.getByLabelText('Unidade subordinada')).toHaveValue('statewide')
+  expect(screen.getByRole('option', { name: 'Unidade Norte' })).toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: '3º BPM' })).not.toBeInTheDocument()
 })
 

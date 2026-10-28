@@ -4,6 +4,7 @@ import { fixtureSessionAdapter } from '../../auth/data/sessionFixture'
 import { createSession, clearSession } from '../../../shared/auth/session'
 import { server } from '../../../shared/api/msw/server'
 import { getDashboard, getUnitDashboard } from './dashboardApi'
+import { http, HttpResponse } from 'msw'
 
 describe('getUnitDashboard with the MSW API boundary', () => {
   beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -74,6 +75,27 @@ describe('getUnitDashboard with the MSW API boundary', () => {
       unitSummaries: expect.arrayContaining([
         expect.objectContaining({ unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, equipment: expect.any(Number), attention: expect.any(Number) }),
       ]),
+    })
+  })
+
+  it('serializes the complete dashboard filter recorte in the request', async () => {
+    await createSession(fixtureSessionAdapter, '200001', 'sigat-ditel')
+    let receivedUrl = ''
+    server.use(http.get('*/api/v1/dashboard', ({ request }) => {
+      receivedUrl = request.url
+      return HttpResponse.json({
+        unit: { id: 'statewide', name: 'Estado do Pará', acronym: 'DITEL' },
+        metrics: { total: 0, active: 0, maintenance: 0, attention: 0 },
+        situations: [],
+        recentActivity: [],
+      })
+    }))
+
+    await getDashboard({ commandId: 'command-north', unitId: 'unit-norte', situation: 'maintenance', municipality: 'Belém', region: 'Metropolitana', type: 'Notebook', model: 'Latitude 5420', section: 'Suporte', period: '90d' })
+
+    const url = new URL(receivedUrl)
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      commandId: 'command-north', unitId: 'unit-norte', situation: 'maintenance', municipality: 'Belém', region: 'Metropolitana', type: 'Notebook', model: 'Latitude 5420', section: 'Suporte', period: '90d',
     })
   })
 })

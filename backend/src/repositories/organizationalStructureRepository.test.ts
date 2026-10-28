@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildOrganizationalUnitFilter, parseOrganizationalStructureQuery, summarizeEquipmentCountsForOrganizations } from './organizationalStructureRepository.js';
+import { buildOrganizationalFilterOptions, buildOrganizationalUnitFilter, parseOrganizationalStructureQuery, summarizeEquipmentCountsForOrganizations } from './organizationalStructureRepository.js';
 
 describe('organizational structure query parsing', () => {
   it('applies bounded pagination and preserves all supported filters', () => {
@@ -54,6 +54,21 @@ describe('organizational structure query parsing', () => {
       'command-1': { total: 6, demonstrative: 5 },
       'unit-1': { total: 6, demonstrative: 5 },
       'unit-2': { total: 2, demonstrative: 2 },
+    });
+  });
+
+  it('builds command options from persisted parent links and preserves empty commands', () => {
+    expect(buildOrganizationalFilterOptions([
+      { id: 'command-1', name: 'CPRM', acronym: 'CPRM', kind: 'intermediate_command', parentUnitId: null },
+      { id: 'region-1', name: 'Região 1', acronym: 'R1', kind: 'other', parentUnitId: 'command-1' },
+      { id: 'unit-1', name: 'Unidade 1', acronym: 'U1', kind: 'bpm', parentUnitId: 'region-1' },
+      { id: 'command-empty', name: 'CPS', acronym: 'CPS', kind: 'intermediate_command', parentUnitId: null },
+    ], [{ unitId: 'unit-1', total: 2 }])).toEqual({
+      commands: [{
+        id: 'command-1', name: 'CPRM', acronym: 'CPRM', equipmentCount: 2,
+        units: [{ id: 'region-1', name: 'Região 1', acronym: 'R1', kind: 'other', parentUnitId: 'command-1', equipmentCount: 2 }, { id: 'unit-1', name: 'Unidade 1', acronym: 'U1', kind: 'bpm', parentUnitId: 'region-1', equipmentCount: 2 }],
+      }, { id: 'command-empty', name: 'CPS', acronym: 'CPS', equipmentCount: 0, units: [] }],
+      units: [{ id: 'region-1', name: 'Região 1', acronym: 'R1', kind: 'other', parentUnitId: 'command-1', equipmentCount: 2 }, { id: 'unit-1', name: 'Unidade 1', acronym: 'U1', kind: 'bpm', parentUnitId: 'region-1', equipmentCount: 2 }],
     });
   });
 });

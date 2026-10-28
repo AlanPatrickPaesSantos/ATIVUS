@@ -4,7 +4,7 @@ import { AuthError, type SessionContext } from '../auth/sessionService.js';
 import { resolveAccessScopeFromContext } from '../auth/activeUnitScope.js';
 import { runInTransaction } from '../database/transaction.js';
 import { createAttachmentUpload } from '../middlewares/attachmentUpload.js';
-import { createEquipment, readEquipmentDetails, readInventory, updateEquipmentSituation, findEquipmentAuditRecord, type InventoryFilters } from '../repositories/equipmentReadRepository.js';
+import { createEquipment, readEquipmentDetails, readInventory, readInventoryFacets, updateEquipmentSituation, findEquipmentAuditRecord, type InventoryFilters } from '../repositories/equipmentReadRepository.js';
 import { recordAuditEvent } from '../repositories/auditRepository.js';
 import { cleanupStoredAttachments, storeUploadedAttachments, type AttachmentMetadata } from '../services/attachments.js';
 import mongoose from 'mongoose';
@@ -48,7 +48,9 @@ function query(req: Parameters<RequestHandler>[0]): { filters: InventoryFilters;
   const situation = req.query.situation as string | undefined;
   if (situation && !['active', 'maintenance', 'inactive', 'lost', 'written_off'].includes(situation)) throw new AuthError(400, 'INVALID_QUERY', 'Situação inválida.');
   const stringValue = (value: unknown) => typeof value === 'string' && value.length > 0 ? value : undefined;
-  return { page, pageSize, filters: { search: stringValue(req.query.search), type: stringValue(req.query.type), model: stringValue(req.query.model), situation: situation as InventoryFilters['situation'], unitId: stringValue(req.query.unitId) } };
+  const period = stringValue(req.query.period);
+  if (period && !['30d', '90d', '2026-08'].includes(period)) throw new AuthError(400, 'INVALID_QUERY', 'Período inválido.');
+  return { page, pageSize, filters: { search: stringValue(req.query.search), type: stringValue(req.query.type), model: stringValue(req.query.model), situation: situation as InventoryFilters['situation'], unitId: stringValue(req.query.unitId), commandId: stringValue(req.query.commandId), municipality: stringValue(req.query.municipality), region: stringValue(req.query.region), section: stringValue(req.query.section), period: period as InventoryFilters['period'] } };
 }
 function actorFromContext(context: SessionContext | undefined) {
   return context ? { id: context.userId, name: context.name, registration: context.registration, role: context.role } : null;
@@ -96,7 +98,7 @@ export function createInventoryRoutes(requireSession: RequestHandler): Router {
     if (hasUnknownEquipmentCreateField(body)) throw new AuthError(400, 'INVALID_EQUIPMENT', 'Dados do equipamento inválidos.');
     if (required.some((key) => typeof body[key] !== 'string' || !body[key].trim()) || !['active','maintenance','inactive','lost','written_off'].includes(body.situation)) throw new AuthError(400, 'INVALID_EQUIPMENT', 'Dados do equipamento inválidos.');
     attachments = await storeUploadedAttachments('equipment', req.files as Express.Multer.File[] | undefined);
-    const created = await createEquipmentWithAudit(context, { patrimony: body.patrimony.trim(), type: body.type.trim(), model: body.model.trim(), brand: body.brand.trim(), situation: body.situation as any, location: body.location.trim(), category: body.category?.trim() || 'Não classificado', ...(body.serialNumber ? { serialNumber: body.serialNumber.trim() } : {}), ...(body.warrantyDate && body.hasWarranty === 'yes' ? { warranty: body.warrantyDate } : {}), ...(body.observations ? { observations: body.observations.trim() } : {}), unit: access.unit, createdBy: context.userId, attachments });
+    const created = await createEquipmentWithAudit(context, { patrimony: body.patrimony.trim(), type: body.type.trim(), model: body.model.trim(), brand: body.brand.trim(), situation: body.situation as any, location: body.location.trim(), ...(body.section ? { section: body.section.trim() } : {}), category: body.category?.trim() || 'Não classificado', ...(body.serialNumber ? { serialNumber: body.serialNumber.trim() } : {}), ...(body.warrantyDate && body.hasWarranty === 'yes' ? { warranty: body.warrantyDate } : {}), ...(body.observations ? { observations: body.observations.trim() } : {}), unit: access.unit, createdBy: context.userId, attachments });
     res.status(201).json(created);
   } catch (error: any) {
     if (attachments.length) await cleanupStoredAttachments(attachments);
@@ -104,6 +106,7 @@ export function createInventoryRoutes(requireSession: RequestHandler): Router {
     next(error);
   } });
   router.get('/inventory', requireSession, async (req, res, next) => { try { const accessScope = await scope(req.sessionContext); const parsed = query(req); res.json(await readInventory(parsed.filters, accessScope, parsed.page, parsed.pageSize)); } catch (error) { next(error); } });
+  router.get('/inventory/facets', requireSession, async (req, res, next) => { try { const accessScope = await scope(req.sessionContext); res.json(await readInventoryFacets(query(req).filters, accessScope)); } catch (error) { next(error); } });
   router.get('/inventory/:equipmentId', requireSession, async (req, res, next) => { try { const result = await readEquipmentDetails(req.params.equipmentId, {}, await scope(req.sessionContext)); if (!result) { res.status(404).json({ code: 'NOT_FOUND', message: 'Equipamento não encontrado.' }); return; } res.json(result); } catch (error) { next(error); } });
   router.patch('/inventory/:equipmentId', requireSession, async (req, res, next) => {
     try {

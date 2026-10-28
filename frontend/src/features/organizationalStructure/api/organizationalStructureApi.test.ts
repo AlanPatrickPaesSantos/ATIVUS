@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { httpClient } from '../../../shared/api/httpClient'
-import { getOrganizationalIndicators, getOrganizationalNode, getOrganizationalStructure } from './organizationalStructureApi'
+import { getOrganizationalFilterOptions, getOrganizationalIndicators, getOrganizationalNode, getOrganizationalStructure } from './organizationalStructureApi'
 
 vi.mock('../../../shared/api/httpClient', () => ({
   httpClient: vi.fn(),
@@ -23,5 +23,11 @@ describe('organizational structure API', () => {
     expect(httpClient).toHaveBeenNthCalledWith(1, '/admin/organizational-structure/unit-1')
     expect(httpClient).toHaveBeenNthCalledWith(2, '/admin/organizational-structure/command-1/indicators')
     expect(JSON.stringify(vi.mocked(httpClient).mock.calls)).not.toMatch(/authorization|token|password/i)
+  })
+
+  it('loads persisted command and subordinate options from the shared endpoint', async () => {
+    vi.mocked(httpClient).mockResolvedValue({ commands: [], units: [] })
+    await getOrganizationalFilterOptions()
+    expect(httpClient).toHaveBeenCalledWith('/organizational-options')
   })
 })

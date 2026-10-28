@@ -534,6 +534,30 @@ export const handlers = [
     user.updatedAt = new Date().toISOString()
     return HttpResponse.json({ id: user.id, situation: 'inactive' })
   }),
+  http.get('*/api/v1/organizational-options', () => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    if (session.role === 'unit_user') return HttpResponse.json({ commands: [], units: [{ id: session.unit?.id, name: session.unit?.name, acronym: session.unit?.acronym, kind: 'bpm', parentUnitId: null, equipmentCount: equipment.filter((item) => item.unitId === session.unit?.id).length }] })
+    return HttpResponse.json({
+      commands: [{ id: 'command-north', name: 'CPRM', acronym: 'CPRM', equipmentCount: 1, units: [{ id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN', kind: 'bpm', parentUnitId: 'command-north', equipmentCount: 1 }] }],
+      units: [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM', kind: 'bpm', parentUnitId: null, equipmentCount: 9 }, { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN', kind: 'bpm', parentUnitId: 'command-north', equipmentCount: 1 }],
+    })
+  }),
+  http.get('*/api/v1/inventory/facets', () => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    const scoped = equipment.filter((item) => session.role === 'ditel_admin' || item.unitId === session.unit?.id)
+    const scopedUnits = session.role === 'ditel_admin' ? [{ id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, ...units] : [session.unit!]
+    return HttpResponse.json({
+      units: scopedUnits,
+      types: [...new Set(scoped.map((item) => item.type))].sort(),
+      models: [...new Set(scoped.map((item) => item.model))].sort(),
+      situations: [...new Set(scoped.map((item) => item.situation))].sort(),
+      municipalities: session.role === 'unit_user' ? ['Belém'] : ['Belém', 'Santarém'],
+      regions: session.role === 'unit_user' ? ['Metropolitana'] : ['Metropolitana', 'Baixo Amazonas'],
+      sections: ['Suporte'],
+    })
+  }),
   http.get('*/api/v1/inventory', ({ request }) => {
     const session = getSession()
     if (!session) return unauthorized()

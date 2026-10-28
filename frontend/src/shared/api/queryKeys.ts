@@ -35,6 +35,11 @@ export const queryKeys = {
     model: query.model ?? null,
     situation: query.situation ?? null,
     inventoryUnitId: query.unitId ?? null,
+    commandId: query.commandId ?? null,
+    municipality: query.municipality ?? null,
+    region: query.region ?? null,
+    section: query.section ?? null,
+    period: query.period ?? null,
     page: query.page,
     pageSize: query.pageSize,
   }] as const,
@@ -45,4 +50,5 @@ export const queryKeys = {
   organizationalStructure: (query: Record<string, unknown>) => ['organizational-structure', 'list', query] as const,
   organizationalNode: (id: string | null) => ['organizational-structure', 'node', id] as const,
   organizationalIndicators: (id: string | null) => ['organizational-structure', 'indicators', id] as const,
+  organizationalFilterOptions: ['organizational-structure', 'filter-options'] as const,
 }

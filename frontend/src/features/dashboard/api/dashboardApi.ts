@@ -1,6 +1,7 @@
 import { httpClient } from '../../../shared/api/httpClient'
 import { getSession } from '../../../shared/auth/session'
 import type { SessionContext } from '../../../shared/auth/types'
+import type { DashboardFilters } from '../../../shared/api/contracts'
 
 export type UnitContext = NonNullable<SessionContext['unit']>
 
@@ -28,8 +29,11 @@ export type UnitDashboard = {
   unitSummaries?: Array<{
     unit: UnitContext
     coverage: string
+    equipmentShare?: string
+    patrimonialCoverage?: string | null
     equipment: number
     attention: number
+    organizationType?: 'intermediate_command' | 'subordinate_unit'
   }>
   callsByStatus?: Array<{
     status: string
@@ -60,13 +64,22 @@ function isUnitDashboard(response: UnitDashboard | LegacyDashboardResponse): res
   return 'metrics' in response
 }
 
-export function getUnitDashboard(): Promise<UnitDashboard> {
+function dashboardUrl(filters: DashboardFilters = {}) {
+  const parameters = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) parameters.set(key, value)
+  })
+  const query = parameters.toString()
+  return query ? `/dashboard?${query}` : '/dashboard'
+}
+
+export function getUnitDashboard(filters: DashboardFilters = {}): Promise<UnitDashboard> {
   const unit = getSession()?.unit
   if (!unit) {
     return Promise.reject(new Error('Uma sessão autenticada de Unidade é obrigatória.'))
   }
 
-  return httpClient<UnitDashboard | LegacyDashboardResponse>('/dashboard').then((response) => {
+  return httpClient<UnitDashboard | LegacyDashboardResponse>(dashboardUrl(filters)).then((response) => {
     if (isUnitDashboard(response)) return response
 
     return {
@@ -88,14 +101,14 @@ export function getUnitDashboard(): Promise<UnitDashboard> {
   })
 }
 
-export function getDashboard(): Promise<UnitDashboard> {
+export function getDashboard(filters: DashboardFilters = {}): Promise<UnitDashboard> {
   const session = getSession()
   if (!session) {
     return Promise.reject(new Error('Uma sessão autenticada é obrigatória.'))
   }
 
   if (session.role === 'ditel_admin') {
-    return httpClient<UnitDashboard>('/dashboard').then((response) => ({
+    return httpClient<UnitDashboard>(dashboardUrl(filters)).then((response) => ({
       unit: response.unit,
       metrics: response.metrics,
       situations: response.situations ?? [],
@@ -109,5 +122,5 @@ export function getDashboard(): Promise<UnitDashboard> {
     }))
   }
 
-  return getUnitDashboard()
+  return getUnitDashboard(filters)
 }

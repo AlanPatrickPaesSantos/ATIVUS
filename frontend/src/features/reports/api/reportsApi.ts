@@ -2,6 +2,7 @@ import { httpClient, httpDownload } from '../../../shared/api/httpClient'
 import type { CallsSummaryReportResponse, GeneralReportResponse, InventoryReportResponse, InventoryReportSituation, MovementsSummaryReportResponse } from '../../../shared/api/contracts'
 
 export type InventoryReportQuery = {
+  commandId?: string
   unitId?: string
   situation?: InventoryReportSituation | null
   period?: string | null
@@ -13,6 +14,7 @@ function reportParameters(query: InventoryReportQuery & { format?: InventoryRepo
   const parameters = new URLSearchParams()
 
   if (query.unitId) parameters.set('unitId', query.unitId)
+  if (query.commandId) parameters.set('commandId', query.commandId)
   if (query.situation) parameters.set('situation', query.situation)
   if (query.period) parameters.set('period', query.period)
   if (query.format) parameters.set('format', query.format)

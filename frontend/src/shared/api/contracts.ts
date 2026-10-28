@@ -4,11 +4,30 @@ export type InventoryQuery = {
   model?: string
   situation?: string
   unitId?: string
+  commandId?: string
+  municipality?: string
+  region?: string
+  section?: string
+  period?: DashboardPeriod
   page: number
   pageSize: number
 }
 
 export type EquipmentSituation = 'active' | 'maintenance' | 'inactive' | 'lost' | 'written_off'
+export type DashboardSituation = EquipmentSituation | 'attention'
+export type DashboardPeriod = '30d' | '90d' | '2026-08'
+
+export type DashboardFilters = {
+  unitId?: string
+  commandId?: string
+  situation?: DashboardSituation
+  municipality?: string
+  region?: string
+  type?: string
+  model?: string
+  section?: string
+  period?: DashboardPeriod
+}
 
 export type EquipmentSummary = {
   id: string
@@ -71,6 +90,16 @@ export type InventoryResponse = {
   total: number
   page: number
   pageSize: number
+}
+
+export type InventoryFacetsResponse = {
+  units: UnitContext[]
+  types: string[]
+  models: string[]
+  situations: EquipmentSituation[]
+  municipalities: string[]
+  regions: string[]
+  sections: string[]
 }
 
 export type AcMaterial = {

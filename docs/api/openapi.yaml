@@ -143,6 +143,16 @@ paths:
       summary: Consulta indicadores do escopo autenticado
       operationId: getDashboard
       security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: unitId, in: query, schema: { type: string } }
+        - { name: commandId, in: query, schema: { type: string } }
+        - { name: situation, in: query, schema: { type: string, enum: [active, maintenance, inactive, lost, written_off, attention] } }
+        - { name: municipality, in: query, schema: { type: string } }
+        - { name: region, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string } }
+        - { name: model, in: query, schema: { type: string } }
+        - { name: section, in: query, schema: { type: string } }
+        - { name: period, in: query, schema: { type: string, enum: [30d, 90d, 2026-08] } }
       responses:
         '200':
           description: Dashboard da unidade ou escopo estadual
@@ -165,6 +175,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnitListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /organizational-options:
+    get:
+      tags: [Units]
+      summary: Lista comandos e unidades subordinadas para filtros dependentes
+      operationId: getOrganizationalFilterOptions
+      description: Retorna relações persistidas por parentUnitId; usuários de unidade recebem apenas sua unidade canônica.
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Opções organizacionais reais, inclusive comandos sem equipamentos
+          content: { application/json: { schema: { $ref: '#/components/schemas/OrganizationalFilterOptionsResponse' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
   /admin/organizational-structure:
@@ -565,6 +588,11 @@ paths:
         - { $ref: '#/components/parameters/Model' }
         - { $ref: '#/components/parameters/Situation' }
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
+        - { name: municipality, in: query, schema: { type: string } }
+        - { name: region, in: query, schema: { type: string } }
+        - { name: section, in: query, schema: { type: string } }
+        - { name: period, in: query, schema: { type: string, enum: [30d, 90d, 2026-08] } }
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:
@@ -576,6 +604,21 @@ paths:
                 $ref: '#/components/schemas/InventoryResponse'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /inventory/facets:
+    get:
+      tags: [Inventory]
+      summary: Lista facetas de inventário dentro do escopo autorizado
+      operationId: listInventoryFacets
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/CommandId' }
+        - { $ref: '#/components/parameters/UnitId' }
+      responses:
+        '200':
+          description: Valores persistidos disponíveis para filtros
+          content: { application/json: { schema: { $ref: '#/components/schemas/InventoryFacetsResponse' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
   /ac/materials:
     get:
@@ -832,6 +875,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
         - { $ref: '#/components/parameters/ReportPeriod' }
       responses:
@@ -851,6 +895,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
         - { $ref: '#/components/parameters/ReportPeriod' }
         - name: format
@@ -877,6 +922,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
       responses:
         '200':
           description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
@@ -895,6 +941,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
       responses:
         '200':
           description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
@@ -913,6 +960,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
+        - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
         - { $ref: '#/components/parameters/ReportPeriod' }
       responses:
@@ -1188,6 +1236,7 @@ components:
       schema:
         $ref: '#/components/schemas/EquipmentSituation'
     UnitId: { name: unitId, in: query, description: Aplicável somente ao administrador DITEL., schema: { type: string } }
+    CommandId: { name: commandId, in: query, description: Comando intermediário persistido; o escopo inclui seus descendentes por parentUnitId., schema: { type: string } }
     ReportPeriod:
       name: period
       in: query
@@ -1272,6 +1321,32 @@ components:
     OrganizationalVerificationStatus:
       type: string
       enum: [confirmed, divergent, pending]
+    OrganizationalFilterOption:
+      type: object
+      required: [id, name, acronym, kind, parentUnitId, equipmentCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        acronym: { type: string }
+        kind: { $ref: '#/components/schemas/OrganizationalUnitKind' }
+        parentUnitId: { oneOf: [{ type: string }, { type: 'null' }] }
+        equipmentCount: { type: integer, minimum: 0 }
+    OrganizationalFilterOptionsResponse:
+      type: object
+      required: [commands, units]
+      properties:
+        commands:
+          type: array
+          items:
+            type: object
+            required: [id, name, acronym, equipmentCount, units]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              acronym: { type: string }
+              equipmentCount: { type: integer, minimum: 0 }
+              units: { type: array, items: { $ref: '#/components/schemas/OrganizationalFilterOption' } }
+        units: { type: array, items: { $ref: '#/components/schemas/OrganizationalFilterOption' } }
     OrganizationalStructureItem:
       type: object
       required: [id, name, acronym, active, verificationStatus, childrenCount, equipmentCount, demonstrativeEquipmentCount]
@@ -1725,6 +1800,17 @@ components:
         total: { type: integer, minimum: 0 }
         page: { type: integer, minimum: 1 }
         pageSize: { type: integer, minimum: 1 }
+    InventoryFacetsResponse:
+      type: object
+      required: [units, types, models, situations, municipalities, regions, sections]
+      properties:
+        units: { type: array, items: { $ref: '#/components/schemas/UnitContext' } }
+        types: { type: array, items: { type: string } }
+        models: { type: array, items: { type: string } }
+        situations: { type: array, items: { $ref: '#/components/schemas/EquipmentSituation' } }
+        municipalities: { type: array, items: { type: string } }
+        regions: { type: array, items: { type: string } }
+        sections: { type: array, items: { type: string } }
     AcMaterialCustody:
       type: object
       required: [scope, unit]
@@ -2313,8 +2399,11 @@ components:
             properties:
               unit: { $ref: '#/components/schemas/UnitContext' }
               coverage: { type: string }
+              equipmentShare: { type: string, description: Participação do equipamento da unidade no recorte filtrado. }
+              patrimonialCoverage: { oneOf: [{ type: string }, { type: 'null' }], description: Cobertura patrimonial; nula quando não há dado persistido. }
               equipment: { type: integer, minimum: 0 }
               attention: { type: integer, minimum: 0 }
+              organizationType: { type: string, enum: [intermediate_command, subordinate_unit] }
         callsByStatus:
           type: array
           items:

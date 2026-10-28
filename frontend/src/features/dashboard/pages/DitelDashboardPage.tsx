@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import type { DashboardFilters } from '../../../shared/api/contracts'
+import { useInventoryFacetsQuery, useOrganizationalFilterOptionsQuery } from '../../inventory/api/inventoryQueries'
 import { useDashboardQuery } from '../api/dashboardQueries'
 import { ErrorState } from '../../../shared/ui/feedback/ErrorState'
 import { LoadingState } from '../../../shared/ui/feedback/LoadingState'
@@ -18,6 +20,7 @@ type UnitSummary = {
   coverage: string
   equipment: number
   attention: number
+  organizationType?: 'intermediate_command' | 'subordinate_unit'
 }
 
 type CallsByStatus = {
@@ -62,22 +65,24 @@ function barWidth(value: number, max: number) {
 }
 
 export function DitelDashboardPage() {
-  const [unitId, setUnitId] = useState('statewide')
-  const [situation, setSituation] = useState('all')
-  const [municipality, setMunicipality] = useState('all')
-  const [region, setRegion] = useState('all')
-  const [equipmentType, setEquipmentType] = useState('all')
-  const [section, setSection] = useState('all')
-  const [period, setPeriod] = useState('Últimos 30 dias')
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false)
-  const dashboardQuery = useDashboardQuery()
+  const filters = useMemo<DashboardFilters>(() => ({
+    unitId: searchParams.get('unitId') || undefined,
+    commandId: searchParams.get('commandId') || undefined,
+    situation: (searchParams.get('situation') as DashboardFilters['situation']) || undefined,
+    municipality: searchParams.get('municipality') || undefined,
+    region: searchParams.get('region') || undefined,
+    type: searchParams.get('type') || undefined,
+    section: searchParams.get('section') || undefined,
+    period: (searchParams.get('period') as DashboardFilters['period']) || '30d',
+  }), [searchParams])
+  const dashboardQuery = useDashboardQuery(filters)
+  const facetsQuery = useInventoryFacetsQuery({ commandId: filters.commandId, unitId: filters.unitId, municipality: filters.municipality, region: filters.region, type: filters.type, model: filters.model, section: filters.section, period: filters.period })
+  const organizationalOptionsQuery = useOrganizationalFilterOptionsQuery()
   const data = dashboardQuery.data
 
-  const units = useMemo(() => {
-    return ((data?.unitSummaries ?? []) as UnitSummary[]).filter((summary) => {
-      return (unitId === 'statewide' || summary.unit.id === unitId) && (situation === 'all' || summary.attention > 0)
-    })
-  }, [data?.unitSummaries, situation, unitId])
+  const units = useMemo(() => (data?.unitSummaries ?? []) as UnitSummary[], [data?.unitSummaries])
 
   const sortedUnits = useMemo(() => {
     return [...units].sort((a, b) => b.attention - a.attention || b.equipment - a.equipment)
@@ -96,7 +101,15 @@ export function DitelDashboardPage() {
   const maxCallCount = Math.max(...callsByStatus.map((item) => item.count), 0)
   const maxUnitAttention = Math.max(...sortedUnits.map((item) => item.attention), 0)
   const hasQueryFeedback = dashboardQuery.isLoading || dashboardQuery.isError
-  const unitOptions = (data?.unitSummaries ?? []) as UnitSummary[]
+  const selectedCommand = organizationalOptionsQuery.data?.commands.find((command) => command.id === filters.commandId)
+  const unitOptions = filters.commandId ? (selectedCommand?.units ?? []) : (organizationalOptionsQuery.data?.units ?? facetsQuery.data?.units ?? (data?.unitSummaries ?? []).map((item) => item.unit))
+  const setFilter = (key: keyof DashboardFilters, value: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (!value || value === 'all' || value === 'statewide') next.delete(key)
+    else next.set(key, value)
+    if (key === 'commandId') next.delete('unitId')
+    setSearchParams(next)
+  }
 
   const metrics = data
     ? [
@@ -109,13 +122,7 @@ export function DitelDashboardPage() {
       ]
     : []
 
-  function clearAdvancedFilters() {
-    setMunicipality('all')
-    setRegion('all')
-    setEquipmentType('all')
-    setSection('all')
-    setPeriod('Últimos 30 dias')
-  }
+  function clearAdvancedFilters() { setSearchParams(new URLSearchParams()) }
 
   return (
     <section
@@ -146,21 +153,33 @@ export function DitelDashboardPage() {
       <section className="module-panel ditel-filters" aria-label="Filtros estaduais">
         <div className="ditel-filters__primary">
           <label>
-            Unidade monitorada
-            <select value={unitId} onChange={(event) => setUnitId(event.target.value)}>
-              <option value="statewide">Todas as unidades</option>
+            Comando intermediário
+            <select aria-label="Comando intermediário" value={filters.commandId ?? 'statewide'} onChange={(event) => setFilter('commandId', event.target.value)}>
+              <option value="statewide">Todos os comandos</option>
+              {(organizationalOptionsQuery.data?.commands ?? []).map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </label>
+          {organizationalOptionsQuery.isLoading ? <span role="status">Carregando comandos e unidades subordinadas...</span> : null}
+          <label>
+            Unidade subordinada
+            <select aria-label="Unidade subordinada" value={filters.unitId ?? 'statewide'} onChange={(event) => setFilter('unitId', event.target.value)}>
+              <option value="statewide">Todas as unidades do comando</option>
               {unitOptions.map((item) => (
-                <option key={item.unit.id} value={item.unit.id}>
-                  {item.unit.name}
+                <option key={item.id} value={item.id}>
+                  {item.name}
                 </option>
               ))}
+              {filters.commandId && selectedCommand && selectedCommand.units.length === 0 ? <option value="" disabled>Nenhuma unidade subordinada cadastrada</option> : null}
             </select>
           </label>
           <label>
             Situação do parque
-            <select value={situation} onChange={(event) => setSituation(event.target.value)}>
+            <select value={filters.situation ?? 'all'} onChange={(event) => setFilter('situation', event.target.value)}>
               <option value="all">Todas as situações</option>
               <option value="attention">Com atenção</option>
+              {(facetsQuery.data?.situations ?? []).map((item) => <option key={item} value={item}>{item === 'active' ? 'Em operação' : item === 'maintenance' ? 'Em manutenção' : item === 'inactive' ? 'Inativo' : item === 'lost' ? 'Extraviado' : 'Baixado'}</option>)}
             </select>
           </label>
           <button
@@ -177,34 +196,38 @@ export function DitelDashboardPage() {
           <div id="ditel-advanced-filters" className="ditel-filters__advanced">
             <label>
               Município
-              <select value={municipality} onChange={(event) => setMunicipality(event.target.value)}>
+              <select value={filters.municipality ?? 'all'} onChange={(event) => setFilter('municipality', event.target.value)}>
                 <option value="all">Todos os municípios</option>
+                {(facetsQuery.data?.municipalities ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
               Região
-              <select value={region} onChange={(event) => setRegion(event.target.value)}>
+              <select value={filters.region ?? 'all'} onChange={(event) => setFilter('region', event.target.value)}>
                 <option value="all">Todas as regiões</option>
+                {(facetsQuery.data?.regions ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
               Tipo de equipamento
-              <select value={equipmentType} onChange={(event) => setEquipmentType(event.target.value)}>
+              <select value={filters.type ?? 'all'} onChange={(event) => setFilter('type', event.target.value)}>
                 <option value="all">Todos os tipos</option>
+                {(facetsQuery.data?.types ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
               Seção responsável
-              <select value={section} onChange={(event) => setSection(event.target.value)}>
+              <select value={filters.section ?? 'all'} onChange={(event) => setFilter('section', event.target.value)}>
                 <option value="all">Todas as seções</option>
+                {(facetsQuery.data?.sections ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
               Período
-              <select value={period} onChange={(event) => setPeriod(event.target.value)}>
-                <option value="Últimos 30 dias">Últimos 30 dias</option>
-                <option value="Últimos 90 dias">Últimos 90 dias</option>
-                <option value="Agosto de 2026">Agosto de 2026</option>
+              <select value={filters.period ?? '30d'} onChange={(event) => setFilter('period', event.target.value)}>
+                <option value="30d">Últimos 30 dias</option>
+                <option value="90d">Últimos 90 dias</option>
+                <option value="2026-08">Agosto de 2026</option>
               </select>
             </label>
             <div className="ditel-filters__actions">

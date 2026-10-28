@@ -1,7 +1,8 @@
 import express, { type RequestHandler, type Router } from 'express';
 
 import { AuthError } from '../auth/sessionService.js';
-import { getOrganizationalNode, listOrganizationalUnits, parseOrganizationalStructureQuery } from '../repositories/organizationalStructureRepository.js';
+import { resolveAccessScopeFromContext } from '../auth/activeUnitScope.js';
+import { getOrganizationalFilterOptions, getOrganizationalNode, listOrganizationalUnits, parseOrganizationalStructureQuery } from '../repositories/organizationalStructureRepository.js';
 import { readOrganizationalIndicators } from '../repositories/organizationalIndicatorsRepository.js';
 
 export function assertDitelAdmin(context: Parameters<RequestHandler>[0]['sessionContext']): void {
@@ -11,6 +12,20 @@ export function assertDitelAdmin(context: Parameters<RequestHandler>[0]['session
 
 export function createOrganizationalStructureRoutes(requireSession: RequestHandler): Router {
   const router = express.Router();
+
+  router.get('/organizational-options', requireSession, (req, res, next) => {
+    try {
+      const context = req.sessionContext;
+      if (!context) throw new AuthError(401, 'UNAUTHENTICATED', 'Sessão inválida ou expirada.');
+      if (context.role !== 'ditel_admin' && context.role !== 'unit_user') throw new AuthError(403, 'FORBIDDEN', 'Acesso administrativo obrigatório.');
+      void resolveAccessScopeFromContext(context).then((access) => {
+        if (!access) throw new AuthError(403, 'FORBIDDEN', 'Escopo de unidade obrigatório.');
+        return getOrganizationalFilterOptions({ role: access.role, unitId: access.unitId });
+      }).then((result) => res.status(200).json(result)).catch(next);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   router.get('/admin/organizational-structure', requireSession, (req, res, next) => {
     try {

@@ -39,6 +39,11 @@ export type OrganizationalIndicators = {
 }
 export type OrganizationalDetailResponse = { organization: OrganizationalStructureItem; children: OrganizationalStructureItem[]; indicators: OrganizationalIndicators }
 export type OrganizationalIndicatorsResponse = { scope: { id: string; name: string; acronym: string }; indicators: OrganizationalIndicators }
+export type OrganizationalFilterOption = { id: string; name: string; acronym: string; kind: OrganizationalKind; parentUnitId: string | null; equipmentCount: number }
+export type OrganizationalFilterOptionsResponse = {
+  commands: Array<{ id: string; name: string; acronym: string; equipmentCount: number; units: OrganizationalFilterOption[] }>
+  units: OrganizationalFilterOption[]
+}
 
 function queryString(query: OrganizationalStructureQuery) {
   const params = new URLSearchParams()
@@ -59,4 +64,8 @@ export function getOrganizationalNode(organizationId: string) {
 
 export function getOrganizationalIndicators(organizationId: string) {
   return httpClient<OrganizationalIndicatorsResponse>(`/admin/organizational-structure/${encodeURIComponent(organizationId)}/indicators`)
+}
+
+export function getOrganizationalFilterOptions() {
+  return httpClient<OrganizationalFilterOptionsResponse>('/organizational-options')
 }

@@ -6,9 +6,9 @@ import { EquipmentDetailModal } from '../components/EquipmentDetailModal'
 import { EquipmentRegistrationModal } from '../components/EquipmentRegistrationModal'
 import { InventoryTable } from '../components/InventoryTable'
 import { InventoryToolbar, type InventoryFilterValues } from '../components/InventoryToolbar'
-import { useInventoryQuery } from '../api/inventoryQueries'
+import { useInventoryFacetsQuery, useInventoryQuery, useOrganizationalFilterOptionsQuery } from '../api/inventoryQueries'
 
-const allowedFilters = ['search', 'type', 'model', 'situation', 'unitId', 'page', 'pageSize'] as const
+const allowedFilters = ['search', 'type', 'model', 'situation', 'commandId', 'unitId', 'municipality', 'region', 'section', 'period', 'page', 'pageSize'] as const
 
 function useMobileViewport() {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia?.('(max-width: 640px)').matches ?? false)
@@ -38,8 +38,8 @@ function positiveInteger(value: string | null, fallback: number) {
 
 function readQuery(searchParams: URLSearchParams): InventoryQuery {
   return {
-    search: searchParams.get('search') ?? '', type: searchParams.get('type') ?? '', model: searchParams.get('model') ?? '', situation: searchParams.get('situation') ?? '', unitId: searchParams.get('unitId') ?? '',
-    page: positiveInteger(searchParams.get('page'), 1), pageSize: positiveInteger(searchParams.get('pageSize'), 10),
+    search: searchParams.get('search') ?? '', type: searchParams.get('type') ?? '', model: searchParams.get('model') ?? '', situation: searchParams.get('situation') ?? '', commandId: searchParams.get('commandId') ?? '', unitId: searchParams.get('unitId') ?? '', municipality: searchParams.get('municipality') ?? '', region: searchParams.get('region') ?? '', section: searchParams.get('section') ?? '', period: (searchParams.get('period') as InventoryQuery['period']) ?? undefined,
+    page: positiveInteger(searchParams.get('page'), 1), pageSize: positiveInteger(searchParams.get('pageSize'), 20),
   }
 }
 
@@ -50,14 +50,17 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
   const query = useMemo(() => readQuery(searchParams), [searchParams])
   const inventoryQuery = useInventoryQuery(query)
+  const facetsQuery = useInventoryFacetsQuery(query)
+  const organizationalOptionsQuery = useOrganizationalFilterOptionsQuery()
   const isMobile = useMobileViewport()
-  const filters: InventoryFilterValues = { search: query.search ?? '', type: query.type ?? '', model: query.model ?? '', situation: query.situation ?? '', unitId: query.unitId ?? '' }
+  const filters: InventoryFilterValues = { search: query.search ?? '', type: query.type ?? '', model: query.model ?? '', situation: query.situation ?? '', commandId: query.commandId ?? '', unitId: query.unitId ?? '', municipality: query.municipality ?? '', region: query.region ?? '', section: query.section ?? '', period: query.period ?? '' }
 
-  function update(values: Partial<InventoryFilterValues> | Pick<InventoryQuery, 'page'>) {
+  function update(values: Partial<InventoryFilterValues> | { page: number; pageSize?: number }) {
     const next = new URLSearchParams()
-    const nextValues = { ...query, ...values, page: 'page' in values ? values.page : 1 }
+    const nextValues = { ...query, ...values, page: 'pageSize' in values || !('page' in values) ? 1 : values.page }
     allowedFilters.forEach((key) => {
-      const value = String(nextValues[key])
+      const rawValue = nextValues[key]
+      const value = rawValue === undefined || rawValue === null ? '' : String(rawValue)
       if (value && !(key === 'page' && value === '1')) next.set(key, value)
     })
     setSearchParams(next)
@@ -69,7 +72,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
   const total = inventoryQuery.data?.total ?? 0
   const attentionTotal = inventoryQuery.data?.items.filter((item) => ['maintenance', 'inactive', 'lost', 'written_off'].includes(item.situation)).length ?? 0
   const subtitle = isStatewide ? 'Escopo estadual' : `${session?.unit?.acronym ?? unitName} • ${total} equipamentos cadastrados`
-  const clearFilters = () => setSearchParams(new URLSearchParams(query.pageSize === 10 ? '' : `pageSize=${query.pageSize}`))
+  const clearFilters = () => setSearchParams(new URLSearchParams(query.pageSize === 20 ? '' : `pageSize=${query.pageSize}`))
   const showPagination = !inventoryQuery.isLoading && !inventoryQuery.isError && total > 0
 
   const situationStatusMap: Record<EquipmentSummary['situation'], string> = {
@@ -108,11 +111,11 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
           <p className="inventory-sidebar__subtitle">Encontre um ativo ou refine a consulta.</p>
         </header>
 
-        <InventoryToolbar filters={filters} onChange={update} isStatewide={isStatewide} scopeName={isStatewide ? 'Escopo estadual' : unitName} />
+        <InventoryToolbar filters={filters} onChange={update} facets={facetsQuery.data} facetsError={facetsQuery.isError} onRetryFacets={() => { void facetsQuery.refetch() }} organizationOptions={organizationalOptionsQuery.data} organizationOptionsLoading={organizationalOptionsQuery.isLoading} isStatewide={isStatewide} scopeName={isStatewide ? 'Escopo estadual' : unitName} />
 
         <div className="inventory-sidebar__meta">
           <span>Seleção rápida</span>
-          <strong>{total} equipamentos</strong>
+            <strong>{total} registros filtrados</strong>
         </div>
 
         <div className="inventory-sidebar-list" aria-label="Lista rápida de equipamentos">
@@ -136,6 +139,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
 
         {showPagination ? (
           <nav className="inventory-sidebar-pagination" aria-label="Paginação do inventário">
+            <label>Quantidade por página<select aria-label="Quantidade por página" value={query.pageSize} onChange={(event) => update({ page: 1, pageSize: Number(event.target.value) })}><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label>
             <button
               type="button"
               className="inventory-sidebar-pagination__arrow"
@@ -146,33 +150,13 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
               ‹
             </button>
             <div className="inventory-sidebar-pagination__numbers">
-              {Array.from({ length: Math.min(5, Math.ceil(total / query.pageSize)) }, (_, i) => {
-                const pageNum = i + 1
+              {Array.from({ length: Math.ceil(total / query.pageSize) }, (_, i) => i + 1).filter((pageNum, _index, pages) => pageNum === 1 || pageNum === pages[pages.length - 1] || Math.abs(pageNum - query.page) <= 2).map((pageNum, _index, pages) => {
+                const previous = pages[pages.indexOf(pageNum) - 1]
+                const gap = previous !== undefined && pageNum - previous > 1
                 return (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    className={`inventory-sidebar-pagination__number-btn ${query.page === pageNum ? 'is-active' : ''}`}
-                    onClick={() => update({ page: pageNum })}
-                    aria-label={`Página ${pageNum}`}
-                  >
-                    {pageNum}
-                  </button>
+                  <span key={pageNum}>{gap ? <span className="inventory-sidebar-pagination__dots">...</span> : null}<button type="button" className={`inventory-sidebar-pagination__number-btn ${query.page === pageNum ? 'is-active' : ''}`} onClick={() => update({ page: pageNum })} aria-label={`Página ${pageNum}`}>{pageNum}</button></span>
                 )
               })}
-              {Math.ceil(total / query.pageSize) > 5 && (
-                <>
-                  <span className="inventory-sidebar-pagination__dots">...</span>
-                  <button
-                    type="button"
-                    className={`inventory-sidebar-pagination__number-btn ${query.page === Math.ceil(total / query.pageSize) ? 'is-active' : ''}`}
-                    onClick={() => update({ page: Math.ceil(total / query.pageSize) })}
-                    aria-label={`Página ${Math.ceil(total / query.pageSize)}`}
-                  >
-                    {Math.ceil(total / query.pageSize)}
-                  </button>
-                </>
-              )}
             </div>
             <button
               type="button"
@@ -196,7 +180,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
             <p>Selecione um item para consultar detalhes, histórico e situação.</p>
           </div>
           <div className="inventory-main__result-count" aria-live="polite">
-            {total} registros
+            {inventoryQuery.data?.items.length ?? 0} exibidos de {total} filtrados
           </div>
         </header>
 

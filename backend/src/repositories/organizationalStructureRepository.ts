@@ -1,6 +1,7 @@
 import { AuthError } from '../auth/sessionService.js';
 import { EquipmentModel } from '../models/Equipment.js';
 import { UnitModel, type OrganizationalUnitKind, type OrganizationalVerificationStatus } from '../models/Unit.js';
+import { descendantUnitIds, resolveOrganizationalScope, type OrganizationalScopeUnit } from './organizationalScopeResolver.js';
 
 const kinds = new Set<OrganizationalUnitKind>(['intermediate_command', 'bpm', 'cipm', 'specialized_unit', 'cime', 'cipamb', 'organic_company', 'pel_dest', 'ppd', 'other']);
 const verificationStatuses = new Set<OrganizationalVerificationStatus>(['confirmed', 'divergent', 'pending']);
@@ -31,6 +32,47 @@ export interface OrganizationalStructureItem {
   demonstrativeEquipmentCount: number;
 }
 type EquipmentCount = { total: number; demonstrative: number };
+
+export interface OrganizationalFilterOption {
+  id: string;
+  name: string;
+  acronym: string;
+  kind: OrganizationalUnitKind;
+  parentUnitId: string | null;
+  equipmentCount: number;
+}
+
+export interface OrganizationalFilterOptions {
+  commands: Array<{ id: string; name: string; acronym: string; equipmentCount: number; units: OrganizationalFilterOption[] }>;
+  units: OrganizationalFilterOption[];
+}
+
+export function buildOrganizationalFilterOptions(
+  units: Array<Pick<OrganizationalScopeUnit, 'id' | 'parentUnitId' | 'kind'> & { name: string; acronym: string }>,
+  counts: Array<{ unitId: string; total: number }>,
+): OrganizationalFilterOptions {
+  const organizationalUnits = units.map((unit) => ({ ...unit, active: true }));
+  const directCounts = new Map(counts.map((count) => [count.unitId, count.total]));
+  const propagated = summarizeEquipmentCountsForOrganizations(organizationalUnits, counts.map((count) => ({ ...count, demonstrative: 0 })));
+  const toOption = (unit: typeof units[number]): OrganizationalFilterOption => ({
+    id: unit.id,
+    name: unit.name,
+    acronym: unit.acronym,
+    kind: unit.kind,
+    parentUnitId: unit.parentUnitId,
+    equipmentCount: propagated[unit.id]?.total ?? directCounts.get(unit.id) ?? 0,
+  });
+  const byId = new Map(units.map((unit) => [unit.id, unit]));
+  const commands = units.filter((unit) => unit.kind === 'intermediate_command').map((command) => ({
+    id: command.id,
+    name: command.name,
+    acronym: command.acronym,
+    equipmentCount: propagated[command.id]?.total ?? 0,
+    units: descendantUnitIds(organizationalUnits, command.id).filter((id) => id !== command.id).map((id) => toOption(byId.get(id)!)),
+  }));
+  const subordinateUnits = units.filter((unit) => unit.kind !== 'intermediate_command').map(toOption);
+  return { commands, units: subordinateUnits };
+}
 
 function text(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -140,4 +182,20 @@ export async function getOrganizationalNode(id: string) {
   const children = await UnitModel.find({ parentUnitId: id }).select({ _id: 0, id: 1, name: 1, acronym: 1, kind: 1, parentUnitId: 1, independent: 1, active: 1, verificationStatus: 1 }).sort({ name: 1, id: 1 }).lean().exec();
   const [organization] = await buildItems([unit as Record<string, any>]);
   return { organization, children: await buildItems(children as Array<Record<string, any>>) };
+}
+
+export async function getOrganizationalFilterOptions(actor: { role: 'unit_user' | 'ditel_admin'; unitId: string | null }): Promise<OrganizationalFilterOptions> {
+  const filter = actor.role === 'unit_user' ? { id: actor.unitId, active: true } : { active: true };
+  const units = await UnitModel.find(filter)
+    .select({ _id: 0, id: 1, name: 1, acronym: 1, kind: 1, parentUnitId: 1, active: 1 })
+    .sort({ name: 1, id: 1 })
+    .lean()
+    .exec();
+  const normalizedUnits = units.map((unit) => ({ ...unit, kind: (unit.kind ?? 'other') as OrganizationalUnitKind, parentUnitId: unit.parentUnitId ?? null }));
+  if (actor.role === 'ditel_admin') resolveOrganizationalScope(normalizedUnits, {}, actor);
+  const grouped = await EquipmentModel.aggregate<{ _id: string; total: number }>([
+    { $match: { 'custody.scope': { $ne: 'AC' }, 'unit.id': { $in: normalizedUnits.map((unit) => unit.id) } } },
+    { $group: { _id: '$unit.id', total: { $sum: 1 } } },
+  ]).exec();
+  return buildOrganizationalFilterOptions(normalizedUnits, grouped.filter((item) => item._id).map((item) => ({ unitId: item._id, total: item.total })));
 }
