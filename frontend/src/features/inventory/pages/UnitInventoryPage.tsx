@@ -75,14 +75,6 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
   const clearFilters = () => setSearchParams(new URLSearchParams(query.pageSize === 20 ? '' : `pageSize=${query.pageSize}`))
   const showPagination = !inventoryQuery.isLoading && !inventoryQuery.isError && total > 0
 
-  const situationStatusMap: Record<EquipmentSummary['situation'], string> = {
-    active: 'available',
-    maintenance: 'attention',
-    inactive: 'critical',
-    lost: 'critical',
-    written_off: 'critical',
-  }
-
   return <section className="inventory-page" aria-labelledby="unit-inventory-title" data-testid="inventory-layout" data-layout={isMobile ? 'mobile' : 'desktop'} data-visual-variant="operation-night">
     <header className="inventory-page__header">
       <div className="inventory-page__identity">
@@ -112,30 +104,6 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
         </header>
 
         <InventoryToolbar filters={filters} onChange={update} facets={facetsQuery.data} facetsError={facetsQuery.isError} onRetryFacets={() => { void facetsQuery.refetch() }} organizationOptions={organizationalOptionsQuery.data} organizationOptionsLoading={organizationalOptionsQuery.isLoading} isStatewide={isStatewide} scopeName={isStatewide ? 'Escopo estadual' : unitName} />
-
-        <div className="inventory-sidebar__meta">
-          <span>Seleção rápida</span>
-            <strong>{total} registros filtrados</strong>
-        </div>
-
-        <div className="inventory-sidebar-list" aria-label="Lista rápida de equipamentos">
-          {inventoryQuery.isLoading && <div className="inventory-sidebar-list__status">Carregando...</div>}
-          {inventoryQuery.isError && <div className="inventory-sidebar-list__status">Erro ao carregar.</div>}
-          {!inventoryQuery.isLoading && !inventoryQuery.isError && inventoryQuery.data?.items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`inventory-sidebar-item ${item.id === selected?.id ? 'is-selected' : ''}`}
-              onClick={() => setSelected(item)}
-            >
-              <i className={`inventory-sidebar-item__dot inventory-sidebar-item__dot--${situationStatusMap[item.situation]}`} />
-              <div className="inventory-sidebar-item__details">
-                <strong>{item.patrimony}</strong>
-                <span>{item.type} · {item.brand} {item.model}</span>
-              </div>
-            </button>
-          ))}
-        </div>
 
         {showPagination ? (
           <nav className="inventory-sidebar-pagination" aria-label="Paginação do inventário">
@@ -172,7 +140,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
       </aside>
 
       {/* Área principal direita */}
-      <main className="inventory-main">
+      <main className="inventory-main inventory-main--expanded">
         <header className="inventory-main__header">
           <div>
             <p className="page-eyebrow">Consulta operacional</p>

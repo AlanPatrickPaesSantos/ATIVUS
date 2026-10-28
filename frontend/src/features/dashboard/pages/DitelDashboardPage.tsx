@@ -54,11 +54,6 @@ function percent(part: number, total: number) {
   return Math.round((part / total) * 100)
 }
 
-function parseCoverage(value: string) {
-  const parsed = Number(value.replace('%', '').replace(',', '.'))
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
 function barWidth(value: number, max: number) {
   if (max <= 0) return '0%'
   return `${Math.max(6, Math.round((value / max) * 100))}%`
@@ -345,24 +340,6 @@ export function DitelDashboardPage() {
               </Link>
             </section>
 
-            <section className="module-panel ditel-coverage-dashboard">
-              <div>
-                <h2>Cobertura por unidade</h2>
-              </div>
-              <ol className="ditel-coverage-dashboard__list">
-                {sortedUnits.map((unit) => (
-                  <li key={unit.unit.id}>
-                    <div>
-                      <strong>{unit.unit.name}</strong>
-                      <span>{unit.coverage}</span>
-                    </div>
-                    <div className="ditel-coverage-dashboard__track">
-                      <span style={{ width: `${parseCoverage(unit.coverage)}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
           </div>
 
           <section className="ditel-analysis-grid" aria-label="Análise operacional estadual">

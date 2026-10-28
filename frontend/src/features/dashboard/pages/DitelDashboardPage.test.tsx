@@ -109,7 +109,8 @@ test('renders detailed statewide dashboard panels from real API data', () => {
 
   renderPage()
 
-  expect(screen.getByRole('heading', { name: 'Cobertura por unidade' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Cobertura por unidade' })).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Unidades monitoradas' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Ranking de atenção' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Chamados estaduais' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Fluxo patrimonial' })).toBeInTheDocument()

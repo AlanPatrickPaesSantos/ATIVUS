@@ -279,6 +279,14 @@ test('keeps the operational identity and summary above the inventory workspace',
   expect(screen.getByRole('heading', { name: 'Equipamentos da Unidade', level: 2 })).toBeInTheDocument()
 })
 
+test('removes the redundant quick selection and keeps the full equipment table workspace', () => {
+  renderPage('/inventario', canvaSession)
+
+  expect(screen.queryByText('Seleção rápida')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /ver detalhes de UC-001/i })).toBeInTheDocument()
+  expect(screen.getByTestId('inventory-layout').querySelector('.inventory-main')).toHaveClass('inventory-main--expanded')
+})
+
 test('gives DITEL a statewide inventory scope and a Unit filter', async () => {
   const user = userEvent.setup()
   renderPage('/inventario', ditelSession)

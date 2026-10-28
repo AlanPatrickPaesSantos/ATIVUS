@@ -498,7 +498,7 @@
 .ditel-metric--critical::before { background: var(--sigat-critical); }
 .ditel-metric strong { font-size: 1.65rem; margin-top: .8rem; }
 .ditel-state-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1.2fr) minmax(24rem, .8fr); margin-bottom: 1rem; }
-.ditel-state-health, .ditel-park-distribution, .ditel-coverage-dashboard, .ditel-calls-dashboard, .ditel-flow-dashboard, .ditel-ranking { background: linear-gradient(145deg, rgb(45 64 88 / 92%), rgb(30 43 61 / 98%)); padding: 1.15rem; }
+.ditel-state-health, .ditel-park-distribution, .ditel-calls-dashboard, .ditel-flow-dashboard, .ditel-ranking { background: linear-gradient(145deg, rgb(45 64 88 / 92%), rgb(30 43 61 / 98%)); padding: 1.15rem; }
 .ditel-state-health { overflow: hidden; position: relative; }
 .ditel-state-health::after { background: radial-gradient(circle, rgb(56 189 248 / 16%), transparent 58%); content: ''; height: 14rem; position: absolute; right: -5rem; top: -5rem; width: 14rem; }
 .ditel-state-health__body { align-items: center; display: grid; gap: 1.3rem; grid-template-columns: auto 1fr; margin-top: 1rem; position: relative; z-index: 1; }
@@ -511,7 +511,7 @@
 .ditel-state-health__readout > div:first-child { align-items: end; display: flex; gap: 1rem; justify-content: space-between; }
 .ditel-state-health__readout span { color: var(--sigat-muted); font-size: .76rem; }
 .ditel-state-health__readout strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: 1.6rem; }
-.ditel-state-health__track, .ditel-bar-list__track, .ditel-ranking__track, .ditel-coverage-dashboard__track { background: rgb(15 23 42 / 70%); border: 1px solid rgb(96 165 250 / 14%); border-radius: 999px; height: .62rem; overflow: hidden; }
+.ditel-state-health__track, .ditel-bar-list__track, .ditel-ranking__track { background: rgb(15 23 42 / 70%); border: 1px solid rgb(96 165 250 / 14%); border-radius: 999px; height: .62rem; overflow: hidden; }
 .ditel-state-health__track span { background: linear-gradient(90deg, var(--sigat-available), var(--sigat-attention), var(--sigat-critical)); display: block; height: 100%; }
 .ditel-state-health__signals { display: grid; gap: .6rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 1rem; position: relative; z-index: 1; }
 .ditel-state-health__signals span { background: rgb(13 22 35 / 54%); border: 1px solid rgb(96 165 250 / 13%); color: var(--sigat-text); font-family: var(--font-identifier); font-size: .72rem; padding: .68rem; }
@@ -521,14 +521,13 @@
 .ditel-park-distribution__segment--attention { background: var(--sigat-attention); }
 .ditel-park-distribution__segment--critical { background: var(--sigat-critical); }
 .ditel-park-distribution__segment--operational { background: var(--sigat-operational-bright); }
-.ditel-park-distribution__list, .ditel-coverage-dashboard__list, .ditel-bar-list, .ditel-ranking__list { display: grid; gap: .62rem; list-style: none; margin: 0; padding: 0; }
+.ditel-park-distribution__list, .ditel-bar-list, .ditel-ranking__list { display: grid; gap: .62rem; list-style: none; margin: 0; padding: 0; }
 .ditel-park-distribution__list li { align-items: center; background: rgb(15 23 42 / 42%); display: flex; justify-content: space-between; padding: .65rem .75rem; }
-.ditel-park-distribution__list span, .ditel-coverage-dashboard__list span, .ditel-bar-list span, .ditel-ranking__list span { color: var(--sigat-muted); font-size: .78rem; }
-.ditel-park-distribution__list strong, .ditel-coverage-dashboard__list strong, .ditel-bar-list strong, .ditel-ranking__list strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: .82rem; }
-.ditel-dashboard-page__grid { align-items: stretch; grid-template-columns: minmax(0, 1.15fr) minmax(22rem, .85fr); margin-bottom: 1rem; }
-.ditel-coverage-dashboard__list li, .ditel-bar-list li, .ditel-ranking__list li { display: grid; gap: .42rem; }
-.ditel-coverage-dashboard__list li > div:first-child, .ditel-bar-list li > div:first-child, .ditel-ranking__list li > div:first-child { align-items: center; display: flex; justify-content: space-between; }
-.ditel-coverage-dashboard__track span { background: linear-gradient(90deg, var(--sigat-operational-bright), var(--sigat-available)); display: block; height: 100%; }
+.ditel-park-distribution__list span, .ditel-bar-list span, .ditel-ranking__list span { color: var(--sigat-muted); font-size: .78rem; }
+.ditel-park-distribution__list strong, .ditel-bar-list strong, .ditel-ranking__list strong { color: var(--sigat-text); font-family: var(--font-identifier); font-size: .82rem; }
+.ditel-dashboard-page__grid { align-items: stretch; grid-template-columns: minmax(0, 1fr); margin-bottom: 1rem; }
+.ditel-bar-list li, .ditel-ranking__list li { display: grid; gap: .42rem; }
+.ditel-bar-list li > div:first-child, .ditel-ranking__list li > div:first-child { align-items: center; display: flex; justify-content: space-between; }
 .ditel-analysis-grid { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ditel-panel-heading { align-items: start; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; }
 .ditel-panel-heading > strong { background: rgb(37 99 235 / 20%); border: 1px solid rgb(96 165 250 / 35%); border-radius: 999px; color: rgb(191 219 254); font-family: var(--font-identifier); font-size: .72rem; padding: .38rem .62rem; white-space: nowrap; }
