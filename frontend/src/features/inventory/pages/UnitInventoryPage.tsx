@@ -175,6 +175,7 @@ export function UnitInventoryPage({ session }: { session?: SessionContext }) {
       open={Boolean(selected)}
       onClose={() => setSelected(null)}
       onOpenCall={(equipmentId) => navigate(`/chamados?equipmentId=${encodeURIComponent(equipmentId)}`)}
+      canViewAudit={session?.role === 'ditel_admin'}
     />
     {canRegisterEquipment ? <EquipmentRegistrationModal open={isRegistrationOpen} onClose={() => setIsRegistrationOpen(false)} unitName={unitName} onSaved={() => { void inventoryQuery.refetch() }} /> : null}
   </section>

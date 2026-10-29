@@ -1,10 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { ApiError } from '../../../shared/api/errors'
 import { clearSession, createSession } from '../../../shared/auth/session'
 import { fixtureSessionAdapter } from '../../auth/data/sessionFixture'
 import { server } from '../../../shared/api/msw/server'
 import { validateEquipmentAttachments } from './equipmentAttachments'
-import { getEquipmentDetails, getInventory, getInventoryFacets } from './inventoryApi'
+import { getEquipmentDetails, getInventory, getInventoryFacets, getPatrimonialView } from './inventoryApi'
 
 describe('inventory API', () => {
   beforeAll(async () => {
@@ -51,6 +52,24 @@ describe('inventory API', () => {
     await createSession({ signIn: async () => ({ userId: 'unit-002', name: 'Bruno Santos', registration: '100002', role: 'unit_user' as const, unit: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' } }) }, 'any', 'any')
 
     await expect(getEquipmentDetails('eq-004')).rejects.toMatchObject({ status: 404, code: 'EQUIPMENT_NOT_FOUND' })
+  })
+
+  it('requests the integrated patrimonial view with independent history and audit pagination', async () => {
+    server.use(http.get('/api/v1/inventory/eq-001/patrimonial', ({ request }) => {
+      const url = new URL(request.url)
+      expect(url.searchParams.get('historyPage')).toBe('2')
+      expect(url.searchParams.get('historyPageSize')).toBe('10')
+      expect(url.searchParams.get('auditPage')).toBe('1')
+      expect(url.searchParams.get('auditPageSize')).toBe('20')
+      return HttpResponse.json({
+        equipment: { id: 'eq-001', patrimony: 'PAT-2026-004821', type: 'Rádio portátil', model: 'APX 2000', brand: 'Motorola', category: 'Comunicação', situation: 'active', location: 'Sala', unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' }, custody: { scope: 'UNIT', unit: { id: 'unit-centro', name: '3º BPM', acronym: '3º BPM' } }, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z' },
+        activeOperation: null, history: { items: [], total: 0, page: 2, pageSize: 10 }, relatedCalls: [], documents: [], auditEvents: { items: [], total: 0, page: 1, pageSize: 20 },
+      })
+    }))
+
+    await expect(getPatrimonialView('eq-001', { historyPage: 2, historyPageSize: 10, auditPage: 1, auditPageSize: 20 })).resolves.toMatchObject({
+      equipment: { patrimony: 'PAT-2026-004821', custody: { scope: 'UNIT' } }, history: { page: 2, pageSize: 10 }, activeOperation: null,
+    })
   })
 
   it('allows DITEL to query statewide inventory and equipment details', async () => {

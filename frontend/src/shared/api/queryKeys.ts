@@ -1,7 +1,7 @@
 import type { InventoryQuery, InventoryReportSituation } from './contracts'
 import type { SessionContext } from '../auth/types'
 
-function reportScope(session: SessionContext | null, query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }) {
+function reportScope(session: SessionContext | null, query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null; from?: string | null; to?: string | null }) {
   return {
     userId: session?.userId ?? null,
     unitId: session?.unit?.id ?? null,
@@ -9,6 +9,8 @@ function reportScope(session: SessionContext | null, query: { unitId?: string; s
     reportUnitId: query.unitId ?? null,
     situation: query.situation ?? null,
     period: query.period ?? null,
+    from: query.from ?? null,
+    to: query.to ?? null,
   }
 }
 
@@ -43,10 +45,10 @@ export const queryKeys = {
     page: query.page,
     pageSize: query.pageSize,
   }] as const,
-  inventoryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'inventory-summary', reportScope(session, query)] as const,
-  callsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'calls-summary', reportScope(session, query)] as const,
-  movementsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'movements-summary', reportScope(session, query)] as const,
-  generalReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null }, session: SessionContext | null) => ['reports', 'general', reportScope(session, query)] as const,
+  inventoryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null; from?: string | null; to?: string | null }, session: SessionContext | null) => ['reports', 'inventory-summary', reportScope(session, query)] as const,
+  callsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null; from?: string | null; to?: string | null }, session: SessionContext | null) => ['reports', 'calls-summary', reportScope(session, query)] as const,
+  movementsSummaryReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null; from?: string | null; to?: string | null }, session: SessionContext | null) => ['reports', 'movements-summary', reportScope(session, query)] as const,
+  generalReport: (query: { unitId?: string; situation?: InventoryReportSituation | null; period?: string | null; from?: string | null; to?: string | null }, session: SessionContext | null) => ['reports', 'general', reportScope(session, query)] as const,
   organizationalStructure: (query: Record<string, unknown>) => ['organizational-structure', 'list', query] as const,
   organizationalNode: (id: string | null) => ['organizational-structure', 'node', id] as const,
   organizationalIndicators: (id: string | null) => ['organizational-structure', 'indicators', id] as const,

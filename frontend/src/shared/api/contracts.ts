@@ -104,6 +104,87 @@ export type EquipmentDetails = EquipmentSummary & {
   documents: LinkedDocument[]
 }
 
+export type PatrimonialCustody = { scope: 'AC' | 'UNIT'; unit: UnitContext | null }
+export type PatrimonialOperation = {
+  id: string
+  kind: 'unit_transfer' | 'ac_return'
+  equipmentId: string
+  status: string
+  requestedAt: string
+  updatedAt: string
+  origin: UnitContext
+  destination: UnitContext | PatrimonialCustody
+  reason: string | null
+  divergenceCount: number
+}
+export type PatrimonialHistoryItem = {
+  id: string
+  source: 'equipment' | 'movement' | 'ac_return'
+  description: string
+  occurredAt: string
+  status?: string
+  operationId?: string
+  snapshot?: Record<string, unknown> | null
+}
+export type PatrimonialHistoryPage = { items: PatrimonialHistoryItem[]; total: number; page: number; pageSize: number }
+export type PatrimonialAuditEvent = {
+  id: string
+  action: string
+  module: string
+  userId: string | null
+  actor: Record<string, unknown> | null
+  entity: Record<string, unknown> | null
+  unit: Record<string, unknown> | null
+  result: 'success' | 'failure'
+  reason: string | null
+  before: unknown
+  after: unknown
+  retentionExpiresAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+export type PatrimonialDocumentReference =
+  | (LinkedDocument & { source: 'equipment' })
+  | { id: string; name: string; type: 'generated'; source: 'ac_transfer'; downloadUrl: string; availableFormats: Array<'pdf' | 'docx'> }
+export type PatrimonialReadView = {
+  equipment: {
+    id: string
+    patrimony: string
+    serialNumber?: string
+    type: string
+    brand: string
+    model: string
+    category: string
+    situation: EquipmentSituation
+    location: string
+    unit: UnitContext | null
+    custody: PatrimonialCustody | null
+    createdAt: string
+    updatedAt: string
+  }
+  activeOperation: PatrimonialOperation | null
+  history: PatrimonialHistoryPage
+  relatedCalls: Array<LinkedCall & { protocol: string }>
+  documents: PatrimonialDocumentReference[]
+  auditEvents: { items: PatrimonialAuditEvent[]; total: number; page: number; pageSize: number }
+}
+
+export type PendingSource = 'movement' | 'ac_return' | 'call' | 'maintenance' | 'mission'
+export type PendingOperation = {
+  id: string
+  source: PendingSource
+  type: string
+  state: string
+  description: string
+  action: string
+  priority: string | null
+  date: string
+  unitId: string | null
+  reference: { path: string; label: string }
+}
+export type PendingOperationsQuery = { page?: number; pageSize?: number; source?: PendingSource; state?: string; priority?: string; unitId?: string; search?: string }
+export type PendingOperationsResponse = { items: PendingOperation[]; total: number; page: number; pageSize: number; totalPages: number; counts: Array<{ source: PendingSource; total: number }> }
+
 export type InventoryResponse = {
   items: EquipmentSummary[]
   total: number
@@ -208,6 +289,9 @@ export type InventoryReportResponse = {
     scope: UnitContext
     filters: {
       situation: InventoryReportSituation | null
+      from?: string
+      to?: string
+      period?: string
     }
   }
   totals: InventoryReportCounters
@@ -226,7 +310,7 @@ export type CallsSummaryReportResponse = {
     title: string
     generatedAt: string
     scope: UnitContext
-    filters: Record<string, never>
+    filters: { from?: string; to?: string; period?: string }
   }
   totals: {
     total: number
@@ -246,7 +330,7 @@ export type MovementsSummaryReportResponse = {
     title: string
     generatedAt: string
     scope: UnitContext
-    filters: Record<string, never>
+    filters: { from?: string; to?: string; period?: string }
   }
   totals: {
     total: number
@@ -266,6 +350,9 @@ export type GeneralReportResponse = {
     scope: UnitContext
     filters: {
       situation: InventoryReportSituation | null
+      from?: string
+      to?: string
+      period?: string
     }
   }
   inventory: {

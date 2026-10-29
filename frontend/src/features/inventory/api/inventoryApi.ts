@@ -1,6 +1,6 @@
 import { httpClient } from '../../../shared/api/httpClient'
 import { ApiError } from '../../../shared/api/errors'
-import type { EquipmentDetails, InventoryFacetsResponse, InventoryQuery, InventoryResponse } from '../../../shared/api/contracts'
+import type { EquipmentDetails, InventoryFacetsResponse, InventoryQuery, InventoryResponse, PatrimonialReadView } from '../../../shared/api/contracts'
 export type CreateEquipmentInput = { patrimony: string; section: string; type: string; model: string; serialNumber?: string; brand: string; hasWarranty: string; warrantyDate?: string; situation: string; location: string; observations?: string; category?: string }
 
 export function getInventory(query: InventoryQuery) {
@@ -30,6 +30,14 @@ export function getInventoryFacets(query: InventoryFacetQuery = {}) {
 export function getEquipmentDetails(id: string, signal?: AbortSignal) {
   if (!id.trim()) return Promise.reject(new ApiError(400, { code: 'INVALID_EQUIPMENT_ID', message: 'Identificador de equipamento inválido.' }))
   return httpClient<EquipmentDetails>(`/inventory/${encodeURIComponent(id)}`, { signal })
+}
+
+export function getPatrimonialView(id: string, query: { historyPage?: number; historyPageSize?: number; auditPage?: number; auditPageSize?: number } = {}, signal?: AbortSignal) {
+  if (!id.trim()) return Promise.reject(new ApiError(400, { code: 'INVALID_EQUIPMENT_ID', message: 'Identificador de equipamento inválido.' }))
+  const parameters = new URLSearchParams()
+  Object.entries(query).forEach(([key, value]) => { if (value !== undefined) parameters.set(key, String(value)) })
+  const suffix = parameters.toString()
+  return httpClient<PatrimonialReadView>(`/inventory/${encodeURIComponent(id)}/patrimonial${suffix ? `?${suffix}` : ''}`, { signal })
 }
 
 export function updateEquipmentSituation(id: string, situation: EquipmentDetails['situation'], updatedAt: string) {

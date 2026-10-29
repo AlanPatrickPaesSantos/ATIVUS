@@ -8,8 +8,9 @@ import { maintenanceStatusLabels } from '../../maintenance/components/Maintenanc
 import type { EquipmentDetails } from '../../../shared/api/contracts'
 import type { MaintenanceItem } from '../../maintenance/api/maintenanceApi'
 import { EquipmentDetailTabs } from './EquipmentDetailTabs'
+import { PatrimonialOverview } from './PatrimonialOverview'
 
-type EquipmentDetailModalProps = { equipmentId: string | null; open: boolean; onClose: () => void; onOpenCall: (equipmentId: string) => void }
+type EquipmentDetailModalProps = { equipmentId: string | null; open: boolean; onClose: () => void; onOpenCall: (equipmentId: string) => void; canViewAudit?: boolean }
 
 const situationLabels: Record<EquipmentDetails['situation'], string> = {
   active: 'Ativo',
@@ -23,7 +24,7 @@ function situationTone(situation: EquipmentDetails['situation']) {
   return situation === 'active' ? 'available' : situation === 'maintenance' ? 'attention' : 'critical'
 }
 
-export function EquipmentDetailModal({ equipmentId, open, onClose, onOpenCall }: EquipmentDetailModalProps) {
+export function EquipmentDetailModal({ equipmentId, open, onClose, onOpenCall, canViewAudit = false }: EquipmentDetailModalProps) {
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null)
   const [error, setError] = useState(false)
   const [tab, setTab] = useState('summary')
@@ -84,6 +85,7 @@ export function EquipmentDetailModal({ equipmentId, open, onClose, onOpenCall }:
         <div className="equipment-detail__status"><span>Situação</span><strong><i className={`semantic-dot semantic-dot--${situationTone(situation)}`} />{situationLabel}</strong></div>
         <div className="equipment-detail__unit"><span>Unidade responsável</span><strong>{equipment.unitName}</strong></div>
       </header>
+      <PatrimonialOverview equipmentId={equipment.id} canViewAudit={canViewAudit} />
       <div className="equipment-detail__body" data-testid="equipment-detail-body">
         <div className="equipment-detail__content"><EquipmentDetailTabs equipment={{ ...equipment, situation }} value={tab} onChange={setTab} /></div>
         <aside className="equipment-operations" aria-label="Painel operacional" data-testid="equipment-operations-panel">

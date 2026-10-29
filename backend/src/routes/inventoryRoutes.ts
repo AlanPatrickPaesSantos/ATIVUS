@@ -7,6 +7,7 @@ import { createAttachmentUpload } from '../middlewares/attachmentUpload.js';
 import { createEquipment, readEquipmentDetails, readInventory, readInventoryFacets, updateEquipmentSituation, findEquipmentAuditRecord, type InventoryFilters } from '../repositories/equipmentReadRepository.js';
 import { recordAuditEvent } from '../repositories/auditRepository.js';
 import { cleanupStoredAttachments, storeUploadedAttachments, type AttachmentMetadata } from '../services/attachments.js';
+import { readPatrimonialView } from '../repositories/patrimonialReadRepository.js';
 import mongoose from 'mongoose';
 
 const equipmentCreateFields = new Set([
@@ -107,6 +108,22 @@ export function createInventoryRoutes(requireSession: RequestHandler): Router {
   } });
   router.get('/inventory', requireSession, async (req, res, next) => { try { const accessScope = await scope(req.sessionContext); const parsed = query(req); res.json(await readInventory(parsed.filters, accessScope, parsed.page, parsed.pageSize)); } catch (error) { next(error); } });
   router.get('/inventory/facets', requireSession, async (req, res, next) => { try { const accessScope = await scope(req.sessionContext); res.json(await readInventoryFacets(query(req).filters, accessScope)); } catch (error) { next(error); } });
+  router.get('/inventory/:equipmentId/patrimonial', requireSession, async (req, res, next) => {
+    try {
+      const context = req.sessionContext;
+      if (!context) throw new AuthError(401, 'UNAUTHENTICATED', 'Sessão inválida ou expirada.');
+      const number = (value: unknown, fallback: number) => value === undefined ? fallback : Number(value);
+      const result = await readPatrimonialView(req.params.equipmentId, context, {
+        historyPage: number(req.query.historyPage, 1), historyPageSize: number(req.query.historyPageSize, 20),
+        auditPage: number(req.query.auditPage, 1), auditPageSize: number(req.query.auditPageSize, 20),
+      });
+      if (!result) { res.status(404).json({ code: 'NOT_FOUND', message: 'Equipamento não encontrado.' }); return; }
+      res.json(result);
+    } catch (error: any) {
+      if (error?.message === 'INVALID_PAGINATION') { next(new AuthError(400, 'INVALID_QUERY', 'Parâmetros de paginação inválidos.')); return; }
+      next(error);
+    }
+  });
   router.get('/inventory/:equipmentId', requireSession, async (req, res, next) => { try { const result = await readEquipmentDetails(req.params.equipmentId, {}, await scope(req.sessionContext)); if (!result) { res.status(404).json({ code: 'NOT_FOUND', message: 'Equipamento não encontrado.' }); return; } res.json(result); } catch (error) { next(error); } });
   router.patch('/inventory/:equipmentId', requireSession, async (req, res, next) => {
     try {
