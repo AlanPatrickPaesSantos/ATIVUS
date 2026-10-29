@@ -11,10 +11,16 @@ const apiTransfer = { id: 'api-mov-01', type: 'Transferência definitiva', equip
 const apiEquipment = { id: '507f1f77bcf86cd799439011', patrimony: 'PAT-001', type: 'Rádio', model: 'APX-2000', brand: 'Motorola', situation: 'active', location: 'Sala 1', unitName: 'Unidade Centro' }
 const apiUnit = { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }
 const emptyAcReturnsResponse = () => new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 100 }), { status: 200 })
+const organizationalOptionsResponse = (units: Array<{ id: string; name: string; acronym: string }>) => new Response(JSON.stringify({ commands: [], units: units.map((unit) => ({ ...unit, kind: 'bpm', parentUnitId: null, equipmentCount: 0 })) }), { status: 200 })
 
 beforeEach(() => {
   vi.stubEnv('VITE_ENABLE_MSW', 'true')
-  vi.stubGlobal('fetch', vi.fn().mockImplementation((input) => String(input).includes('/ac/returns') ? Promise.resolve(emptyAcReturnsResponse()) : Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))))
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
+    return Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+  }))
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -62,6 +68,7 @@ test('filters the operational center by status and unit', async () => {
   const fetchMock = vi.fn((input) => {
     const url = String(input)
     if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
     if (url.includes('status=Pendente')) return Promise.resolve(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
     return Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer], total: 1, page: 1, pageSize: 20, totalPages: 1 }), { status: 200 }))
   })
@@ -78,12 +85,71 @@ test('filters the operational center by status and unit', async () => {
   expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument()
 })
 
+test('populates the unit filter from the organizational catalog when movements are empty', async () => {
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([
+      { id: 'unit-centro', name: 'Unidade Centro', acronym: 'UC' },
+      { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' },
+      { id: 'unit-sul', name: 'Unidade Sul', acronym: 'US' },
+    ]))
+    return Promise.resolve(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<MovementsPage session={ditelSession} />)
+
+  const unitFilter = await screen.findByLabelText('Unidade da movimentação')
+  await waitFor(() => expect(within(unitFilter).getByRole('option', { name: 'Unidade Sul' })).toBeInTheDocument())
+  expect(within(unitFilter).getByRole('option', { name: 'Unidade Norte' })).toBeInTheDocument()
+  expect(screen.getByText('Nenhuma movimentação encontrada')).toBeInTheDocument()
+})
+
+test('limits a unit user unit filter to the scope returned by the catalog', async () => {
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([{ id: unitSession.unit!.id, name: unitSession.unit!.name, acronym: unitSession.unit!.acronym }]))
+    return Promise.resolve(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<MovementsPage session={unitSession} />)
+
+  const unitFilter = await screen.findByLabelText('Unidade da movimentação')
+  expect(await within(unitFilter).findByRole('option', { name: 'Unidade Centro' })).toBeInTheDocument()
+  expect(within(unitFilter).queryByRole('option', { name: 'Todas as unidades' })).not.toBeInTheDocument()
+  expect(within(unitFilter).queryByRole('option', { name: 'Unidade Norte' })).not.toBeInTheDocument()
+})
+
+test('shows catalog failure and retries the unit options request', async () => {
+  const user = userEvent.setup()
+  let catalogAttempts = 0
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) {
+      catalogAttempts += 1
+      return catalogAttempts === 1
+        ? Promise.resolve(new Response(JSON.stringify({ code: 'SERVICE_UNAVAILABLE' }), { status: 503 }))
+        : Promise.resolve(organizationalOptionsResponse([{ id: 'unit-sul', name: 'Unidade Sul', acronym: 'US' }]))
+    }
+    return Promise.resolve(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<MovementsPage session={ditelSession} />)
+
+  expect(await screen.findByText('Não foi possível carregar as unidades.')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Tentar novamente unidades' }))
+  expect(await screen.findByRole('option', { name: 'Unidade Sul' })).toBeInTheDocument()
+})
+
 test('navigates server pages without changing active filters', async () => {
   const user = userEvent.setup()
   const secondTransfer = { ...apiTransfer, id: 'api-mov-02', equipmentId: 'Rádio APX-3000 · UN-005' }
   const fetchMock = vi.fn((input) => {
     const url = String(input)
     if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
     return Promise.resolve(new Response(JSON.stringify(url.includes('page=2') ? { items: [secondTransfer], total: 2, page: 2, pageSize: 1, totalPages: 2 } : { items: [apiTransfer], total: 2, page: 1, pageSize: 1, totalPages: 2 }), { status: 200 }))
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -102,6 +168,7 @@ test('ignores an older movement response after a filter changes', async () => {
   const fetchMock = vi.fn((input) => {
     const url = String(input)
     if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
     return new Promise<Response>((resolve) => resolvers.push(resolve))
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -127,7 +194,9 @@ test('retries movement loading without leaking unhandled rejections', async () =
   }
   let movementAttempts = 0
   const fetchMock = vi.fn((input) => {
-    if (String(input).includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
     movementAttempts += 1
     return movementAttempts === 1
       ? Promise.reject(new Error('offline'))
@@ -155,6 +224,7 @@ test('requires a justification before DITEL rejects a pending movement', async (
   const fetchMock = vi.fn((input) => {
     const url = String(input)
     if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([apiTransfer.origin, apiTransfer.destination]))
     if (url.endsWith('/decision')) return Promise.resolve(new Response(JSON.stringify({ ...pending, status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' }), { status: 200 }))
     movementReads += 1
     return Promise.resolve(new Response(JSON.stringify({ items: [{ ...pending, ...(movementReads > 1 ? { status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' } : {}) }] }), { status: 200 }))
@@ -178,13 +248,15 @@ test('requires a justification before DITEL rejects a pending movement', async (
 
 test('unit user can review and submit a transfer without client authority fields', async () => {
   const user = userEvent.setup()
-  const fetchMock = vi.fn()
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiEquipment], total: 1, page: 1, pageSize: 100 }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiUnit] }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ ...apiTransfer, id: 'new-movement', status: 'Pendente' }), { status: 201 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+  const fetchMock = vi.fn((input, init) => {
+    const url = String(input)
+    if (url.includes('/organizational-options')) return Promise.resolve(organizationalOptionsResponse([unitSession.unit!, apiUnit]))
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('/inventory?')) return Promise.resolve(new Response(JSON.stringify({ items: [apiEquipment], total: 1, page: 1, pageSize: 100 }), { status: 200 }))
+    if (url.endsWith('/units')) return Promise.resolve(new Response(JSON.stringify({ items: [apiUnit] }), { status: 200 }))
+    if (init?.method === 'POST') return Promise.resolve(new Response(JSON.stringify({ ...apiTransfer, id: 'new-movement', status: 'Pendente' }), { status: 201 }))
+    return Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+  })
   vi.stubGlobal('fetch', fetchMock)
   render(<MovementsPage session={unitSession} />)
 

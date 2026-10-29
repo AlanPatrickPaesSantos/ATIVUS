@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionContext } from "../../../shared/auth/types";
 import { cancelMovement, createMovement, decideMovement, getMovements, receiveMovement, resolveMovementDivergence, type MovementApiItem } from "../api/movementsApi";
 import { getUnits, type UnitOption } from "../api/unitsApi";
+import { getOrganizationalFilterOptions } from "../../organizationalStructure/api/organizationalStructureApi";
 import { getInventory } from "../../inventory/api/inventoryApi";
 import type { EquipmentSummary } from "../../../shared/api/contracts";
 import type { AcReturn } from "../../../shared/api/contracts";
@@ -74,6 +75,10 @@ export function MovementsPage({ session }: { session: SessionContext }) {
   const [requestStep, setRequestStep] = useState<"form" | "review">("form");
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentSummary[]>([]);
   const [unitOptions, setUnitOptions] = useState<UnitOption[]>([]);
+  const [movementUnitOptions, setMovementUnitOptions] = useState<UnitOption[]>([]);
+  const [movementUnitCatalogLoading, setMovementUnitCatalogLoading] = useState(true);
+  const [movementUnitCatalogError, setMovementUnitCatalogError] = useState(false);
+  const [movementUnitCatalogRetry, setMovementUnitCatalogRetry] = useState(0);
   const [requestEquipmentId, setRequestEquipmentId] = useState("");
   const [requestUnitId, setRequestUnitId] = useState("");
   const [requestLoading, setRequestLoading] = useState(false);
@@ -122,6 +127,24 @@ export function MovementsPage({ session }: { session: SessionContext }) {
     void loadMovements(controller.signal);
     return () => controller.abort();
   }, [loadMovements]);
+  useEffect(() => {
+    let active = true;
+    setMovementUnitCatalogLoading(true);
+    setMovementUnitCatalogError(false);
+    void getOrganizationalFilterOptions().then((response) => {
+      if (!active) return;
+      const options = response.units.map((unit) => ({ id: unit.id, name: unit.name, acronym: unit.acronym }));
+      setMovementUnitOptions(options);
+      if (session.role === "unit_user" && options.length > 0) setUnitFilter((current) => current === "all" ? options[0].id : current);
+    }).catch(() => {
+      if (!active) return;
+      setMovementUnitOptions([]);
+      setMovementUnitCatalogError(true);
+    }).finally(() => {
+      if (active) setMovementUnitCatalogLoading(false);
+    });
+    return () => { active = false; };
+  }, [movementUnitCatalogRetry, session.role]);
   async function openRequest() {
     setRequestOpen(true);
     setRequestStep("form");
@@ -174,7 +197,7 @@ export function MovementsPage({ session }: { session: SessionContext }) {
     const text = `${item.equipment?.patrimony ?? item.equipmentId} ${item.origin.name}`.toLocaleLowerCase();
     return (statusFilter === "all" || item.status === statusFilter) && (unitFilter === "all" || item.origin.id === unitFilter) && (!search.trim() || text.includes(search.trim().toLocaleLowerCase())) && (!periodFrom || date >= new Date(`${periodFrom}T00:00:00`)) && (!periodTo || date <= new Date(`${periodTo}T23:59:59.999`));
   }), [acReturns, search, statusFilter, unitFilter, periodFrom, periodTo]);
-  const unitOptionsForFilter = useMemo(() => [...new Map([...remotePendingMovements.flatMap((item) => [{ id: item.originId, name: item.origin }, { id: item.destinationId, name: item.destination }]), ...acReturns.map((item) => ({ id: item.origin.id, name: item.origin.name }))].map((item) => [item.id, item])).values()], [remotePendingMovements, acReturns]);
+  const unitOptionsForFilter = movementUnitOptions;
   const onAcReturnStateChange = useCallback((items: AcReturn[], isLoading: boolean, error: string | null) => { setAcReturns(items); setAcReturnsLoading(isLoading); setAcReturnsError(error); }, []);
   const canObserveAcReturns = session.role === "unit_user" || session.role === "ac_operator" || session.role === "ditel_admin";
   const selectedMovement = remotePendingMovements.find((movement) => movement.id === selectedMovementId) ?? null;
@@ -394,9 +417,13 @@ export function MovementsPage({ session }: { session: SessionContext }) {
         <label className="movement-filters__select">
           Unidade
           <select aria-label="Unidade da movimentação" value={unitFilter} onChange={(event) => { setUnitFilter(event.target.value); setPage(1); }}>
-            <option value="all">Todas as unidades</option>
+            {session.role !== "unit_user" ? <option value="all">Todas as unidades</option> : null}
             {unitOptionsForFilter.map((unit) => <option value={unit.id} key={unit.id}>{unit.name}</option>)}
           </select>
+          {movementUnitCatalogLoading ? <span role="status">Carregando unidades…</span> : null}
+          {movementUnitCatalogError ? <span role="alert">Não foi possível carregar as unidades.</span> : null}
+          {!movementUnitCatalogLoading && !movementUnitCatalogError && unitOptionsForFilter.length === 0 ? <span>Não há unidades disponíveis.</span> : null}
+          {movementUnitCatalogError ? <button type="button" aria-label="Tentar novamente unidades" onClick={() => setMovementUnitCatalogRetry((value) => value + 1)}>Tentar novamente</button> : null}
         </label>
         <label>
           Período inicial
