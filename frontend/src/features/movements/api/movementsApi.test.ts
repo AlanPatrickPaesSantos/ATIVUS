@@ -10,6 +10,15 @@ describe('movementsApi', () => {
   })
 })
 
+it('serializes movement filters and pagination for the backend', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [], total: 0, page: 2, pageSize: 10, totalPages: 0 }), { status: 200 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await getMovements({ page: 2, pageSize: 10, status: 'Pendente', unitId: 'unit-2', search: 'PAT-1', from: '2026-10-01', to: '2026-10-31' })
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/v1/movements?page=2&pageSize=10&status=Pendente&unitId=unit-2&search=PAT-1&from=2026-10-01&to=2026-10-31', expect.objectContaining({ credentials: 'include' }))
+})
+
 it('sends a triage decision with the server version and rejection reason', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'mov-1' }), { status: 200 }))
   vi.stubGlobal('fetch', fetchMock)

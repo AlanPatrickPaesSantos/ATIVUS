@@ -31,8 +31,8 @@ test('lets DITEL consult movements across Units', async () => {
   render(<MovementsPage session={ditelSession} />)
 
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
-  expect(screen.getByText('Alocação interna')).toBeInTheDocument()
-  expect(screen.getByText('3 registros')).toBeInTheDocument()
+  expect(screen.queryByText('Alocação interna')).not.toBeInTheDocument()
+  expect(screen.getByText('1 registro')).toBeInTheDocument()
 })
 
 test('does not append fixture movements when MSW mock mode is disabled', async () => {
@@ -45,28 +45,77 @@ test('does not append fixture movements when MSW mock mode is disabled', async (
   expect(screen.getByText('1 registro')).toBeInTheDocument()
 })
 
-test('filters the movement log through quick type controls', async () => {
+test('does not expose unsupported allocation or disposal filters', async () => {
   const user = userEvent.setup()
   render(<MovementsPage session={ditelSession} />)
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
 
-  await user.click(screen.getByRole('button', { name: 'Baixa' }))
-
-  expect(screen.getByText('Baixa patrimonial')).toBeInTheDocument()
-  expect(screen.queryByText('Transferência entre unidades')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Baixa' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Alocação' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Baixa patrimonial')).not.toBeInTheDocument()
+  expect(screen.getByText('Transferência')).toBeInTheDocument()
   expect(screen.getByText('1 registro')).toBeInTheDocument()
 })
 
 test('filters the operational center by status and unit', async () => {
   const user = userEvent.setup()
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.includes('status=Pendente')) return Promise.resolve(new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
+    return Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer], total: 1, page: 1, pageSize: 20, totalPages: 1 }), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
   render(<MovementsPage session={ditelSession} />)
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
 
   await user.selectOptions(screen.getByLabelText('Situação da movimentação'), 'Pendente')
-  expect(screen.getByText('Nenhuma movimentação encontrada')).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByText('Nenhuma movimentação encontrada')).toBeInTheDocument())
+  expect(fetchMock).toHaveBeenCalledWith('/api/v1/movements?page=1&pageSize=20&status=Pendente', expect.objectContaining({ credentials: 'include' }))
   await user.selectOptions(screen.getByLabelText('Situação da movimentação'), 'all')
   await user.selectOptions(screen.getByLabelText('Unidade da movimentação'), 'unit-norte')
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/v1/movements?page=1&pageSize=20&unitId=unit-norte', expect.objectContaining({ credentials: 'include' })))
   expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument()
+})
+
+test('navigates server pages without changing active filters', async () => {
+  const user = userEvent.setup()
+  const secondTransfer = { ...apiTransfer, id: 'api-mov-02', equipmentId: 'Rádio APX-3000 · UN-005' }
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    return Promise.resolve(new Response(JSON.stringify(url.includes('page=2') ? { items: [secondTransfer], total: 2, page: 2, pageSize: 1, totalPages: 2 } : { items: [apiTransfer], total: 2, page: 1, pageSize: 1, totalPages: 2 }), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<MovementsPage session={ditelSession} />)
+
+  await waitFor(() => expect(screen.getByText('Página 1 de 2')).toBeInTheDocument())
+  await user.click(screen.getByRole('button', { name: 'Próxima' }))
+  await waitFor(() => expect(screen.getByText('Página 2 de 2')).toBeInTheDocument())
+  expect(screen.getAllByText('Rádio APX-3000 · UN-005').length).toBeGreaterThan(0)
+  expect(fetchMock).toHaveBeenCalledWith('/api/v1/movements?page=2&pageSize=20', expect.objectContaining({ credentials: 'include' }))
+})
+
+test('ignores an older movement response after a filter changes', async () => {
+  const user = userEvent.setup()
+  const resolvers: Array<(response: Response) => void> = []
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    return new Promise<Response>((resolve) => resolvers.push(resolve))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<MovementsPage session={ditelSession} />)
+
+  await waitFor(() => expect(resolvers).toHaveLength(1))
+  await user.selectOptions(screen.getByLabelText('Situação da movimentação'), 'Pendente')
+  await waitFor(() => expect(resolvers).toHaveLength(2))
+
+  resolvers[1](new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 }), { status: 200 }))
+  await waitFor(() => expect(screen.getByText('Nenhuma movimentação encontrada')).toBeInTheDocument())
+  resolvers[0](new Response(JSON.stringify({ items: [apiTransfer], total: 1, page: 1, pageSize: 20, totalPages: 1 }), { status: 200 }))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(screen.queryByText('Transferência entre unidades')).not.toBeInTheDocument()
 })
 
 test('retries movement loading without leaking unhandled rejections', async () => {

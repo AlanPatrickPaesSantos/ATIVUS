@@ -8,11 +8,34 @@ import { EquipmentModel } from '../models/Equipment.js';
 import { MovementModel } from '../models/Movement.js';
 import { recordAuditEvent } from '../repositories/auditRepository.js';
 import { findActiveUnitReference } from '../repositories/unitsRepository.js';
-import { cancelMovement, createMovement, decideMovement, listMovements, movementExists, receiveMovement, resolveMovementDivergence } from '../repositories/movementsRepository.js';
+import { cancelMovement, createMovement, decideMovement, listMovements, MOVEMENT_PAGE_SIZE_DEFAULT, MOVEMENT_PAGE_SIZE_MAX, movementExists, receiveMovement, resolveMovementDivergence, type MovementListQuery } from '../repositories/movementsRepository.js';
 import { PatrimonialConflictError } from '../repositories/patrimonialConflictRepository.js';
 import { requireOperationalWritesOpen } from '../middlewares/operationalWriteGate.js';
 async function access(context: SessionContext | undefined) { if (!context) throw new AuthError(401, 'UNAUTHENTICATED', 'Sessão inválida ou expirada.'); const access = await resolveAccessScopeFromContext(context); if (!access) throw new AuthError(403, 'FORBIDDEN', 'Escopo de unidade obrigatório.'); return access; }
 function value(req: express.Request, key: string) { return typeof req.body?.[key] === 'string' ? req.body[key].trim() : ''; }
+function queryValue(req: express.Request, key: string) { return typeof req.query[key] === 'string' ? req.query[key].trim() : undefined; }
+function movementListQuery(req: express.Request): MovementListQuery {
+  const pageValue = queryValue(req, 'page');
+  const pageSizeValue = queryValue(req, 'pageSize');
+  const page = pageValue === undefined ? 1 : Number(pageValue);
+  const pageSize = pageSizeValue === undefined ? MOVEMENT_PAGE_SIZE_DEFAULT : Number(pageSizeValue);
+  const status = queryValue(req, 'status');
+  const unitId = queryValue(req, 'unitId');
+  const search = queryValue(req, 'search');
+  const fromValue = queryValue(req, 'from');
+  const toValue = queryValue(req, 'to');
+  const validStatuses = ['Pendente', 'Aguardando recebimento', 'Divergência', 'Recebida', 'Rejeitada', 'Cancelada'];
+  const validDate = (value: string | undefined) => value === undefined || /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > MOVEMENT_PAGE_SIZE_MAX || (status !== undefined && !validStatuses.includes(status)) || (search !== undefined && search.length > 200) || !validDate(fromValue) || !validDate(toValue)) {
+    throw new AuthError(400, 'INVALID_QUERY', 'Parâmetros de paginação ou filtro inválidos.');
+  }
+  const from = fromValue ? new Date(`${fromValue}T00:00:00.000Z`) : undefined;
+  const to = toValue ? new Date(`${toValue}T23:59:59.999Z`) : undefined;
+  if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime())) || (from && to && from > to)) {
+    throw new AuthError(400, 'INVALID_QUERY', 'Parâmetros de período inválidos.');
+  }
+  return { page, pageSize, ...(status ? { status: status as MovementListQuery['status'] } : {}), ...(unitId ? { unitId } : {}), ...(search ? { search } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) };
+}
 async function createMovementWithAudit(
   userId: string,
   input: Parameters<typeof createMovement>[0],
@@ -35,7 +58,7 @@ async function decideMovementWithAudit(
   });
 }
 export function createMovementRoutes(requireSession: RequestHandler): Router { const router = express.Router(); router.use((req, res, next) => req.method === 'GET' ? next() : requireOperationalWritesOpen(req, res, next));
-  router.get('/movements', requireSession, async (req, res, next) => { try { res.json(await listMovements(await access(req.sessionContext))); } catch (e) { next(e); } });
+  router.get('/movements', requireSession, async (req, res, next) => { try { res.json(await listMovements(await access(req.sessionContext), movementListQuery(req))); } catch (e) { next(e); } });
   router.post('/movements', requireSession, async (req, res, next) => { try { const c = req.sessionContext; const a = await access(c); if (a.role !== 'unit_user') throw new AuthError(403, 'FORBIDDEN', 'Somente usuários de unidade podem solicitar transferências.'); const equipmentId = value(req, 'equipmentId'); const destination = req.body?.destination; if (!mongoose.isValidObjectId(equipmentId) || !isValidUnitReference(destination) || destination.id === a.unitId) throw new AuthError(400, 'INVALID_MOVEMENT', 'Dados da transferência inválidos.'); const canonicalDestination = await findActiveUnitReference(destination.id); if (!canonicalDestination) throw new AuthError(400, 'INVALID_MOVEMENT', 'Dados da transferência inválidos.'); if (!(await EquipmentModel.exists({ _id: equipmentId, situation: 'active', 'unit.id': a.unitId }))) throw new AuthError(404, 'NOT_FOUND', 'Equipamento não encontrado.'); const result = await createMovementWithAudit(c!.userId, { equipmentId, origin: a.unit, destination: canonicalDestination, requestedBy: c!.userId }); res.status(201).json(result); } catch (e: any) { if (e instanceof PatrimonialConflictError || e?.code === 11000) { next(new AuthError(409, 'CONFLICT', 'Não foi possível criar a solicitação de transferência.')); return; } next(e); } });
   router.patch('/movements/:id/decision', requireSession, async (req, res, next) => { try { const c = req.sessionContext; const a = await access(c); if (a.role !== 'ditel_admin') throw new AuthError(403, 'FORBIDDEN', 'Somente DITEL pode decidir transferências.'); const status = value(req, 'status'); const updatedAt = new Date(value(req, 'updatedAt')); const reason = value(req, 'reason'); if (!['Aprovada', 'Rejeitada'].includes(status) || Number.isNaN(updatedAt.getTime()) || (status === 'Rejeitada' && !reason)) throw new AuthError(400, 'INVALID_MOVEMENT', 'Decisão inválida.'); if (!mongoose.isValidObjectId(req.params.id) || !(await movementExists(req.params.id))) throw new AuthError(404, 'NOT_FOUND', 'Movimentação não encontrada.'); const result = await decideMovementWithAudit(c!.userId, { id: req.params.id, updatedAt, status: status as 'Aprovada' | 'Rejeitada', ...(reason ? { reason } : {}), decidedBy: c!.userId }); if (!result) throw new AuthError(409, 'CONFLICT', 'A movimentação já foi decidida ou está desatualizada.'); res.json(result); } catch (e: any) { if (e?.message === 'EQUIPMENT_CONFLICT' || e?.message === 'MOVEMENT_CONFLICT') { next(new AuthError(409, 'CONFLICT', 'A movimentação não pôde ser concluída porque o equipamento foi alterado.')); return; } next(e); } });
   router.patch('/movements/:id/cancel', requireSession, async (req, res, next) => { try { const c = req.sessionContext; const a = await access(c); const reason = value(req, 'reason'); const updatedAt = new Date(value(req, 'updatedAt')); if (!reason || Number.isNaN(updatedAt.getTime())) throw new AuthError(400, 'INVALID_MOVEMENT', 'O cancelamento exige justificativa e data válida.'); const result = await runInTransaction(async (transaction) => { const filter = a.role === 'ditel_admin' ? { _id: req.params.id, status: 'Pendente' } : { _id: req.params.id, status: 'Pendente', 'origin.id': a.unitId, requestedBy: c!.userId }; const current = await MovementModel.findOne(filter).session(transaction).lean().exec(); if (!current) { const existing = await MovementModel.findById(req.params.id).session(transaction).lean().exec(); if (existing && (a.role === 'ditel_admin' || (existing.origin.id === a.unitId && existing.requestedBy === c!.userId))) throw new AuthError(409, 'CONFLICT', 'A solicitação já foi decidida, cancelada ou está desatualizada.'); throw new AuthError(404, 'NOT_FOUND', 'Solicitação não encontrada no escopo autorizado.'); } const cancelled = await cancelMovement({ id: req.params.id, updatedAt, reason, cancelledBy: c!.userId }, transaction); if (!cancelled) throw new AuthError(409, 'CONFLICT', 'A solicitação já foi decidida, cancelada ou está desatualizada.'); await recordAuditEvent({ action: 'movements.cancel', userId: c!.userId, result: 'success', session: transaction }); return cancelled; }); res.json(result); } catch (e) { next(e); } });

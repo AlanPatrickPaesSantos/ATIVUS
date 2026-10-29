@@ -7,9 +7,56 @@ import { assertOperationalWritesOpen } from './operationalMaintenanceRepository.
 
 export interface MovementCreateInput { equipmentId: string; origin: UnitReference; destination: UnitReference; requestedBy: string }
 type MovementViewDocument = MovementDocument & { _id?: unknown; createdAt: Date; updatedAt: Date };
+export const MOVEMENT_PAGE_SIZE_DEFAULT = 20;
+export const MOVEMENT_PAGE_SIZE_MAX = 100;
+export type MovementListQuery = {
+  page: number;
+  pageSize: number;
+  status?: MovementStatus;
+  unitId?: string;
+  search?: string;
+  from?: Date;
+  to?: Date;
+};
+function escapeRegex(value: string) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 export function movementView(document: MovementViewDocument, equipment?: { patrimony: string; type: string; model: string }) { return { id: String(document._id), type: document.type, equipmentId: document.equipmentId, ...(equipment ? { equipment } : {}), origin: document.origin, destination: document.destination, requestedBy: document.requestedBy, status: document.status, ...(document.decisionReason ? { decisionReason: document.decisionReason } : {}), ...(document.cancelledBy ? { cancelledBy: document.cancelledBy } : {}), ...(document.cancelledAt ? { cancelledAt: new Date(document.cancelledAt).toISOString() } : {}), divergences: document.divergences ?? [], createdAt: document.createdAt.toISOString(), updatedAt: document.updatedAt.toISOString() }; }
 export async function createMovement(input: MovementCreateInput, session?: ClientSession) { const operationId = new mongoose.Types.ObjectId().toString(); if (session) { await assertOperationalWritesOpen(session); await assertNoPendingPatrimonialOperation(input.equipmentId, session); await acquirePatrimonialOperationLock(input.equipmentId, operationId, 'movement', session); } const [document] = await MovementModel.create([{ _id: operationId, ...input, type: 'Transferência definitiva', status: 'Pendente' }], session ? { session } : undefined); return movementView(document); }
-export async function listMovements(scope: { role: 'unit_user' | 'ditel_admin'; unitId: string | null }) { const filter = scope.role === 'unit_user' ? { $or: [{ 'origin.id': scope.unitId }, { 'destination.id': scope.unitId }] } : {}; const docs = await MovementModel.find(filter).sort({ createdAt: -1, _id: 1 }).lean().exec(); const equipmentIds = [...new Set(docs.map((doc) => doc.equipmentId))]; const equipment = await EquipmentModel.find({ _id: { $in: equipmentIds } }).select({ patrimony: 1, type: 1, model: 1 }).lean().exec(); const equipmentById = new Map(equipment.map((item) => [String(item._id), { patrimony: item.patrimony, type: item.type, model: item.model }])); return { items: docs.map((doc) => movementView(doc, equipmentById.get(doc.equipmentId))) }; }
+export async function listMovements(scope: { role: 'unit_user' | 'ditel_admin'; unitId: string | null }, query: MovementListQuery = { page: 1, pageSize: MOVEMENT_PAGE_SIZE_DEFAULT }) {
+  const filter: Record<string, unknown> = { type: 'Transferência definitiva' };
+  const scopeUnits = scope.role === 'unit_user' ? [scope.unitId] : undefined;
+  const requestedUnit = query.unitId ? [query.unitId] : undefined;
+  const unitConditions = [
+    ...(scopeUnits ? [{ $or: [{ 'origin.id': { $in: scopeUnits } }, { 'destination.id': { $in: scopeUnits } }] }] : []),
+    ...(requestedUnit ? [{ $or: [{ 'origin.id': { $in: requestedUnit } }, { 'destination.id': { $in: requestedUnit } }] }] : []),
+  ];
+  if (unitConditions.length === 1) Object.assign(filter, unitConditions[0]);
+  if (unitConditions.length > 1) filter.$and = unitConditions;
+  if (query.status) filter.status = query.status;
+  if (query.from || query.to) filter.createdAt = { ...(query.from ? { $gte: query.from } : {}), ...(query.to ? { $lte: query.to } : {}) };
+  if (query.search) {
+    const search = escapeRegex(query.search.trim());
+    const equipmentIds = (await EquipmentModel.find({ $or: [
+      { patrimony: { $regex: search, $options: 'i' } },
+      { type: { $regex: search, $options: 'i' } },
+      { model: { $regex: search, $options: 'i' } },
+    ] }).select({ _id: 1 }).lean().exec()).map((item) => String(item._id));
+    const searchCondition = { $or: [
+      { equipmentId: { $in: equipmentIds } },
+      { requestedBy: { $regex: search, $options: 'i' } },
+      { 'origin.name': { $regex: search, $options: 'i' } },
+      { 'origin.acronym': { $regex: search, $options: 'i' } },
+      { 'destination.name': { $regex: search, $options: 'i' } },
+      { 'destination.acronym': { $regex: search, $options: 'i' } },
+    ] };
+    filter.$and = [...(Array.isArray(filter.$and) ? filter.$and : []), searchCondition];
+  }
+  const total = await MovementModel.countDocuments(filter).exec();
+  const docs = await MovementModel.find(filter).sort({ createdAt: -1, _id: 1 }).skip((query.page - 1) * query.pageSize).limit(query.pageSize).lean().exec();
+  const equipmentIds = [...new Set(docs.map((doc) => doc.equipmentId))];
+  const equipment = await EquipmentModel.find({ _id: { $in: equipmentIds } }).select({ patrimony: 1, type: 1, model: 1 }).lean().exec();
+  const equipmentById = new Map(equipment.map((item) => [String(item._id), { patrimony: item.patrimony, type: item.type, model: item.model }]));
+  return { items: docs.map((doc) => movementView(doc, equipmentById.get(doc.equipmentId))), total, page: query.page, pageSize: query.pageSize, totalPages: Math.ceil(total / query.pageSize) };
+}
 export async function movementExists(id: string) { return Boolean(await MovementModel.exists({ _id: id })); }
 export async function cancelMovement(input: { id: string; updatedAt: Date; reason: string; cancelledBy: string }, session: ClientSession) {
   await assertOperationalWritesOpen(session);

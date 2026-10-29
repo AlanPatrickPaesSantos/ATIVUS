@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionContext } from "../../../shared/auth/types";
-import { movementFixture, type MovementKind } from "../../../shared/fixtures/moduleFixtures";
 import { cancelMovement, createMovement, decideMovement, getMovements, receiveMovement, resolveMovementDivergence, type MovementApiItem } from "../api/movementsApi";
 import { getUnits, type UnitOption } from "../api/unitsApi";
 import { getInventory } from "../../inventory/api/inventoryApi";
@@ -12,17 +11,6 @@ import { MovementRequestModal } from "../components/MovementRequestModal";
 import { MovementDecisionModal } from "../components/MovementDecisionModal";
 import { MovementOperationsSummary } from "../components/MovementOperationsSummary";
 
-const labels: Record<MovementKind, string> = {
-  transferencia: "Transferência",
-  baixa: "Baixa",
-  alocacao: "Alocação",
-};
-const movementFilters: Array<{ value: "all" | MovementKind; label: string }> = [
-  { value: "all", label: "Todos" },
-  { value: "transferencia", label: "Transferência" },
-  { value: "alocacao", label: "Alocação" },
-  { value: "baixa", label: "Baixa" },
-];
 const statusFilters = ["all", "Pendente", "Aguardando recebimento", "Divergência", "Recebida", "Rejeitada", "Cancelada"] as const;
 type StatusFilter = typeof statusFilters[number];
 const statusLabels: Record<StatusFilter, string> = { all: "Todas as situações", Pendente: "Pendentes", "Aguardando recebimento": "Aguardando recebimento", Divergência: "Divergências", Recebida: "Recebidas", Rejeitada: "Rejeitadas", Cancelada: "Canceladas" };
@@ -64,12 +52,15 @@ function pendingFromApi(movement: MovementApiItem): PendingMovement {
 }
 
 export function MovementsPage({ session }: { session: SessionContext }) {
-  const [kind, setKind] = useState<"all" | MovementKind>("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [unitFilter, setUnitFilter] = useState("all");
   const [periodFrom, setPeriodFrom] = useState("");
   const [periodTo, setPeriodTo] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedMovementId, setSelectedMovementId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectionError, setRejectionError] = useState(false);
@@ -92,26 +83,45 @@ export function MovementsPage({ session }: { session: SessionContext }) {
   const [acReturns, setAcReturns] = useState<AcReturn[]>([]);
   const [acReturnsLoading, setAcReturnsLoading] = useState(true);
   const [acReturnsError, setAcReturnsError] = useState<string | null>(null);
-  const loadMovements = async () => {
+  const movementRequestId = useRef(0);
+  const movementQuery = useMemo(() => ({
+    page,
+    pageSize,
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(unitFilter !== "all" ? { unitId: unitFilter } : {}),
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(periodFrom ? { from: periodFrom } : {}),
+    ...(periodTo ? { to: periodTo } : {}),
+  }), [page, pageSize, periodFrom, periodTo, search, statusFilter, unitFilter]);
+  const loadMovements = useCallback(async (signal?: AbortSignal) => {
+    const requestId = ++movementRequestId.current;
     setLoading(true);
     setLoadError(false);
     try {
-      const response = await getMovements();
+      const response = await getMovements(movementQuery, signal);
+      if (requestId !== movementRequestId.current || signal?.aborted) return false;
       setRemoteMovements(response.items.map(adaptMovement));
       setRemotePendingMovements(response.items.map(pendingFromApi));
+      setTotal(response.total ?? response.items.length);
+      setTotalPages(response.totalPages ?? 1);
       return true;
     } catch {
+      if (signal?.aborted || requestId !== movementRequestId.current) return false;
       setRemoteMovements([]);
       setRemotePendingMovements([]);
+      setTotal(0);
+      setTotalPages(1);
       setLoadError(true);
       return false;
     } finally {
-      setLoading(false);
+      if (requestId === movementRequestId.current) setLoading(false);
     }
-  };
+  }, [movementQuery]);
   useEffect(() => {
-    void loadMovements();
-  }, []);
+    const controller = new AbortController();
+    void loadMovements(controller.signal);
+    return () => controller.abort();
+  }, [loadMovements]);
   async function openRequest() {
     setRequestOpen(true);
     setRequestStep("form");
@@ -157,27 +167,8 @@ export function MovementsPage({ session }: { session: SessionContext }) {
       setRequestLoading(false);
     }
   }
-  const includeFixtureMovements = import.meta.env.DEV && import.meta.env.VITE_ENABLE_MSW === "true";
-  const matchesFilter = (movement: VisualMovement) => {
-    const query = search.trim().toLocaleLowerCase();
-    const date = movement.occurredAt ? new Date(movement.occurredAt) : null;
-    return (session.role === "ditel_admin" || movement.unitId === session.unit?.id) &&
-      (kind === "all" || movement.type === kind) &&
-      (statusFilter === "all" || movement.status === statusFilter) &&
-      (unitFilter === "all" || movement.unitId === unitFilter || movement.destinationId === unitFilter) &&
-      (!query || `${movement.title} ${movement.equipment} ${movement.origin} ${movement.destination}`.toLocaleLowerCase().includes(query)) &&
-      (!periodFrom || !date || date >= new Date(`${periodFrom}T00:00:00`)) &&
-      (!periodTo || !date || date <= new Date(`${periodTo}T23:59:59.999`));
-  };
-  const movements = useMemo(() => [...remoteMovements, ...(includeFixtureMovements ? movementFixture.filter((movement) => movement.type !== "transferencia") : [])].filter(matchesFilter), [kind, search, statusFilter, unitFilter, periodFrom, periodTo, session.role, session.unit?.id, remoteMovements, includeFixtureMovements]);
-  const filteredMovements = useMemo(() => remotePendingMovements.filter((movement) => {
-    const date = new Date(movement.occurredAt);
-    const query = search.trim().toLocaleLowerCase();
-    return (statusFilter === "all" || movement.status === statusFilter) &&
-      (unitFilter === "all" || movement.originId === unitFilter || movement.destinationId === unitFilter) &&
-      (!query || `${movement.equipment} ${movement.origin} ${movement.destination}`.toLocaleLowerCase().includes(query)) &&
-      (!periodFrom || date >= new Date(`${periodFrom}T00:00:00`)) && (!periodTo || date <= new Date(`${periodTo}T23:59:59.999`));
-  }), [remotePendingMovements, search, statusFilter, unitFilter, periodFrom, periodTo]);
+  const movements = remoteMovements;
+  const filteredMovements = remotePendingMovements;
   const filteredAcReturns = useMemo(() => acReturns.filter((item) => {
     const date = new Date(item.createdAt);
     const text = `${item.equipment?.patrimony ?? item.equipmentId} ${item.origin.name}`.toLocaleLowerCase();
@@ -293,7 +284,7 @@ export function MovementsPage({ session }: { session: SessionContext }) {
         <div>
           <p className="page-eyebrow">Rastreabilidade patrimonial · {session.role === "ditel_admin" ? "escopo estadual" : session.unit?.name}</p>
           <h1 id="movements-title">Histórico de movimentações</h1>
-          <p>Consulte eventos recentes de transferência, alocação e baixa no escopo autorizado.</p>
+          <p>Consulte transferências definitivas no escopo autorizado.</p>
         </div>
         <div>
           {session.role === "unit_user" && (
@@ -302,7 +293,7 @@ export function MovementsPage({ session }: { session: SessionContext }) {
             </button>
           )}
           <span className="module-total">
-            {movements.length} {movements.length === 1 ? "registro" : "registros"}
+            {total} {total === 1 ? "registro" : "registros"}
           </span>
         </div>
       </header>
@@ -392,45 +383,28 @@ export function MovementsPage({ session }: { session: SessionContext }) {
       <section className="module-panel movement-filters" aria-label="Filtros de movimentação">
         <label>
           Buscar movimentação
-          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Equipamento, origem ou destino" />
-        </label>
-        <div className="movement-filter-chips" role="group" aria-label="Filtrar por tipo">
-          {movementFilters.map((filter) => (
-            <button type="button" className={kind === filter.value ? "is-active" : ""} aria-pressed={kind === filter.value} key={filter.value} onClick={() => setKind(filter.value)}>
-              {filter.label}
-            </button>
-          ))}
-        </div>
-        <label className="movement-filters__select">
-          Tipo de movimentação
-          <select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
-            {movementFilters.map((filter) => (
-              <option value={filter.value} key={filter.value}>
-                {filter.value === "all" ? "Todos os tipos" : filter.label}
-              </option>
-            ))}
-          </select>
+          <input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Equipamento, origem ou destino" />
         </label>
         <label className="movement-filters__select">
           Situação
-          <select aria-label="Situação da movimentação" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+          <select aria-label="Situação da movimentação" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value as StatusFilter); setPage(1); }}>
             {statusFilters.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
           </select>
         </label>
         <label className="movement-filters__select">
           Unidade
-          <select aria-label="Unidade da movimentação" value={unitFilter} onChange={(event) => setUnitFilter(event.target.value)}>
+          <select aria-label="Unidade da movimentação" value={unitFilter} onChange={(event) => { setUnitFilter(event.target.value); setPage(1); }}>
             <option value="all">Todas as unidades</option>
             {unitOptionsForFilter.map((unit) => <option value={unit.id} key={unit.id}>{unit.name}</option>)}
           </select>
         </label>
         <label>
           Período inicial
-          <input aria-label="Período inicial" type="date" value={periodFrom} onChange={(event) => setPeriodFrom(event.target.value)} />
+          <input aria-label="Período inicial" type="date" value={periodFrom} onChange={(event) => { setPeriodFrom(event.target.value); setPage(1); }} />
         </label>
         <label>
           Período final
-          <input aria-label="Período final" type="date" value={periodTo} onChange={(event) => setPeriodTo(event.target.value)} />
+          <input aria-label="Período final" type="date" value={periodTo} onChange={(event) => { setPeriodTo(event.target.value); setPage(1); }} />
         </label>
       </section>
       {loading && (
@@ -458,7 +432,7 @@ export function MovementsPage({ session }: { session: SessionContext }) {
             movements.map((movement, index) => (
               <article key={movement.id} className="module-panel movement-item" style={{ "--movement-index": index } as React.CSSProperties}>
                 <div className="movement-item__summary">
-                  <span className={`movement-kind movement-kind--${movement.type}`}>{labels[movement.type]}</span>
+                  <span className={`movement-kind movement-kind--${movement.type}`}>Transferência</span>
                   <h2>{movement.title}</h2>
                   <p>{movement.equipment}</p>
                 </div>
@@ -491,6 +465,13 @@ export function MovementsPage({ session }: { session: SessionContext }) {
             </section>
           ))}
       </div>
+      {!loading && !loadError && totalPages > 1 && (
+        <nav className="module-panel movement-pagination" aria-label="Paginação de movimentações">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Anterior</button>
+          <span>Página {page} de {totalPages}</span>
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>Próxima</button>
+        </nav>
+      )}
       <MovementDecisionModal movement={selectedMovement} session={session} reason={rejectionReason} reasonError={rejectionError} decisionError={decisionError} loading={decisionLoading} onClose={closeReview} onReasonChange={(value) => { setRejectionReason(value); setRejectionError(false); }} onDecide={decideMovementAction} onReceive={receiveMovementAction} onResolve={resolveMovementAction} onCancel={cancelMovementAction} />
       <MovementRequestModal open={requestOpen} success={requestSuccess} step={requestStep} error={requestError} loading={requestLoading} equipmentOptions={equipmentOptions} unitOptions={unitOptions} equipmentId={requestEquipmentId} unitId={requestUnitId} onClose={closeRequest} onRetry={openRequest} onEquipmentChange={setRequestEquipmentId} onUnitChange={setRequestUnitId} onStepChange={setRequestStep} onSubmit={submitRequest} />
     </section>

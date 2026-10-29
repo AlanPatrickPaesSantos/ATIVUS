@@ -18,10 +18,25 @@ export type MovementApiItem = {
   updatedAt: string
 }
 
-export type MovementsResponse = { items: MovementApiItem[] }
+export type MovementsQuery = {
+  page?: number
+  pageSize?: number
+  status?: MovementApiItem['status']
+  unitId?: string
+  search?: string
+  from?: string
+  to?: string
+}
 
-export function getMovements() {
-  return httpClient<MovementsResponse>('/movements')
+export type MovementsResponse = { items: MovementApiItem[]; total?: number; page?: number; pageSize?: number; totalPages?: number }
+
+export function getMovements(query: MovementsQuery = {}, signal?: AbortSignal) {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== '') params.set(key, String(value))
+  }
+  const suffix = params.toString()
+  return httpClient<MovementsResponse>(`/movements${suffix ? `?${suffix}` : ''}`, { signal })
 }
 
 export type MovementDecision = { status: 'Aprovada' | 'Rejeitada'; updatedAt: string; reason?: string }
