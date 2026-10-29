@@ -16,6 +16,7 @@ vi.mock('../../inventory/api/inventoryApi', () => inventory)
 
 const unitSession: SessionContext = { userId: 'unit-1', name: 'Unidade', registration: '1', role: 'unit_user', unit: { id: 'unit-1', name: 'Unidade Norte', acronym: 'UN' } }
 const acSession: SessionContext = { userId: 'ac-1', name: 'AC', registration: '2', role: 'ac_operator', unit: null }
+const ditelSession: SessionContext = { userId: 'ditel-1', name: 'DITEL', registration: '3', role: 'ditel_admin', unit: null }
 const equipment = { id: 'equipment-1', patrimony: 'RP-1', type: 'Rádio', model: 'X', situation: 'active' }
 const pending = { id: 'return-1', equipmentId: equipment.id, origin: unitSession.unit!, requestedBy: 'unit-1', status: 'Pendente', equipment: { ...equipment }, createdAt: '2026-10-28T10:00:00.000Z', updatedAt: '2026-10-28T10:00:00.000Z' }
 
@@ -48,5 +49,13 @@ describe('AcReturnPanel', () => {
     await user.type(within(dialog).getByLabelText('Justificativa da decisão'), 'Equipamento requer conferência.')
     await user.click(within(dialog).getByRole('button', { name: 'Rejeitar devolução' }))
     await waitFor(() => expect(api.decideAcReturn).toHaveBeenCalledWith('return-1', { status: 'Rejeitada', updatedAt: pending.updatedAt, reason: 'Equipamento requer conferência.' }))
+  })
+
+  it('loads an empty return list for DITEL instead of staying in loading state', async () => {
+    render(<AcReturnPanel session={ditelSession} />)
+
+    await waitFor(() => expect(api.getAcReturns).toHaveBeenCalledWith({ page: 1, pageSize: 100 }))
+    expect(await screen.findByText('Nenhuma devolução registrada.')).toBeInTheDocument()
+    expect(screen.queryByText('Carregando devoluções…')).not.toBeInTheDocument()
   })
 })

@@ -64,8 +64,8 @@ export function AcReturnPanel({ session, onStateChange }: AcReturnPanelProps) {
   }
 
   useEffect(() => {
-    if (canRequest || canDecide) void load();
-  }, [canRequest, canDecide, onStateChange]);
+    if (canObserve) void load();
+  }, [canObserve, onStateChange]);
 
   async function openRequest() {
     setRequestOpen(true);

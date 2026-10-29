@@ -10,10 +10,11 @@ const ditelSession: SessionContext = { userId: 'ditel-001', name: 'Carlos Lima',
 const apiTransfer = { id: 'api-mov-01', type: 'Transferência definitiva', equipmentId: 'Rádio APX-2000 · UC-004', origin: { id: 'unit-centro', name: 'Unidade Centro', acronym: 'UC' }, destination: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }, requestedBy: 'Carlos Lima', status: 'Aprovada', createdAt: '2026-08-22T14:20:00.000Z', updatedAt: '2026-08-22T14:20:00.000Z' }
 const apiEquipment = { id: '507f1f77bcf86cd799439011', patrimony: 'PAT-001', type: 'Rádio', model: 'APX-2000', brand: 'Motorola', situation: 'active', location: 'Sala 1', unitName: 'Unidade Centro' }
 const apiUnit = { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }
+const emptyAcReturnsResponse = () => new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 100 }), { status: 200 })
 
 beforeEach(() => {
   vi.stubEnv('VITE_ENABLE_MSW', 'true')
-  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))))
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((input) => String(input).includes('/ac/returns') ? Promise.resolve(emptyAcReturnsResponse()) : Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))))
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -75,16 +76,21 @@ test('retries movement loading without leaking unhandled rejections', async () =
     unhandledRejections.push(event.reason)
     event.preventDefault()
   }
-  const fetchMock = vi.fn()
-    .mockRejectedValueOnce(new Error('offline'))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+  let movementAttempts = 0
+  const fetchMock = vi.fn((input) => {
+    if (String(input).includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    movementAttempts += 1
+    return movementAttempts === 1
+      ? Promise.reject(new Error('offline'))
+      : Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+  })
 
   window.addEventListener('unhandledrejection', onUnhandledRejection)
   vi.stubGlobal('fetch', fetchMock)
 
   render(<MovementsPage session={ditelSession} />)
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar as transferências.')
+  expect(await screen.findByText('Não foi possível carregar as transferências.')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
 
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
@@ -96,10 +102,14 @@ test('retries movement loading without leaking unhandled rejections', async () =
 test('requires a justification before DITEL rejects a pending movement', async () => {
   const user = userEvent.setup()
   const pending = { ...apiTransfer, id: 'mov-pend-01', status: 'Pendente', updatedAt: '2026-08-30T08:30:00.000Z' }
-  const fetchMock = vi.fn()
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [pending] }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ ...pending, status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' }), { status: 200 }))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ ...pending, status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' }] }), { status: 200 }))
+  let movementReads = 0
+  const fetchMock = vi.fn((input) => {
+    const url = String(input)
+    if (url.includes('/ac/returns')) return Promise.resolve(emptyAcReturnsResponse())
+    if (url.endsWith('/decision')) return Promise.resolve(new Response(JSON.stringify({ ...pending, status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' }), { status: 200 }))
+    movementReads += 1
+    return Promise.resolve(new Response(JSON.stringify({ items: [{ ...pending, ...(movementReads > 1 ? { status: 'Rejeitada', decisionReason: 'Documento patrimonial pendente.' } : {}) }] }), { status: 200 }))
+  })
   vi.stubGlobal('fetch', fetchMock)
   render(<MovementsPage session={ditelSession} />)
 
