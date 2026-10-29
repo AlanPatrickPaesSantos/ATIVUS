@@ -130,6 +130,24 @@ describe('OpenAPI contract', () => {
     expect(schema).toContain('message: Não foi possível registrar auditoria.');
   });
 
+  it('documents provisional AC document version and emission headers', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    const operation = pathBlock(schema, '/ac/transfers/{transferId}/document');
+    expect(operation).toContain('X-Document-Template-Version');
+    expect(operation).toContain('X-Document-Id');
+    expect(operation).toContain('ac-transfer-v1');
+    expect(operation).toContain('provisional-not-official');
+    expect(operation).toContain('não representa armazenamento permanente');
+  });
+
+  it('documents real date filters for every managerial report source', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    for (const path of ['/reports/inventory-summary', '/reports/inventory-summary/export', '/reports/calls-summary', '/reports/movements-summary', '/reports/general']) {
+      expect(pathBlock(schema, path), path).toContain("$ref: '#/components/parameters/ReportFrom'");
+      expect(pathBlock(schema, path), path).toContain("$ref: '#/components/parameters/ReportTo'");
+    }
+  });
+
   it('documents administrative password reset and the must-change-password login state', async () => {
     const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
     const resetOperation = operationBlock('/admin/users/{userId}/password-reset', 'post', schema);

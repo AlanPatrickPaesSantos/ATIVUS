@@ -23,6 +23,14 @@ import {
 
 const CSV_HEADERS = ['Unidade', 'Total', 'Em operação', 'Em manutenção', 'Inativos', 'Perdidos', 'Baixados', 'Atenção'];
 type PdfImage = { name: string; width: number; height: number; data: Buffer };
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidIsoDate(value: string) {
+  if (!DATE_PATTERN.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
 
 async function scope(context: SessionContext | undefined): Promise<ActiveUnitAccessScope> {
   if (!context) {
@@ -44,6 +52,8 @@ function parseFilters(query: Record<string, unknown>): InventoryReportFilters {
   const commandId = typeof query.commandId === 'string' && query.commandId.trim() ? query.commandId.trim() : undefined;
   const situation = typeof query.situation === 'string' && query.situation.trim() ? query.situation.trim() : undefined;
   const period = typeof query.period === 'string' && query.period.trim() ? query.period.trim() : undefined;
+  const from = typeof query.from === 'string' && query.from.trim() ? query.from.trim() : undefined;
+  const to = typeof query.to === 'string' && query.to.trim() ? query.to.trim() : undefined;
 
   if (unitId) {
     filters.unitId = unitId;
@@ -66,6 +76,15 @@ function parseFilters(query: Record<string, unknown>): InventoryReportFilters {
     filters.period = period as InventoryReportPeriod;
   }
 
+  for (const date of [from, to]) {
+    if (date && !isValidIsoDate(date)) {
+      throw new AuthError(400, 'INVALID_QUERY', 'Período inválido.');
+    }
+  }
+  if (from && to && from > to) throw new AuthError(400, 'INVALID_QUERY', 'Período inválido.');
+  if (from) filters.from = from;
+  if (to) filters.to = to;
+
   return filters;
 }
 
@@ -87,6 +106,15 @@ async function resolveReportScope(access: ActiveUnitAccessScope, filters: Invent
   return unit;
 }
 
+function publicReportFilters(filters: InventoryReportFilters) {
+  return {
+    ...(filters.situation ? { situation: filters.situation } : {}),
+    ...(filters.from ? { from: filters.from } : {}),
+    ...(filters.to ? { to: filters.to } : {}),
+    ...(filters.period ? { period: filters.period } : {}),
+  };
+}
+
 async function buildInventoryReportResponse(context: SessionContext, query: Record<string, unknown>) {
   const access = await scope(context);
   const filters = parseFilters(query);
@@ -99,10 +127,7 @@ async function buildInventoryReportResponse(context: SessionContext, query: Reco
       title: 'Inventário consolidado',
       generatedAt: new Date().toISOString(),
       scope: requestedScope,
-      filters: {
-        situation: filters.situation ?? null,
-        ...(filters.period ? { period: filters.period } : {}),
-      },
+      filters: { situation: filters.situation ?? null, ...publicReportFilters(filters) },
     },
     totals: report.totals,
     units: report.units,
@@ -320,7 +345,9 @@ function buildPdf(commands: string[], images: PdfImage[] = []) {
 function reportToPdf(response: Awaited<ReturnType<typeof buildInventoryReportResponse>>) {
   const generatedAt = new Date(response.report.generatedAt).toLocaleDateString('pt-BR');
   const situationFilter = response.report.filters.situation ?? 'Todas as situações';
-  const period = response.report.filters.period ?? 'Agosto de 2026';
+  const period = response.report.filters.from || response.report.filters.to
+    ? `${response.report.filters.from ?? 'início'} a ${response.report.filters.to ?? 'fim'}`
+    : response.report.filters.period ?? 'Todos os períodos';
   const operationalPercent = response.totals.total > 0 ? Math.round((response.totals.active / response.totals.total) * 100) : 0;
   const attentionPercent = response.totals.total > 0 ? Math.round((response.totals.attention / response.totals.total) * 100) : 0;
   const barWidth = 360;
@@ -433,7 +460,7 @@ async function buildCallsReportResponse(context: SessionContext, query: Record<s
       title: 'Chamados por status e prioridade',
       generatedAt: new Date().toISOString(),
       scope: requestedScope,
-      filters: {},
+      filters: publicReportFilters(filters),
     },
     totals: report.totals,
     byStatus: report.byStatus,
@@ -454,7 +481,7 @@ async function buildMovementsReportResponse(context: SessionContext, query: Reco
       title: 'Movimentações por período',
       generatedAt: new Date().toISOString(),
       scope: requestedScope,
-      filters: {},
+      filters: publicReportFilters(filters),
     },
     totals: report.totals,
     byStatus: report.byStatus,
@@ -474,10 +501,7 @@ async function buildGeneralReportResponse(context: SessionContext, query: Record
       title: 'Relatório geral DITEL',
       generatedAt: new Date().toISOString(),
       scope: requestedScope,
-      filters: {
-        situation: filters.situation ?? null,
-        ...(filters.period ? { period: filters.period } : {}),
-      },
+      filters: { situation: filters.situation ?? null, ...publicReportFilters(filters) },
     },
     inventory: report.inventory,
     calls: report.calls,

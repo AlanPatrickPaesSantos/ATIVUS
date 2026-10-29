@@ -17,6 +17,8 @@ export interface InventoryReportFilters {
   unitId?: string;
   commandId?: string;
   situation?: InventoryReportSituation;
+  from?: string;
+  to?: string;
   period?: InventoryReportPeriod;
 }
 
@@ -33,6 +35,14 @@ function periodCreatedAtRange(period: InventoryReportPeriod): { $gte: Date; $lt:
   }
 
   return { $gte: start, $lt: end };
+}
+
+function realDateRange(filters: InventoryReportFilters): { $gte: Date; $lte: Date } | undefined {
+  if (!filters.from && !filters.to) return undefined;
+  return {
+    $gte: new Date(`${filters.from ?? '1970-01-01'}T00:00:00.000Z`),
+    $lte: new Date(`${filters.to ?? '9999-12-31'}T23:59:59.999Z`),
+  };
 }
 
 export interface InventoryReportCounters {
@@ -67,16 +77,20 @@ function emptyCounters(): InventoryReportCounters {
 }
 
 function increment(counters: InventoryReportCounters, situation: EquipmentSituation) {
-  counters.total += 1;
+  incrementByCount(counters, situation, 1);
+}
+
+function incrementByCount(counters: InventoryReportCounters, situation: EquipmentSituation, count: number) {
+  counters.total += count;
 
   if (situation === 'written_off') {
-    counters.writtenOff += 1;
+    counters.writtenOff += count;
   } else {
-    counters[situation] += 1;
+    counters[situation] += count;
   }
 
   if (ATTENTION_SITUATIONS.includes(situation as typeof ATTENTION_SITUATIONS[number])) {
-    counters.attention += 1;
+    counters.attention += count;
   }
 }
 
@@ -89,7 +103,9 @@ async function filterFor(filters: InventoryReportFilters, scope: InventoryReport
     filter.situation = filters.situation;
   }
 
-  if (filters.period) {
+  if (filters.from || filters.to) {
+    filter.createdAt = realDateRange(filters);
+  } else if (filters.period) {
     filter.createdAt = periodCreatedAtRange(filters.period);
   }
 
@@ -100,21 +116,19 @@ export async function readInventoryReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<InventoryReport> {
-  const documents = await EquipmentModel.find(await filterFor(filters, scope))
-    .select('unit situation')
-    .sort({ 'unit.name': 1, 'unit.id': 1, createdAt: -1, _id: 1 })
-    .lean()
-    .exec();
-
   const totals = emptyCounters();
   const byUnit = new Map<string, InventoryReportUnitSummary>();
+  const groups = await EquipmentModel.aggregate<{ _id: { unit: UnitReference; situation: EquipmentSituation }; count: number }>([
+    { $match: await filterFor(filters, scope) },
+    { $group: { _id: { unit: '$unit', situation: '$situation' }, count: { $sum: 1 } } },
+    { $sort: { '_id.unit.name': 1, '_id.unit.id': 1, '_id.situation': 1 } },
+  ]).exec();
 
-  for (const document of documents) {
-    const unit = document.unit as UnitReference;
+  for (const group of groups) {
+    const unit = group._id.unit;
     const existing = byUnit.get(unit.id) ?? { unit, ...emptyCounters() };
-
-    increment(totals, document.situation as EquipmentSituation);
-    increment(existing, document.situation as EquipmentSituation);
+    incrementByCount(totals, group._id.situation, group.count);
+    incrementByCount(existing, group._id.situation, group.count);
     byUnit.set(unit.id, existing);
   }
 
@@ -156,32 +170,33 @@ function emptyCallsCounters(): CallsReportCounters {
 
 async function callsFilterFor(filters: InventoryReportFilters, scope: InventoryReportScope) {
   const unitIds = await resolveScopedUnitIds({ commandId: scope.role === 'ditel_admin' ? filters.commandId : undefined, unitId: scope.role === 'ditel_admin' ? filters.unitId : undefined }, scope);
-  return unitIds === null ? {} : { 'unit.id': { $in: unitIds } };
+  const filter: Record<string, unknown> = unitIds === null ? {} : { 'unit.id': { $in: unitIds } };
+  const dates = realDateRange(filters);
+  if (dates) filter.createdAt = dates;
+  return filter;
 }
 
 export async function readCallsReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<CallsReport> {
-  const documents = await CallModel.find(await callsFilterFor(filters, scope))
-    .select('status priority')
-    .lean()
-    .exec();
-
   const totals = emptyCallsCounters();
   const byStatus = new Map<string, number>();
   const byPriority = new Map<string, number>();
+  const groups = await CallModel.aggregate<{ _id: { status: string; priority: string }; count: number }>([
+    { $match: await callsFilterFor(filters, scope) },
+    { $group: { _id: { status: '$status', priority: '$priority' }, count: { $sum: 1 } } },
+  ]).exec();
 
-  for (const document of documents) {
-    totals.total += 1;
-
-    if (document.status === 'Aberto') totals.open += 1;
-    if (document.status === 'Aberto' || document.status === 'Em atendimento' || document.status === 'Aguardando informação') totals.attention += 1;
-    if (document.status === 'Resolvido' || document.status === 'Encerrado') totals.resolved += 1;
-    if (document.priority === 'Crítica') totals.critical += 1;
-
-    byStatus.set(document.status, (byStatus.get(document.status) ?? 0) + 1);
-    byPriority.set(document.priority, (byPriority.get(document.priority) ?? 0) + 1);
+  for (const group of groups) {
+    const { status, priority } = group._id;
+    totals.total += group.count;
+    if (status === 'Aberto') totals.open += group.count;
+    if (status === 'Aberto' || status === 'Em atendimento' || status === 'Aguardando informação') totals.attention += group.count;
+    if (status === 'Resolvido' || status === 'Encerrado') totals.resolved += group.count;
+    if (priority === 'Crítica') totals.critical += group.count;
+    byStatus.set(status, (byStatus.get(status) ?? 0) + group.count);
+    byPriority.set(priority, (byPriority.get(priority) ?? 0) + group.count);
   }
 
   return {
@@ -219,6 +234,9 @@ async function movementsFilterFor(filters: InventoryReportFilters, scope: Invent
     filter.$or = [{ 'origin.id': { $in: unitIds } }, { 'destination.id': { $in: unitIds } }];
   }
 
+  const dates = realDateRange(filters);
+  if (dates) filter.createdAt = dates;
+
   return filter;
 }
 
@@ -226,22 +244,19 @@ export async function readMovementsReport(
   filters: InventoryReportFilters,
   scope: InventoryReportScope,
 ): Promise<MovementsReport> {
-  const documents = await MovementModel.find(await movementsFilterFor(filters, scope))
-    .select('status')
-    .lean()
-    .exec();
-
   const totals = emptyMovementsCounters();
   const byStatus = new Map<string, number>();
+  const groups = await MovementModel.aggregate<{ _id: string; count: number }>([
+    { $match: await movementsFilterFor(filters, scope) },
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]).exec();
 
-  for (const document of documents) {
-    totals.total += 1;
-
-    if (document.status === 'Pendente') totals.pending += 1;
-    if (document.status === 'Aprovada') totals.approved += 1;
-    if (document.status === 'Rejeitada') totals.rejected += 1;
-
-    byStatus.set(document.status, (byStatus.get(document.status) ?? 0) + 1);
+  for (const group of groups) {
+    totals.total += group.count;
+    if (group._id === 'Pendente') totals.pending += group.count;
+    if (group._id === 'Aprovada') totals.approved += group.count;
+    if (group._id === 'Rejeitada') totals.rejected += group.count;
+    byStatus.set(group._id, group.count);
   }
 
   return {

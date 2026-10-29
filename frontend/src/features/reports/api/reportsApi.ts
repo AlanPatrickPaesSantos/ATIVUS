@@ -6,6 +6,8 @@ export type InventoryReportQuery = {
   unitId?: string
   situation?: InventoryReportSituation | null
   period?: string | null
+  from?: string | null
+  to?: string | null
 }
 
 export type InventoryReportExportFormat = 'csv' | 'pdf'
@@ -17,6 +19,8 @@ function reportParameters(query: InventoryReportQuery & { format?: InventoryRepo
   if (query.commandId) parameters.set('commandId', query.commandId)
   if (query.situation) parameters.set('situation', query.situation)
   if (query.period) parameters.set('period', query.period)
+  if (query.from) parameters.set('from', query.from)
+  if (query.to) parameters.set('to', query.to)
   if (query.format) parameters.set('format', query.format)
 
   return parameters.toString()

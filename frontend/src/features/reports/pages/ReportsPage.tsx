@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../../../app/providers'
 import type { SessionContext } from '../../../shared/auth/types'
@@ -18,12 +18,6 @@ const situationOptions: Array<{ value: '' | InventoryReportSituation; label: str
   { value: 'written_off', label: 'Baixado' },
 ]
 
-const periodOptions: Array<{ value: string; label: string }> = [
-  { value: '', label: 'Agosto de 2026' },
-  { value: 'july_2026', label: 'Julho de 2026' },
-  { value: 'q2_2026', label: '2º trimestre de 2026' },
-]
-
 type ReportKind = 'inventory' | 'calls' | 'movements' | 'general'
 
 const reportKindOptions: Array<{ value: ReportKind; label: string }> = [
@@ -37,17 +31,18 @@ function equipmentLabel(total: number) {
   return `${total} ${total === 1 ? 'equipamento' : 'equipamentos'}`
 }
 
-const periodLabel = (period: string) => periodOptions.find((option) => option.value === period)?.label ?? 'Agosto de 2026'
+const dateRangeLabel = (from: string, to: string) => from || to ? `${from || 'Início'} a ${to || 'Hoje'}` : 'Todos os períodos'
 
 export function reportScopeFromQuery(searchParams: URLSearchParams, isDitel: boolean) {
   return isDitel ? searchParams.get('unitId') || 'statewide' : 'statewide'
 }
 
-function buildQuery(isDitel: boolean, selectedScope: string, situation: '' | InventoryReportSituation, period: string): InventoryReportQuery {
+function buildQuery(isDitel: boolean, selectedScope: string, situation: '' | InventoryReportSituation, from: string, to: string): InventoryReportQuery {
   return {
     ...(isDitel && selectedScope !== 'statewide' ? { unitId: selectedScope } : {}),
     ...(situation ? { situation } : {}),
-    ...(period ? { period } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
   }
 }
 
@@ -66,16 +61,17 @@ function ReportsContent({ session }: { session: SessionContext }) {
   const [draftKind, setDraftKind] = useState<ReportKind>('inventory')
   const [selectedScope, setSelectedScope] = useState(initialScope)
   const [draftScope, setDraftScope] = useState(initialScope)
-  const [period, setPeriod] = useState(periodOptions[0].value)
-  const periodRef = useRef(period)
-  const [draftPeriod, setDraftPeriod] = useState(periodOptions[0].value)
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [draftFrom, setDraftFrom] = useState('')
+  const [draftTo, setDraftTo] = useState('')
   const [situation, setSituation] = useState<'' | InventoryReportSituation>('')
   const [draftSituation, setDraftSituation] = useState<'' | InventoryReportSituation>('')
   const [exportStatus, setExportStatus] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportingFormat, setExportingFormat] = useState<InventoryReportExportFormat | null>(null)
 
-  const reportQuery = buildQuery(isDitel, selectedScope, situation, period)
+  const reportQuery = buildQuery(isDitel, selectedScope, situation, from, to)
   const inventoryQuery = useInventoryReportQuery(reportQuery)
   const callsQuery = useCallsSummaryReportQuery(reportQuery)
   const movementsQuery = useMovementsSummaryReportQuery(reportQuery)
@@ -97,8 +93,8 @@ function ReportsContent({ session }: { session: SessionContext }) {
     setReportKind(draftKind)
     setSelectedScope(draftScope)
     setSituation(draftSituation)
-    setPeriod(draftPeriod)
-    periodRef.current = draftPeriod
+    setFrom(draftFrom)
+    setTo(draftTo)
     setExportStatus(null)
     setExportError(null)
   }
@@ -111,7 +107,7 @@ function ReportsContent({ session }: { session: SessionContext }) {
     setExportError(null)
 
     try {
-      const blob = await downloadInventoryReportExport({ ...buildQuery(isDitel, selectedScope, situation, periodRef.current), format })
+      const blob = await downloadInventoryReportExport({ ...buildQuery(isDitel, selectedScope, situation, from, to), format })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -151,12 +147,9 @@ function ReportsContent({ session }: { session: SessionContext }) {
           <label>Situação<select aria-label="Situação" value={draftSituation} onChange={(event) => { setDraftSituation(event.target.value as '' | InventoryReportSituation); setExportStatus(null); setExportError(null) }}>
             {situationOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
           </select></label>
-          <label>Período<select aria-label="Período" value={draftPeriod} onChange={(event) => { setDraftPeriod(event.target.value); setExportStatus(null); setExportError(null) }}>
-            {periodOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
-          </select></label>
-        </> : <label>Período<select aria-label="Período" value={draftPeriod} onChange={(event) => { setDraftPeriod(event.target.value); setExportStatus(null); setExportError(null) }}>
-          {periodOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
-        </select></label>}
+        </> : null}
+        <label>Data inicial<input aria-label="Data inicial" type="date" value={draftFrom} onChange={(event) => { setDraftFrom(event.target.value); setExportStatus(null); setExportError(null) }} /></label>
+        <label>Data final<input aria-label="Data final" type="date" value={draftTo} onChange={(event) => { setDraftTo(event.target.value); setExportStatus(null); setExportError(null) }} /></label>
         {isDitel
           ? <label>Escopo<select aria-label="Escopo" value={draftScope} onChange={(event) => { setDraftScope(event.target.value); setExportStatus(null); setExportError(null) }}>
               <option value="statewide">Todo o estado</option>
@@ -173,7 +166,7 @@ function ReportsContent({ session }: { session: SessionContext }) {
       <article className="module-panel report-preview" aria-labelledby="report-preview-title">
         {currentQuery.isLoading ? <LoadingState label="Carregando relatório" /> : null}
         {currentQuery.isError ? <ErrorState message="Não foi possível carregar o relatório." onRetry={() => { void currentQuery.refetch() }} /> : null}
-        {reportKind === 'inventory' && inventoryQuery.data ? <InventoryPreview response={inventoryQuery.data} periodLabel={periodLabel(period)} scopeLabel={scopeLabel} selectedSituationLabel={selectedSituationLabel} /> : null}
+        {reportKind === 'inventory' && inventoryQuery.data ? <InventoryPreview response={inventoryQuery.data} periodLabel={dateRangeLabel(from, to)} scopeLabel={scopeLabel} selectedSituationLabel={selectedSituationLabel} /> : null}
         {reportKind === 'calls' && callsQuery.data ? <CallsPreview response={callsQuery.data} scopeLabel={scopeLabel} /> : null}
         {reportKind === 'movements' && movementsQuery.data ? <MovementsPreview response={movementsQuery.data} scopeLabel={scopeLabel} /> : null}
         {reportKind === 'general' && generalQuery.data ? <GeneralPreview response={generalQuery.data} scopeLabel={scopeLabel} selectedSituationLabel={selectedSituationLabel} /> : null}

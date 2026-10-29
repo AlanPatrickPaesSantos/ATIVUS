@@ -33,9 +33,8 @@ function textExpression(value?: string) {
   return new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 }
 
-function equipmentFilter(filters: AcPatrimonialReportFilters, ids?: string[]) {
+function equipmentFilter(filters: AcPatrimonialReportFilters) {
   const filter: Record<string, unknown> = { ...AC_STOCK_FILTER };
-  if (ids) filter._id = { $in: ids };
   return applyEquipmentAttributes(filter, filters);
 }
 
@@ -47,20 +46,33 @@ function applyEquipmentAttributes(filter: Record<string, unknown>, filters: AcPa
   return filter;
 }
 
-async function matchingEquipmentIds(filters: AcPatrimonialReportFilters) {
-  if (!filters.patrimony && !filters.type && !filters.model && !filters.situation) return undefined;
-  const documents = await EquipmentModel.find(applyEquipmentAttributes({}, filters)).select({ _id: 1 }).lean().exec();
-  return documents.map((document) => String(document._id));
-}
-
-function transferFilter(filters: AcPatrimonialReportFilters, equipmentIds?: string[]) {
+function transferFilter(filters: AcPatrimonialReportFilters) {
   const filter: Record<string, unknown> = { origin: 'AC', status: 'confirmed' };
   if (filters.unitId) filter['destinationUnit.id'] = filters.unitId;
   if (filters.bg) filter['bg.number'] = textExpression(filters.bg);
   const dates = dateRange(filters);
   if (dates) filter.distributedAt = dates;
-  if (equipmentIds) filter['materials.equipmentId'] = { $in: equipmentIds };
   return filter;
+}
+
+function transferEquipmentStages(filters: AcPatrimonialReportFilters) {
+  if (!filters.patrimony && !filters.type && !filters.model && !filters.situation) return [];
+  return [
+    {
+      $lookup: {
+        from: EquipmentModel.collection.name,
+        let: { equipmentIds: '$materials.equipmentId' },
+        pipeline: [
+          { $match: { $expr: { $in: [{ $toString: '$_id' }, '$$equipmentIds'] } } },
+          { $match: applyEquipmentAttributes({}, filters) },
+          { $project: { _id: 1 } },
+        ],
+        as: 'matchingEquipment',
+      },
+    },
+    { $match: { 'matchingEquipment.0': { $exists: true } } },
+    { $unset: 'matchingEquipment' },
+  ];
 }
 
 function publicStock(document: any) {
@@ -93,9 +105,8 @@ function sourceForDescription(description: string): 'AC' | 'DITEL' {
 }
 
 export async function readAcPatrimonialReport(filters: AcPatrimonialReportFilters, page: AcPatrimonialReportPage) {
-  const equipmentIds = await matchingEquipmentIds(filters);
-  const stockFilter = equipmentFilter(filters, equipmentIds);
-  const transferQuery = transferFilter(filters, equipmentIds);
+  const stockFilter = equipmentFilter(filters);
+  const transferQuery = transferFilter(filters);
   const direction: 1 | -1 = page.order === 'asc' ? 1 : -1;
   const sort: Record<string, 1 | -1> = page.sort === 'patrimony'
     ? { 'materials.patrimony': direction, _id: 1 }
@@ -103,25 +114,43 @@ export async function readAcPatrimonialReport(filters: AcPatrimonialReportFilter
       ? { 'destinationUnit.name': direction, distributedAt: -1, _id: 1 }
       : { distributedAt: direction, _id: 1 };
 
-  const [stockTotal, stockDocuments, transferDocuments, transferTotal] = await Promise.all([
+  const transferStages = transferEquipmentStages(filters);
+  const [stockTotal, stockDocuments, transferDocuments, transferTotal, distributedGoodsResult, availableStock] = await Promise.all([
     EquipmentModel.countDocuments(stockFilter).exec(),
     EquipmentModel.find(stockFilter).select('patrimony serialNumber brand type model situation').sort({ patrimony: 1, _id: 1 }).skip((page.page - 1) * page.pageSize).limit(page.pageSize).lean().exec(),
-    AcTransferModel.find(transferQuery).sort(sort).skip((page.page - 1) * page.pageSize).limit(page.pageSize).lean().exec(),
-    AcTransferModel.countDocuments(transferQuery).exec(),
+    AcTransferModel.aggregate([
+      { $match: transferQuery },
+      ...transferStages,
+      { $sort: sort },
+      { $skip: (page.page - 1) * page.pageSize },
+      { $limit: page.pageSize },
+    ]).exec(),
+    AcTransferModel.aggregate([
+      { $match: transferQuery },
+      ...transferStages,
+      { $count: 'total' },
+    ]).exec(),
+    AcTransferModel.aggregate([
+      { $match: transferQuery },
+      ...transferStages,
+      { $unwind: '$materials' },
+      { $group: { _id: '$materials.equipmentId' } },
+      { $count: 'total' },
+    ]).exec(),
+    EquipmentModel.countDocuments({ ...stockFilter, situation: 'active' }).exec(),
   ]);
 
-  const allTransfers = await AcTransferModel.find(transferQuery).select('materials.equipmentId').lean().exec();
-  const distributedGoods = new Set(allTransfers.flatMap((transfer) => (transfer.materials ?? []).map((material: any) => material.equipmentId))).size;
-  const availableStock = await EquipmentModel.countDocuments({ ...stockFilter, situation: 'active' }).exec();
+  const distributedGoods = distributedGoodsResult[0]?.total ?? 0;
+  const transferTotalCount = transferTotal[0]?.total ?? 0;
 
   const history = filters.patrimony
     ? await readAcPatrimonialHistory(filters.patrimony, filters)
     : null;
 
   return {
-    metrics: { availableStock, distributedGoods, transfers: transferTotal },
+    metrics: { availableStock, distributedGoods, transfers: transferTotalCount },
     stock: { items: stockDocuments.map(publicStock), total: stockTotal, page: page.page, pageSize: page.pageSize },
-    distributions: { items: transferDocuments.map(publicDistribution), total: transferTotal, page: page.page, pageSize: page.pageSize },
+    distributions: { items: transferDocuments.map(publicDistribution), total: transferTotalCount, page: page.page, pageSize: page.pageSize },
     history,
     criteria: {
       availableStock: 'Equipment distinto com custódia AC e situação active.',

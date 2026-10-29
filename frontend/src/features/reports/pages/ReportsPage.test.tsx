@@ -119,6 +119,30 @@ test('lets DITEL choose a unit scope and reloads the report with the selected un
   expect((await screen.findAllByText('Unidade Norte')).length).toBeGreaterThan(0)
 })
 
+test('sends real date filters to preview and export instead of fixed 2026 periods', async () => {
+  const user = userEvent.setup()
+  const requestedUrls: string[] = []
+  server.use(http.get('*/api/v1/reports/inventory-summary', ({ request }) => { requestedUrls.push(request.url); return HttpResponse.json(reportResponse) }))
+  server.use(http.get('*/api/v1/reports/inventory-summary/export', ({ request }) => { requestedUrls.push(request.url); return new HttpResponse('Unidade,Total\n', { headers: { 'Content-Type': 'text/csv' } }) }))
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:report')
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+  renderReports()
+  expect(await screen.findByText('2 equipamentos')).toBeInTheDocument()
+  await user.clear(screen.getByLabelText('Data inicial'))
+  await user.type(screen.getByLabelText('Data inicial'), '2026-08-01')
+  await user.clear(screen.getByLabelText('Data final'))
+  await user.type(screen.getByLabelText('Data final'), '2026-08-31')
+  await user.click(screen.getByRole('button', { name: 'Atualizar prévia' }))
+  await waitFor(() => expect(requestedUrls.some((url) => new URL(url).searchParams.get('from') === '2026-08-01' && new URL(url).searchParams.get('to') === '2026-08-31')).toBe(true))
+  await user.click(screen.getByRole('button', { name: 'Exportar CSV' }))
+  await waitFor(() => expect(requestedUrls.filter((url) => url.includes('/export')).length).toBe(1))
+  const exportQuery = new URL(requestedUrls.find((url) => url.includes('/export'))!).searchParams
+  expect(exportQuery.get('from')).toBe('2026-08-01')
+  expect(exportQuery.get('to')).toBe('2026-08-31')
+})
+
 test('shows a retryable error without stale report data when the report request fails', async () => {
   const user = userEvent.setup()
   let shouldFail = true

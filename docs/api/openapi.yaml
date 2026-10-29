@@ -30,6 +30,8 @@ tags:
     description: Consultas administrativas protegidas.
   - name: Audit
     description: Consulta protegida da trilha de auditoria operacional.
+  - name: Operations
+    description: Consultas operacionais agregadas e somente leitura.
 paths:
   /health:
     get:
@@ -778,7 +780,7 @@ paths:
       tags: [AC]
       summary: Exporta o modelo provisório de uma transferência AC
       operationId: exportAcTransferDocument
-      description: Gera somente leitura um DOCX editável ou PDF a partir dos snapshots da transferência confirmada. O arquivo é um modelo provisório e não oficial da PMPA.
+      description: Gera somente leitura um DOCX editável ou PDF a partir dos snapshots da transferência confirmada. O arquivo é um modelo provisório e não oficial da PMPA. A auditoria registra a emissão, mas não representa armazenamento permanente do arquivo.
       security: [{ sessionCookie: [] }]
       parameters:
         - name: transferId
@@ -793,7 +795,10 @@ paths:
         '200':
           description: Documento binário provisório
           headers:
-            X-Document-Template: { description: Sempre provisional-not-official nesta fase., schema: { type: string, enum: [provisional-not-official] } }
+             X-Document-Template: { description: Sempre provisional-not-official nesta fase., schema: { type: string, enum: [provisional-not-official] } }
+             X-Document-Template-Version: { description: Versão do template provisório., schema: { type: string, enum: [ac-transfer-v1] } }
+             X-Document-Notice: { description: Aviso de caráter provisório e não oficial., schema: { type: string, enum: [MODELO PROVISÓRIO - NÃO OFICIAL] } }
+             X-Document-Id: { description: 'Identificador único da emissão; não é um identificador de armazenamento do arquivo.', schema: { type: string, format: uuid } }
           content:
             application/vnd.openxmlformats-officedocument.wordprocessingml.document: { schema: { type: string, format: binary } }
             application/pdf: { schema: { type: string, format: binary } }
@@ -909,6 +914,8 @@ paths:
         - { $ref: '#/components/parameters/UnitId' }
         - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportFrom' }
+        - { $ref: '#/components/parameters/ReportTo' }
         - { $ref: '#/components/parameters/ReportPeriod' }
       responses:
         '200':
@@ -929,6 +936,8 @@ paths:
         - { $ref: '#/components/parameters/UnitId' }
         - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportFrom' }
+        - { $ref: '#/components/parameters/ReportTo' }
         - { $ref: '#/components/parameters/ReportPeriod' }
         - name: format
           in: query
@@ -955,6 +964,8 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
         - { $ref: '#/components/parameters/CommandId' }
+        - { $ref: '#/components/parameters/ReportFrom' }
+        - { $ref: '#/components/parameters/ReportTo' }
       responses:
         '200':
           description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
@@ -974,6 +985,8 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/UnitId' }
         - { $ref: '#/components/parameters/CommandId' }
+        - { $ref: '#/components/parameters/ReportFrom' }
+        - { $ref: '#/components/parameters/ReportTo' }
       responses:
         '200':
           description: Relatório sem senhas, tokens, hashes ou identificadores de sessão
@@ -994,6 +1007,8 @@ paths:
         - { $ref: '#/components/parameters/UnitId' }
         - { $ref: '#/components/parameters/CommandId' }
         - { $ref: '#/components/parameters/Situation' }
+        - { $ref: '#/components/parameters/ReportFrom' }
+        - { $ref: '#/components/parameters/ReportTo' }
         - { $ref: '#/components/parameters/ReportPeriod' }
       responses:
         '200':
@@ -1050,6 +1065,29 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /inventory/{equipmentId}/patrimonial:
+    get:
+      tags: [Inventory]
+      summary: Consulta a visão patrimonial integrada de um equipamento
+      operationId: getIntegratedPatrimonialView
+      description: Consulta somente leitura derivada das coleções existentes. A custódia vem do equipamento persistido; operações pendentes não são tratadas como concluídas. Eventos de auditoria são retornados somente para administradores DITEL.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: equipmentId
+          in: path
+          required: true
+          schema: { type: string }
+        - { $ref: '#/components/parameters/HistoryPage' }
+        - { $ref: '#/components/parameters/HistoryPageSize' }
+        - { $ref: '#/components/parameters/AuditPage' }
+        - { $ref: '#/components/parameters/AuditPageSize' }
+      responses:
+        '200':
+          description: Visão patrimonial integrada dentro do escopo autorizado
+          content: { application/json: { schema: { $ref: '#/components/schemas/PatrimonialReadResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /maintenance/{maintenanceId}:
     patch:
       tags: [Maintenance]
@@ -1212,8 +1250,17 @@ paths:
       summary: Listar movimentações autorizadas
       operationId: listMovements
       security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: status, in: query, schema: { type: string, enum: [Pendente, Aguardando recebimento, Divergência, Recebida, Rejeitada, Cancelada] } }
+        - { name: unitId, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
       responses:
         '200': { description: Movement list, content: { application/json: { schema: { $ref: '#/components/schemas/MovementListResponse' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
@@ -1231,6 +1278,26 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /pending-operations:
+    get:
+      tags: [Operations]
+      summary: Lista pendências operacionais agregadas
+      operationId: listPendingOperations
+      description: Consulta somente leitura derivada das coleções de transferências, devoluções AC, chamados, manutenções e missões. O escopo é aplicado antes da contagem e da paginação; nenhum registro de pendência é persistido.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: source, in: query, schema: { type: string, enum: [movement, ac_return, call, maintenance, mission] } }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: priority, in: query, schema: { type: string } }
+        - { name: unitId, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+      responses:
+        '200': { description: Página agregada de pendências, content: { application/json: { schema: { $ref: '#/components/schemas/PendingOperationsResponse' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /movements/{id}/decision:
     patch:
       summary: Decidir transferência patrimonial
@@ -1434,8 +1501,14 @@ components:
       schema:
         type: string
         enum: [july_2026, q2_2026]
+    ReportFrom: { name: from, in: query, description: Data inicial inclusiva do relatório (YYYY-MM-DD)., schema: { type: string, format: date } }
+    ReportTo: { name: to, in: query, description: Data final inclusiva do relatório (YYYY-MM-DD)., schema: { type: string, format: date } }
     Page: { name: page, in: query, required: true, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    HistoryPage: { name: historyPage, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    HistoryPageSize: { name: historyPageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    AuditPage: { name: auditPage, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    AuditPageSize: { name: auditPageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     AcPage: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
     AcPageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     AcReportFrom: { name: from, in: query, description: Data inicial inclusiva da distribuição (YYYY-MM-DD)., schema: { type: string, format: date } }
@@ -1906,8 +1979,13 @@ components:
         updatedAt: { type: string, format: date-time }
     MovementListResponse:
       type: object
-      required: [items]
-      properties: { items: { type: array, items: { $ref: '#/components/schemas/Movement' } } }
+      required: [items, total, page, pageSize, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Movement' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        totalPages: { type: integer, minimum: 0 }
     CreateMovementRequest:
       type: object
       required: [equipmentId, destination]
@@ -2364,6 +2442,8 @@ components:
                   oneOf:
                     - { $ref: '#/components/schemas/EquipmentSituation' }
                     - { type: 'null' }
+                from: { type: string, format: date }
+                to: { type: string, format: date }
         totals: { $ref: '#/components/schemas/InventoryReportCounters' }
         units:
           type: array
@@ -2388,7 +2468,10 @@ components:
             scope: { $ref: '#/components/schemas/UnitContext' }
             filters:
               type: object
-              properties: {}
+              properties:
+                from: { type: string, format: date }
+                to: { type: string, format: date }
+                period: { type: string, deprecated: true }
         totals:
           type: object
           required: [total, open, critical, attention, resolved]
@@ -2434,7 +2517,10 @@ components:
             scope: { $ref: '#/components/schemas/UnitContext' }
             filters:
               type: object
-              properties: {}
+              properties:
+                from: { type: string, format: date }
+                to: { type: string, format: date }
+                period: { type: string, deprecated: true }
         totals:
           type: object
           required: [total, pending, approved, rejected]
@@ -2477,6 +2563,8 @@ components:
                   oneOf:
                     - { $ref: '#/components/schemas/EquipmentSituation' }
                     - { type: 'null' }
+                from: { type: string, format: date }
+                to: { type: string, format: date }
         inventory:
           type: object
           required: [totals, units]
@@ -2606,6 +2694,115 @@ components:
         completedAt: { type: string, format: date-time }
         observations: { type: string }
         updatedAt: { type: string, format: date-time }
+    PatrimonialReadResponse:
+      type: object
+      required: [equipment, activeOperation, history, relatedCalls, documents, auditEvents]
+      properties:
+        equipment: { $ref: '#/components/schemas/PatrimonialEquipment' }
+        activeOperation:
+          oneOf:
+            - { $ref: '#/components/schemas/PatrimonialOperation' }
+            - { type: 'null' }
+        history: { $ref: '#/components/schemas/PatrimonialHistoryPage' }
+        relatedCalls: { type: array, items: { $ref: '#/components/schemas/PatrimonialRelatedCall' } }
+        documents: { type: array, items: { $ref: '#/components/schemas/PatrimonialDocumentReference' } }
+        auditEvents: { $ref: '#/components/schemas/AuditEventListResponse' }
+    PatrimonialEquipment:
+      type: object
+      required: [id, patrimony, type, brand, model, category, situation, location, unit, custody, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        patrimony: { type: string }
+        serialNumber: { type: string }
+        type: { type: string }
+        brand: { type: string }
+        model: { type: string }
+        category: { type: string }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        location: { type: string }
+        unit:
+          oneOf:
+            - { $ref: '#/components/schemas/UnitContext' }
+            - { type: 'null' }
+        custody:
+          oneOf:
+            - { $ref: '#/components/schemas/EquipmentCustody' }
+            - { type: 'null' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EquipmentCustody:
+      type: object
+      required: [scope, unit]
+      properties:
+        scope: { type: string, enum: [AC, UNIT] }
+        unit:
+          oneOf:
+            - { $ref: '#/components/schemas/UnitContext' }
+            - { type: 'null' }
+    PatrimonialOperation:
+      type: object
+      required: [id, kind, equipmentId, status, requestedAt, updatedAt, origin, destination, reason, divergenceCount]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [unit_transfer, ac_return] }
+        equipmentId: { type: string }
+        status: { type: string }
+        requestedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        origin: { $ref: '#/components/schemas/UnitContext' }
+        destination:
+          oneOf:
+            - { $ref: '#/components/schemas/UnitContext' }
+            - { $ref: '#/components/schemas/EquipmentCustody' }
+        reason:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        divergenceCount: { type: integer, minimum: 0 }
+    PatrimonialHistoryEntry:
+      type: object
+      required: [id, source, description, occurredAt]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [equipment, movement, ac_return] }
+        description: { type: string }
+        occurredAt: { type: string, format: date-time }
+        status: { type: string }
+        operationId: { type: string }
+        snapshot:
+          oneOf:
+            - { type: object, additionalProperties: true }
+            - { type: 'null' }
+    PatrimonialHistoryPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/PatrimonialHistoryEntry' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    PatrimonialRelatedCall:
+      type: object
+      required: [id, protocol, subject, status, openedAt]
+      properties:
+        id: { type: string }
+        protocol: { type: string }
+        subject: { type: string }
+        status: { type: string }
+        openedAt: { type: string, format: date-time }
+    PatrimonialDocumentReference:
+      type: object
+      required: [id, name, type, source, downloadUrl]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        source: { type: string, enum: [equipment, ac_transfer] }
+        size: { type: integer, minimum: 0 }
+        uploadedAt: { type: string, format: date-time }
+        status: { type: string, enum: [active] }
+        downloadUrl: { type: string, format: uri-reference }
+        availableFormats: { type: array, items: { type: string, enum: [pdf, docx] } }
     EquipmentDetails:
       allOf:
         - { $ref: '#/components/schemas/EquipmentSummary' }
@@ -2853,3 +3050,39 @@ components:
       properties:
         id: { type: string }
         protocol: { type: string }
+    PendingOperation:
+      type: object
+      required: [id, source, type, state, description, action, priority, date, unitId, reference]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [movement, ac_return, call, maintenance, mission] }
+        type: { type: string }
+        state: { type: string }
+        description: { type: string }
+        action: { type: string }
+        priority: { type: [string, 'null'] }
+        date: { type: string, format: date-time }
+        unitId: { type: [string, 'null'] }
+        reference:
+          type: object
+          required: [path, label]
+          properties:
+            path: { type: string }
+            label: { type: string }
+    PendingOperationsResponse:
+      type: object
+      required: [items, total, page, pageSize, totalPages, counts]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/PendingOperation' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        totalPages: { type: integer, minimum: 0 }
+        counts:
+          type: array
+          items:
+            type: object
+            required: [source, total]
+            properties:
+              source: { type: string, enum: [movement, ac_return, call, maintenance, mission] }
+              total: { type: integer, minimum: 0 }

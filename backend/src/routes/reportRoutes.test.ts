@@ -236,6 +236,22 @@ describe('report routes', () => {
     expect(pdf).not.toContain('<FEFF');
   });
 
+  it('keeps the real date range in the PDF export', async () => {
+    await seed();
+
+    const response = await exportRequest({
+      userId: 'd',
+      name: 'Carlos',
+      registration: '2',
+      role: 'ditel_admin',
+      unit: null,
+    }, 'pdf').query({ from: '2026-08-25', to: '2026-08-26' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.toString('latin1')).toContain('(2026-08-25 a 2026-08-26)');
+    expect(response.body.toString('latin1')).not.toContain('Agosto de 2026');
+  });
+
   it('rejects unsupported export formats and invalid situation filters', async () => {
     await seed();
 
@@ -302,6 +318,27 @@ describe('report routes', () => {
     });
     expect(response.body.totals).toMatchObject({ total: 3, pending: 1, approved: 1, rejected: 1 });
     expect(serialized(response.body)).not.toMatch(/passwordHash|password|token|tokenDigest|sessionId/i);
+  });
+
+  it('applies inclusive real date filters consistently to inventory, calls and movements', async () => {
+    await seed();
+    const context = sessionServiceFor(ditel);
+    const inventory = await request(createApp({ sessionService: context })).get('/api/v1/reports/inventory-summary').query({ from: '2026-08-25', to: '2026-08-26' }).set('Cookie', 'sigat_session=test');
+    const calls = await request(createApp({ sessionService: context })).get('/api/v1/reports/calls-summary').query({ from: '2026-08-25', to: '2026-08-26' }).set('Cookie', 'sigat_session=test');
+    const movements = await request(createApp({ sessionService: context })).get('/api/v1/reports/movements-summary').query({ from: '2026-08-25', to: '2026-08-26' }).set('Cookie', 'sigat_session=test');
+
+    expect(inventory.body.report.filters).toMatchObject({ from: '2026-08-25', to: '2026-08-26' });
+    expect(inventory.body.totals.total).toBe(0);
+    expect(calls.body.totals.total).toBe(2);
+    expect(movements.body.totals.total).toBe(2);
+  });
+
+  it('rejects invalid and inverted real date filters', async () => {
+    const context = sessionServiceFor(ditel);
+    const invalid = await request(createApp({ sessionService: context })).get('/api/v1/reports/calls-summary').query({ from: '2026-99-01' }).set('Cookie', 'sigat_session=test');
+    const inverted = await request(createApp({ sessionService: context })).get('/api/v1/reports/general').query({ from: '2026-08-27', to: '2026-08-26' }).set('Cookie', 'sigat_session=test');
+    expect(invalid.status).toBe(400);
+    expect(inverted.status).toBe(400);
   });
 
   it('returns a consolidated DITEL report with inventory, calls and movements for admins', async () => {
