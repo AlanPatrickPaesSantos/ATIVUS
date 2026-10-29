@@ -1,9 +1,9 @@
 import type { NavigationItem, SessionContext } from './types'
 
 const permissionsByRole = {
-  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration', 'maintenance', 'missions', 'ac_materials', 'ac_transfers', 'ac_reports', 'statewide_structure'],
-  unit_user: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'maintenance', 'missions'],
-  ac_operator: ['ac_materials', 'ac_transfers', 'ac_reports'],
+  ditel_admin: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'administration', 'maintenance', 'missions', 'pending', 'ac_materials', 'ac_transfers', 'ac_reports', 'statewide_structure'],
+  unit_user: ['dashboard', 'inventory', 'tickets', 'movements', 'reports', 'maintenance', 'missions', 'pending'],
+  ac_operator: ['ac_materials', 'ac_transfers', 'ac_reports', 'pending'],
 } as const
 
 const navigation: NavigationItem[] = [
@@ -11,6 +11,7 @@ const navigation: NavigationItem[] = [
   { label: 'Inventário', href: '/inventario', icon: '▣', requires: 'inventory' },
   { label: 'Chamados', href: '/chamados', icon: '◌', requires: 'tickets' },
   { label: 'Movimentações', href: '/movimentacoes', icon: '↔', requires: 'movements' },
+  { label: 'Pendências', href: '/pendencias', icon: '!', requires: 'pending' },
   { label: 'Relatórios', href: '/relatorios', icon: '▤', requires: 'reports' },
   { label: 'Administração', href: '/administracao', icon: '⚙', requires: 'administration' },
   { label: 'Materiais AC', href: '/ac/materiais', icon: '▥', requires: 'ac_materials' },

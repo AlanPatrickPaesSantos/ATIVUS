@@ -86,11 +86,16 @@ describe('homologation operations', () => {
 
     expect(report.seeded).toBe(true);
     expect(users).toEqual([
+      { registration: 'hml-ac', role: 'ac_operator' },
       { registration: 'hml-admin', role: 'ditel_admin' },
       { registration: 'hml-unit', role: 'unit_user' },
+      { registration: 'hml-unit-a', role: 'unit_user' },
+      { registration: 'hml-unit-b', role: 'unit_user' },
     ]);
     expect(units).toEqual([
       { id: 'hml-unit' },
+      { id: 'hml-unit-a' },
+      { id: 'hml-unit-b' },
     ]);
   });
 

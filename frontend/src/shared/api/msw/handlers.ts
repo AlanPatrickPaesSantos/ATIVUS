@@ -602,6 +602,26 @@ export const handlers = [
     const total = session.role === 'unit_user' && session.unit?.id === 'unit-centro' && !search && !type && !model && !situation ? 428 : items.length
     return HttpResponse.json({ items: items.slice(start, start + pageSize), total, page, pageSize })
   }),
+  http.get('*/api/v1/inventory/:equipmentId/patrimonial', ({ params, request }) => {
+    const session = getSession()
+    if (!session) return unauthorized()
+    const item = equipment.find((candidate) => candidate.id === params.equipmentId && (session.role === 'ditel_admin' || candidate.unitId === session.unit?.id))
+    if (!item) return HttpResponse.json({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipamento não encontrado no escopo da Unidade.' }, { status: 404 })
+    const details = detailsByEquipment[item.id]
+    const url = new URL(request.url)
+    const historyPage = Math.max(1, Number(url.searchParams.get('historyPage')) || 1)
+    const historyPageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('historyPageSize')) || 10))
+    const historyItems = (details?.history ?? []).map((entry) => ({ ...entry, source: 'equipment' as const, snapshot: null }))
+    const start = (historyPage - 1) * historyPageSize
+    return HttpResponse.json({
+      equipment: { id: item.id, patrimony: item.patrimony, serialNumber: details?.serialNumber, type: item.type, brand: item.brand, model: item.model, category: details?.category ?? '', situation: item.situation, location: item.location, unit: item.unitId ? { id: item.unitId, name: item.unitName ?? item.unitId, acronym: item.unitName ?? item.unitId } : null, custody: item.unitId ? { scope: 'UNIT', unit: { id: item.unitId, name: item.unitName ?? item.unitId, acronym: item.unitName ?? item.unitId } } : { scope: 'AC', unit: null }, createdAt: details?.createdAt ?? '2026-01-01T00:00:00.000Z', updatedAt: details?.updatedAt ?? '2026-01-02T00:00:00.000Z' },
+      activeOperation: null,
+      history: { items: historyItems.slice(start, start + historyPageSize), total: historyItems.length, page: historyPage, pageSize: historyPageSize },
+      relatedCalls: (details?.linkedCalls ?? []).map((call) => ({ ...call, protocol: call.id })),
+      documents: (details?.documents ?? []).map((document) => ({ ...document, source: 'equipment' as const })),
+      auditEvents: { items: session.role === 'ditel_admin' ? [] : [], total: 0, page: 1, pageSize: 10 },
+    })
+  }),
   http.get('*/api/v1/inventory/:equipmentId', ({ params }) => {
     const session = getSession()
     const item = equipment.find((candidate) => candidate.id === params.equipmentId && (session?.role === 'ditel_admin' || candidate.unitId === session?.unit?.id))
@@ -987,10 +1007,27 @@ export const handlers = [
       : null
     return HttpResponse.json({ generatedAt: new Date().toISOString(), generatedBy: { name: session.name, role: session.role }, metrics: { availableStock: stock.filter((item) => item.situation === 'active').length, distributedGoods: new Set(distributions.flatMap((item) => Array.isArray(acTransfers.find((transfer) => transfer.id === item.id)?.materials) ? (acTransfers.find((transfer) => transfer.id === item.id)?.materials as Array<{ equipmentId?: string }>).map((material) => material.equipmentId) : [])).size, transfers: distributions.length }, criteria: { availableStock: 'Equipment AC ativo.', distributedGoods: 'equipmentId distinto em AcTransfer.', transfers: 'AcTransfer confirmado.' }, stock: { items: stock, total: stock.length, page: 1, pageSize: 20 }, distributions: { items: distributions, total: distributions.length, page: 1, pageSize: 20 }, history })
   }),
-  http.get('*/api/v1/movements', () => {
+  http.get('*/api/v1/movements', ({ request }) => {
     const session = getSession()
     if (!session) return unauthorized()
-    return HttpResponse.json({ items: session.role === 'ditel_admin' ? movements : movements.filter((item) => item.origin.id === session.unit?.id) })
+    const url = new URL(request.url)
+    const page = Math.max(1, Number(url.searchParams.get('page') ?? 1) || 1)
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? 20) || 20))
+    const status = url.searchParams.get('status')
+    const unitId = url.searchParams.get('unitId')
+    const search = url.searchParams.get('search')?.trim().toLocaleLowerCase()
+    const from = url.searchParams.get('from')
+    const to = url.searchParams.get('to')
+    const scoped = session.role === 'ditel_admin' ? movements : movements.filter((item) => item.origin.id === session.unit?.id || item.destination.id === session.unit?.id)
+    const filtered = scoped.filter((item) => {
+      const equipmentItem = equipment.find((candidate) => candidate.id === item.equipmentId)
+      const searchable = `${item.equipmentId} ${equipmentItem?.patrimony ?? ''} ${equipmentItem?.type ?? ''} ${equipmentItem?.model ?? ''} ${item.origin.name} ${item.destination.name}`.toLocaleLowerCase()
+      const createdAt = item.createdAt.slice(0, 10)
+      return (!status || item.status === status) && (!unitId || item.origin.id === unitId || item.destination.id === unitId) && (!search || searchable.includes(search)) && (!from || createdAt >= from) && (!to || createdAt <= to)
+    })
+    const totalPages = Math.ceil(filtered.length / pageSize)
+    const items = filtered.slice((page - 1) * pageSize, page * pageSize)
+    return HttpResponse.json({ items, total: filtered.length, page, pageSize, totalPages })
   }),
   http.post('*/api/v1/movements', async ({ request }) => {
     const session = getSession()

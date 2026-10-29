@@ -154,18 +154,18 @@ async function seedNonProductionData(): Promise<void> {
   const passwordHash = await hashPassword(seedPassword);
 
   await runInTransaction(async (session) => {
-    await UnitModel.updateOne(
-      { id: 'hml-unit' },
-      {
-        $setOnInsert: {
-          id: 'hml-unit',
-          name: 'Unidade Homologação',
-          acronym: 'HML',
-          active: true,
-        },
-      },
-      { upsert: true, session },
-    );
+    const units = [
+      { id: 'hml-unit', name: 'Unidade Homologação', acronym: 'HML' },
+      { id: 'hml-unit-a', name: 'Unidade Homologação A', acronym: 'HMA' },
+      { id: 'hml-unit-b', name: 'Unidade Homologação B', acronym: 'HMB' },
+    ];
+    for (const unit of units) {
+      await UnitModel.updateOne(
+        { id: unit.id },
+        { $setOnInsert: { ...unit, active: true } },
+        { upsert: true, session },
+      );
+    }
 
     await UserModel.collection.updateOne(
       { registration: 'hml-admin' },
@@ -200,6 +200,38 @@ async function seedNonProductionData(): Promise<void> {
       },
       { upsert: true, session },
     );
+
+    await UserModel.collection.updateOne(
+      { registration: 'hml-ac' },
+      {
+        $setOnInsert: {
+          name: 'Operador AC Homologação',
+          registration: 'hml-ac',
+          role: 'ac_operator',
+          situation: 'active',
+          unit: null,
+          passwordHash,
+        },
+      },
+      { upsert: true, session },
+    );
+
+    for (const unit of units.slice(1)) {
+      await UserModel.collection.updateOne(
+        { registration: unit.id },
+        {
+          $setOnInsert: {
+            name: `Usuária ${unit.name}`,
+            registration: unit.id,
+            role: 'unit_user',
+            situation: 'active',
+            unit,
+            passwordHash,
+          },
+        },
+        { upsert: true, session },
+      );
+    }
   });
 }
 

@@ -65,17 +65,25 @@ test.describe('real backend smoke', () => {
     await page.getByLabel('Senha').fill(requiredEnvironment.E2E_REAL_DITEL_PASSWORD as string)
     await page.getByRole('button', { name: 'Entrar' }).click()
     await expect(page.getByRole('heading', { name: 'Painel estadual' })).toBeVisible()
-    await page.getByRole('link', { name: 'Administração', exact: true }).click()
+    const administrationLink = page.getByRole('link', { name: 'Administração', exact: true })
+    if (await administrationLink.count()) {
+      await administrationLink.click()
+    } else {
+      await page.getByRole('button', { name: 'Mais ações' }).click()
+      await page.getByRole('menuitem', { name: 'Administração', exact: true }).click()
+    }
     await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
 
     for (const viewport of [{ width: 320, height: 700 }, { width: 768, height: 1024 }]) {
       await page.setViewportSize(viewport)
-      const dimensions = await page.evaluate(() => ({
-        clientWidth: document.documentElement.clientWidth,
-        scrollWidth: document.documentElement.scrollWidth,
-      }))
-      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1)
+      await page.goto('/administracao')
+      await expect(page.getByRole('heading', { name: 'Administração DITEL' })).toBeVisible()
+      await expect.poll(async () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
     }
+
+    await page.getByRole('button', { name: 'Admin Homologação' }).click()
+    await page.getByRole('menuitem', { name: 'Sair' }).click()
+    await expect(page.getByRole('heading', { name: 'Entrar no ATIVUS' })).toBeVisible()
 
     const unitLogin = await unitContext.post('/api/v1/auth/login', {
       data: {

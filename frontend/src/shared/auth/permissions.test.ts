@@ -13,7 +13,7 @@ const session: SessionContext = {
 describe('menu oficial (regra: não reintroduzir módulos removidos)', () => {
   it('expõe os módulos oficiais e as consultas AC para o administrador DITEL', () => {
     const labels = getNavigation(session).map((item) => item.label)
-    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios', 'Administração', 'Materiais AC', 'Transferências AC', 'Relatórios AC', 'Estrutura estadual'])
+    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Pendências', 'Relatórios', 'Administração', 'Materiais AC', 'Transferências AC', 'Relatórios AC', 'Estrutura estadual'])
   })
 
   it('não inclui Manutenção, Missões técnicas, Tipos de equipamento ou Auditoria', () => {
@@ -26,13 +26,13 @@ describe('menu oficial (regra: não reintroduzir módulos removidos)', () => {
   it('mantém relatórios e painel centralizados no menu do usuário de unidade', () => {
     const unitSession: SessionContext = { ...session, role: 'unit_user', unit: { id: 'unit-1', name: '1ª Companhia', acronym: '1CIA' } }
     const labels = getNavigation(unitSession).map((item) => item.label)
-    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Relatórios'])
+    expect(labels).toEqual(['Painel', 'Inventário', 'Chamados', 'Movimentações', 'Pendências', 'Relatórios'])
     expect(labels).not.toContain('Administração')
   })
 
   it('concede apenas os módulos AC ao operador AC', () => {
     const acSession: SessionContext = { ...session, role: 'ac_operator', unit: null }
-    expect(getNavigation(acSession).map((item) => item.label)).toEqual(['Materiais AC', 'Transferências AC', 'Relatórios AC'])
+    expect(getNavigation(acSession).map((item) => item.label)).toEqual(['Pendências', 'Materiais AC', 'Transferências AC', 'Relatórios AC'])
     expect(can(acSession, 'ac_materials')).toBe(true)
     expect(can(acSession, 'ac_transfers')).toBe(true)
     expect(can(acSession, 'ac_reports')).toBe(true)

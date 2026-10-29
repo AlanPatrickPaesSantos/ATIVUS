@@ -103,6 +103,22 @@ describe('MSW fixture resets', () => {
     expect(second.status).toBe(201)
   })
 
+  it('mirrors the paginated movement contract used by the real API', async () => {
+    await createSession(fixtureSessionAdapter, '100001', 'sigat-unit')
+
+    const created = await fetch('http://localhost/api/v1/movements', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ equipmentId: 'eq-002', destination: { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' } }),
+    })
+    expect(created.status).toBe(201)
+
+    const response = await fetch('http://localhost/api/v1/movements?page=2&pageSize=1&status=Pendente', { credentials: 'include' })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ total: 2, page: 2, pageSize: 1, totalPages: 2, items: [{ id: 'mov-api-01' }] })
+  })
+
   it('unlocks a must-change-password fixture session after password change', async () => {
     await createSession(fixtureSessionAdapter, '300001', 'senha-temporaria')
 
