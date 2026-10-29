@@ -27,6 +27,7 @@ const AcMaterialsPage = lazy(() => import('../features/ac/pages/AcMaterialsPage'
 const AcTransfersPage = lazy(() => import('../features/ac/pages/AcTransfersPage').then(({ AcTransfersPage }) => ({ default: AcTransfersPage })))
 const AcReportsPage = lazy(() => import('../features/ac/pages/AcReportsPage').then(({ AcReportsPage }) => ({ default: AcReportsPage })))
 const OrganizationalStructurePage = lazy(() => import('../features/organizationalStructure/pages/OrganizationalStructurePage').then(({ OrganizationalStructurePage }) => ({ default: OrganizationalStructurePage })))
+const PendingOperationsPage = lazy(() => import('../features/pending/pages/PendingOperationsPage').then(({ PendingOperationsPage }) => ({ default: PendingOperationsPage })))
 
 type AppRoutesProps = {
   session: SessionContext | null
@@ -38,6 +39,7 @@ const routePermissions: Record<string, string> = {
   '/inventario': 'inventory',
   '/chamados': 'tickets',
   '/movimentacoes': 'movements',
+  '/pendencias': 'pending',
   '/relatorios': 'reports',
   '/administracao': 'administration',
   '/auditoria': 'administration',
@@ -133,6 +135,7 @@ function ProtectedRoutes({ session, onSessionChange }: { session: SessionContext
         <Route path="/inventario" element={<LazyRoute><UnitInventoryPage session={session} /></LazyRoute>} />
         <Route path="/chamados" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelCallsPage /> : <CallsPage />}</LazyRoute>} />
         <Route path="/movimentacoes" element={<LazyRoute><MovementsPage session={session} /></LazyRoute>} />
+        <Route path="/pendencias" element={<LazyRoute><PendingOperationsPage session={session} /></LazyRoute>} />
         <Route path="/relatorios" element={<LazyRoute><ReportsPage session={session} /></LazyRoute>} />
         <Route path="/manutencao" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelMaintenancePage session={session} /> : <UnitMaintenancePage session={session} />}</LazyRoute>} />
         <Route path="/missoes-tecnicas" element={<LazyRoute>{session.role === 'ditel_admin' ? <DitelMissionsPage session={session} /> : <MissionsPage session={session} />}</LazyRoute>} />

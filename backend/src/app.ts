@@ -35,6 +35,7 @@ import { createAcReportRoutes } from './routes/acReportRoutes.js';
 import { createAcTransferDocumentRoutes } from './routes/acTransferDocumentRoutes.js';
 import { createAcReturnRoutes } from './routes/acReturnRoutes.js';
 import { createOperationalMaintenanceRoutes } from './routes/operationalMaintenanceRoutes.js';
+import { createPendingRoutes } from './routes/pendingRoutes.js';
 import { OperationalMaintenanceActiveError } from './repositories/operationalMaintenanceRepository.js';
 
 type ErrorLogger = Pick<Console, 'error'>;
@@ -170,6 +171,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use('/api/v1', createEquipmentTypeRoutes(requireSession));
   app.use('/api/v1', createMissionRoutes(requireSession));
   app.use('/api/v1', createOrganizationalStructureRoutes(requireSession));
+  app.use('/api/v1', createPendingRoutes(requireSession));
 
   app.use((_req: Request, res: Response) => {
     res.status(404).json({

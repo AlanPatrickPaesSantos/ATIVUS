@@ -6,3 +6,4 @@
 @import './modules.css';
 @import './inventory.css';
 @import './pages.css';
+@import '../../features/pending/pending.css';

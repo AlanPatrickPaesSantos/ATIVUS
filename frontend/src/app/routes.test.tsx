@@ -23,6 +23,7 @@ beforeEach(() => {
   queryClient.clear()
   server.use(
     http.get('*/api/v1/movements', () => HttpResponse.json({ items: [apiTransfer] })),
+    http.get('*/api/v1/ac/returns', () => HttpResponse.json({ items: [], total: 0, page: 1, pageSize: 100 })),
   )
 })
 afterEach(() => {
@@ -181,15 +182,14 @@ test('loads the authenticated reports preview and exports PDF through the API', 
   expect(await screen.findByRole('status')).toHaveTextContent('Exportação PDF preparada')
 })
 
-test('renders a filterable movement history without exposing Administration to a Unit user', async () => {
-  const user = userEvent.setup()
+test('renders supported movement filters without exposing Administration to a Unit user', async () => {
   renderRoutes('/movimentacoes', unitSession)
 
   expect(await screen.findByRole('heading', { name: 'Histórico de movimentações' })).toBeInTheDocument()
   await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Tipo de movimentação' }), 'baixa')
-  expect(screen.getByText('Baixa patrimonial')).toBeInTheDocument()
-  expect(screen.queryByText('Transferência entre unidades')).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Tipo de movimentação' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Baixa patrimonial')).not.toBeInTheDocument()
+  expect(screen.queryByText('Alocação interna')).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Administração' })).not.toBeInTheDocument()
 })
 
