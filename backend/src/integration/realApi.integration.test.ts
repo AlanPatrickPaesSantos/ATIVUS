@@ -43,6 +43,9 @@ describe('real API integration', () => {
     const admin = new UserModel({ name: 'Admin Integração', registration: 'int-admin', role: 'ditel_admin', unit: null });
     admin.set('password', 'senha-de-teste-nao-sensivel');
     await admin.save();
+    const destinationUser = new UserModel({ name: 'Destino Integração', registration: 'int-destination', role: 'unit_user', unit: destination });
+    destinationUser.set('password', 'senha-de-teste-nao-sensivel');
+    await destinationUser.save();
     const equipment = await EquipmentModel.create({ patrimony: `INT-${Date.now()}`, type: 'Notebook', model: 'Teste', brand: 'ATIVUS', situation: 'active', location: 'Sala de teste', unit, createdBy: user.id, history: [{ id: 'initial', description: 'Cadastro inicial', occurredAt: new Date() }] });
     equipmentId = equipment.id;
   });
@@ -98,8 +101,14 @@ describe('real API integration', () => {
     expect(listed.body.items).toHaveLength(1);
     const decided = await adminAgent.patch(`/api/v1/movements/${movementId}/decision`).send({ status: 'Aprovada', updatedAt: listed.body.items[0].updatedAt });
     expect(decided.status).toBe(200);
+    const awaiting = await adminAgent.get('/api/v1/movements');
+    expect(awaiting.body.items[0].status).toBe('Aguardando recebimento');
+    const destinationAgent = request.agent(app);
+    await destinationAgent.post('/api/v1/auth/login').send({ registration: 'int-destination', password: 'senha-de-teste-nao-sensivel' });
+    const received = await destinationAgent.patch(`/api/v1/movements/${movementId}/receipt`).send({ status: 'Recebida', updatedAt: awaiting.body.items[0].updatedAt });
+    expect(received.status).toBe(200);
     const persisted = await EquipmentModel.findById(equipmentId).lean();
     expect(persisted?.unit?.id).toBe(destination.id);
-    expect((await adminAgent.get('/api/v1/movements')).body.items[0].status).toBe('Aprovada');
+    expect((await adminAgent.get('/api/v1/movements')).body.items[0].status).toBe('Recebida');
   });
 });

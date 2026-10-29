@@ -458,6 +458,7 @@ paths:
       summary: Consulta a janela compartilhada de manutenção patrimonial
       operationId: getOperationalMaintenance
       security: [{ sessionCookie: [] }]
+      description: Exclusivo para administrador DITEL. A leitura não altera a janela nem dados patrimoniais.
       responses:
         '200':
           description: Estado atual da janela operacional
@@ -469,12 +470,15 @@ paths:
       summary: Ativa ou desativa a janela compartilhada de manutenção patrimonial
       operationId: updateOperationalMaintenance
       security: [{ sessionCookie: [] }]
+      description: Exclusivo para administrador DITEL. A mudança é persistida no MongoDB para coordenar múltiplas instâncias e é auditada.
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/OperationalMaintenanceUpdateRequest' } } }
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OperationalMaintenanceUpdateRequest' }
       responses:
         '200':
-          description: Janela atualizada
+          description: Janela operacional atualizada
           content: { application/json: { schema: { $ref: '#/components/schemas/OperationalMaintenanceWindow' } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1244,6 +1248,163 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /movements/{id}/cancel:
+    patch:
+      summary: Cancelar solicitação pendente de transferência
+      operationId: cancelMovement
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/MovementId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MovementCancellationRequest' } } }
+      responses:
+        '200': { description: Solicitação cancelada, content: { application/json: { schema: { $ref: '#/components/schemas/Movement' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /movements/{id}/receipt:
+    patch:
+      summary: Confirmar recebimento ou registrar divergência de transferência
+      operationId: receiveMovement
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/MovementId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MovementReceiptRequest' } } }
+      responses:
+        '200': { description: Recebimento registrado, content: { application/json: { schema: { $ref: '#/components/schemas/Movement' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /movements/{id}/divergence:
+    patch:
+      summary: Resolver divergência de transferência
+      operationId: resolveMovementDivergence
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/MovementId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DivergenceResolutionRequest' } } }
+      responses:
+        '200': { description: Divergência resolvida, content: { application/json: { schema: { $ref: '#/components/schemas/Movement' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/returns:
+    get:
+      summary: Listar devoluções para a AC
+      operationId: listAcReturns
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: Return list, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturnsResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      summary: Solicitar devolução de equipamento para a AC
+      operationId: createAcReturn
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 1, maxLength: 160 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AcReturnCreateRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '200': { description: Idempotent replay, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/returns/{returnId}:
+    get:
+      summary: Consultar devolução para a AC
+      operationId: getAcReturn
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AcReturnId' }]
+      responses:
+        '200': { description: AC return, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /ac/returns/{returnId}/decision:
+    patch:
+      summary: Aceitar ou rejeitar devolução para a AC
+      operationId: decideAcReturn
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AcReturnId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AcReturnDecisionRequest' } } }
+      responses:
+        '200': { description: Decided AC return, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/returns/{returnId}/cancel:
+    patch:
+      summary: Cancelar solicitação pendente de devolução AC
+      operationId: cancelAcReturn
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AcReturnId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AcReturnCancellationRequest' } } }
+      responses:
+        '200': { description: Devolução cancelada, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/returns/{returnId}/receipt:
+    patch:
+      summary: Confirmar recebimento ou registrar divergência de devolução AC
+      operationId: receiveAcReturn
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AcReturnId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AcReturnReceiptRequest' } } }
+      responses:
+        '200': { description: Recebimento registrado, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
+  /ac/returns/{returnId}/divergence:
+    patch:
+      summary: Resolver divergência de devolução AC
+      operationId: resolveAcReturnDivergence
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/AcReturnId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DivergenceResolutionRequest' } } }
+      responses:
+        '200': { description: Divergência resolvida, content: { application/json: { schema: { $ref: '#/components/schemas/AcReturn' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/AuditUnavailable' }
 
 components:
   securitySchemes:
@@ -1253,6 +1414,7 @@ components:
       name: sigat_session
   parameters:
     MovementId: { name: id, in: path, required: true, schema: { type: string } }
+    AcReturnId: { name: returnId, in: path, required: true, schema: { type: string } }
     AdminUserId: { name: userId, in: path, required: true, schema: { type: string } }
     Search: { name: search, in: query, schema: { type: string } }
     AcMaterialSearch: { name: search, in: query, description: 'Pesquisa por RP, número de série, descrição (observações) ou demais campos patrimoniais.', schema: { type: string, maxLength: 160 } }
@@ -1654,23 +1816,6 @@ components:
         userId: { type: string }
         temporaryPassword: { type: string, minLength: 20, writeOnly: true }
         mustChangePassword: { type: boolean, const: true }
-    OperationalMaintenanceWindow:
-      type: object
-      required: [active, reason, actorId, activatedAt, deactivatedAt, revision]
-      properties:
-        active: { type: boolean }
-        reason: { type: string }
-        actorId: { type: string }
-        activatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
-        deactivatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
-        revision: { type: integer, minimum: 0 }
-    OperationalMaintenanceUpdateRequest:
-      type: object
-      additionalProperties: false
-      required: [active, reason]
-      properties:
-        active: { type: boolean }
-        reason: { type: string, minLength: 1, maxLength: 500 }
     AuditActor:
       type: object
       required: [id]
@@ -1742,11 +1887,21 @@ components:
         id: { type: string }
         type: { type: string, enum: [Transferência definitiva] }
         equipmentId: { type: string }
+        equipment:
+          type: object
+          required: [patrimony, type, model]
+          properties:
+            patrimony: { type: string }
+            type: { type: string }
+            model: { type: string }
         origin: { $ref: '#/components/schemas/UnitContext' }
         destination: { $ref: '#/components/schemas/UnitContext' }
         requestedBy: { type: string }
-        status: { type: string, enum: [Pendente, Aprovada, Rejeitada] }
+        status: { type: string, enum: [Pendente, Aprovada, Aguardando recebimento, Recebida, Divergência, Rejeitada, Cancelada] }
         decisionReason: { type: string }
+        cancelledBy: { type: string }
+        cancelledAt: { type: string, format: date-time }
+        divergences: { type: array, items: { $ref: '#/components/schemas/PatrimonialDivergence' } }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     MovementListResponse:
@@ -1764,6 +1919,133 @@ components:
         status: { type: string, enum: [Aprovada, Rejeitada] }
         updatedAt: { type: string, format: date-time }
         reason: { type: string }
+    MovementReceiptRequest:
+      type: object
+      additionalProperties: false
+      required: [status, updatedAt]
+      properties:
+        status: { type: string, enum: [Recebida, Divergência] }
+        updatedAt: { type: string, format: date-time }
+        description: { type: string, maxLength: 1000 }
+    MovementCancellationRequest:
+      type: object
+      additionalProperties: false
+      required: [updatedAt, reason]
+      properties:
+        updatedAt: { type: string, format: date-time }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    PatrimonialDivergence:
+      type: object
+      required: [description, reportedBy, reportedAt, resolutionStatus]
+      properties:
+        description: { type: string }
+        reportedBy: { type: string }
+        reportedAt: { type: string, format: date-time }
+        resolutionStatus: { type: string, enum: [pending, resolved] }
+        resolvedBy: { oneOf: [{ type: string }, { type: 'null' }] }
+        resolvedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        resolution: { oneOf: [{ type: string }, { type: 'null' }] }
+    DivergenceResolutionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, updatedAt, resolution]
+      properties:
+        action: { type: string, enum: [retomar, rejeitar] }
+        updatedAt: { type: string, format: date-time }
+        resolution: { type: string, maxLength: 1000 }
+    AcReturnEquipmentSnapshot:
+      type: object
+      required: [patrimony, type, model, brand, situation, unit, custody, equipmentUpdatedAt, equipmentVersion]
+      properties:
+        patrimony: { type: string }
+        type: { type: string }
+        model: { type: string }
+        brand: { type: string }
+        serialNumber: { type: string }
+        situation: { $ref: '#/components/schemas/EquipmentSituation' }
+        unit: { $ref: '#/components/schemas/UnitContext' }
+        custody:
+          oneOf:
+            - { type: 'null' }
+            - { type: object, required: [scope, unit], properties: { scope: { type: string, enum: [AC] }, unit: { type: 'null' } } }
+            - { type: object, required: [scope, unit], properties: { scope: { type: string, enum: [UNIT] }, unit: { $ref: '#/components/schemas/UnitContext' } } }
+        equipmentUpdatedAt: { type: string, format: date-time }
+        equipmentVersion: { type: integer, minimum: 0 }
+    AcReturn:
+      type: object
+      required: [id, equipmentId, origin, requestedBy, status, equipment, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        equipmentId: { type: string }
+        origin: { $ref: '#/components/schemas/UnitContext' }
+        requestedBy: { type: string }
+        requestReason: { type: string }
+        status: { type: string, enum: [Pendente, Aceita, Aguardando recebimento, Recebida, Divergência, Rejeitada, Cancelada] }
+        decisionReason: { type: string }
+        decidedBy: { type: string }
+        decidedAt: { type: string, format: date-time }
+        divergences: { type: array, items: { $ref: '#/components/schemas/PatrimonialDivergence' } }
+        cancelledBy: { type: string }
+        cancelledAt: { type: string, format: date-time }
+        equipment: { $ref: '#/components/schemas/AcReturnEquipmentSnapshot' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AcReturnsResponse:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AcReturn' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+    AcReturnCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [equipmentId]
+      properties:
+        equipmentId: { type: string }
+        reason: { type: string, maxLength: 500 }
+    AcReturnReceiptRequest:
+      type: object
+      additionalProperties: false
+      required: [status, updatedAt]
+      properties:
+        status: { type: string, enum: [Recebida, Divergência] }
+        updatedAt: { type: string, format: date-time }
+        description: { type: string, maxLength: 1000 }
+    AcReturnCancellationRequest:
+      type: object
+      additionalProperties: false
+      required: [updatedAt, reason]
+      properties:
+        updatedAt: { type: string, format: date-time }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    AcReturnDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [status, updatedAt]
+      properties:
+        status: { type: string, enum: [Aceita, Rejeitada] }
+        updatedAt: { type: string, format: date-time }
+        reason: { type: string, maxLength: 500 }
+    OperationalMaintenanceWindow:
+      type: object
+      additionalProperties: false
+      required: [active, reason, actorId, activatedAt, deactivatedAt, revision]
+      properties:
+        active: { type: boolean }
+        reason: { type: string, maxLength: 500 }
+        actorId: { type: string }
+        activatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        deactivatedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        revision: { type: integer, minimum: 0 }
+    OperationalMaintenanceUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [active, reason]
+      properties:
+        active: { type: boolean }
+        reason: { type: string, minLength: 1, maxLength: 500 }
     ApiError:
       type: object
       required: [code, message]

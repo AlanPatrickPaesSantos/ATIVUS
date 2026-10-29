@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { decideMovement, getMovements } from './movementsApi'
+import { createAcReturn, decideAcReturn, getAcReturns, decideMovement, getMovements } from './movementsApi'
 
 describe('movementsApi', () => {
   it('requests the backend movement list', async () => {
@@ -20,4 +20,30 @@ it('sends a triage decision with the server version and rejection reason', async
     method: 'PATCH',
     body: JSON.stringify({ status: 'Rejeitada', updatedAt: '2026-08-30T10:00:00.000Z', reason: 'Documento pendente.' }),
   }))
+})
+
+it('sends an idempotent AC return request', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'return-1' }), { status: 201 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await createAcReturn({ equipmentId: 'equipment-1', reason: 'Conferência.' }, 'return-key')
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/v1/ac/returns', expect.objectContaining({
+    method: 'POST',
+    headers: expect.objectContaining({ 'Idempotency-Key': 'return-key' }),
+    body: JSON.stringify({ equipmentId: 'equipment-1', reason: 'Conferência.' }),
+  }))
+})
+
+it('loads and decides AC returns with the server version', async () => {
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'return-1', status: 'Aceita' }), { status: 200 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await getAcReturns()
+  await decideAcReturn('return-1', { status: 'Aceita', updatedAt: '2026-10-28T10:00:00.000Z' })
+
+  expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/ac/returns', expect.objectContaining({ credentials: 'include' }))
+  expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/v1/ac/returns/return-1/decision', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'Aceita', updatedAt: '2026-10-28T10:00:00.000Z' }) }))
 })

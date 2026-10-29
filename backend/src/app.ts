@@ -33,6 +33,7 @@ import { createAcMaterialRoutes } from './routes/acMaterialRoutes.js';
 import { createAcTransferRoutes } from './routes/acTransferRoutes.js';
 import { createAcReportRoutes } from './routes/acReportRoutes.js';
 import { createAcTransferDocumentRoutes } from './routes/acTransferDocumentRoutes.js';
+import { createAcReturnRoutes } from './routes/acReturnRoutes.js';
 import { createOperationalMaintenanceRoutes } from './routes/operationalMaintenanceRoutes.js';
 import { OperationalMaintenanceActiveError } from './repositories/operationalMaintenanceRepository.js';
 
@@ -156,6 +157,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use('/api/v1', createAcMaterialRoutes(requireSession));
   app.use('/api/v1', createAcTransferRoutes(requireSession));
   app.use('/api/v1', createAcTransferDocumentRoutes(requireSession));
+  app.use('/api/v1', createAcReturnRoutes(requireSession));
   app.use('/api/v1', createAcReportRoutes(requireSession));
   app.use('/api/v1', createCallsRoutes(requireSession));
   app.use('/api/v1', createAttachmentRoutes(requireSession));

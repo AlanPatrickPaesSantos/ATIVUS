@@ -30,14 +30,6 @@ describe('OpenAPI contract', () => {
     expect(schema).toMatch(/EquipmentCreateRequest:[\s\S]*category:\s*\{ type: string \}/);
   });
 
-  it('documents the operational maintenance window', async () => {
-    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
-    expect(schema).toContain('/admin/operational-maintenance:');
-    expect(schema).toContain('operationId: getOperationalMaintenance');
-    expect(schema).toContain('operationId: updateOperationalMaintenance');
-    expect(schema).toContain('OperationalMaintenanceWindow:');
-  });
-
   it('documents the AC patrimonial material contract and its restricted operations', async () => {
     const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
     const collection = pathBlock(schema, '/ac/materials');
@@ -70,6 +62,34 @@ describe('OpenAPI contract', () => {
     expect(detail).toContain("schema: { $ref: '#/components/schemas/AcTransfer' }");
     expect(schema).toContain('AcTransferMaterial:');
     expect(schema).toContain('equipmentIds: { type: array, minItems: 1, maxItems: 500, uniqueItems: true');
+  });
+
+  it('documents the shared operational maintenance window contract', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    const operation = pathBlock(schema, '/admin/operational-maintenance');
+
+    expect(operation).toContain('operationId: getOperationalMaintenance');
+    expect(operation).toContain('operationId: updateOperationalMaintenance');
+    expect(operation).toContain("schema: { $ref: '#/components/schemas/OperationalMaintenanceUpdateRequest' }");
+    expect(schema).toContain('OperationalMaintenanceWindow:');
+    expect(schema).toContain('OperationalMaintenanceUpdateRequest:');
+  });
+
+  it('documents the AC return lifecycle and idempotency contract', async () => {
+    const schema = await readFile(new URL('../../docs/api/openapi.yaml', import.meta.url), 'utf8');
+    const collection = pathBlock(schema, '/ac/returns');
+    const decision = pathBlock(schema, '/ac/returns/{returnId}/decision');
+    expect(collection).toContain('operationId: createAcReturn');
+    expect(collection).toContain('Idempotency-Key');
+    expect(collection).toContain("schema: { $ref: '#/components/schemas/AcReturnCreateRequest' }");
+    expect(decision).toContain('operationId: decideAcReturn');
+    expect(decision).toContain("schema: { $ref: '#/components/schemas/AcReturnDecisionRequest' }");
+    expect(schema).toContain('AcReturn:');
+    expect(schema).toContain('status: { type: string, enum: [Pendente, Aceita, Aguardando recebimento, Recebida, Divergência, Rejeitada, Cancelada] }');
+    expect(pathBlock(schema, '/ac/returns/{returnId}/receipt')).toContain('operationId: receiveAcReturn');
+    expect(pathBlock(schema, '/ac/returns/{returnId}/divergence')).toContain('operationId: resolveAcReturnDivergence');
+    expect(pathBlock(schema, '/ac/returns/{returnId}/cancel')).toContain('operationId: cancelAcReturn');
+    expect(pathBlock(schema, '/movements/{id}/cancel')).toContain('operationId: cancelMovement');
   });
 
   it('documents every backend call queue status returned after triage', async () => {

@@ -13,7 +13,7 @@ const apiUnit = { id: 'unit-norte', name: 'Unidade Norte', acronym: 'UN' }
 
 beforeEach(() => {
   vi.stubEnv('VITE_ENABLE_MSW', 'true')
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 })))
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))))
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -54,6 +54,18 @@ test('filters the movement log through quick type controls', async () => {
   expect(screen.getByText('Baixa patrimonial')).toBeInTheDocument()
   expect(screen.queryByText('Transferência entre unidades')).not.toBeInTheDocument()
   expect(screen.getByText('1 registro')).toBeInTheDocument()
+})
+
+test('filters the operational center by status and unit', async () => {
+  const user = userEvent.setup()
+  render(<MovementsPage session={ditelSession} />)
+  await waitFor(() => expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument())
+
+  await user.selectOptions(screen.getByLabelText('Situação da movimentação'), 'Pendente')
+  expect(screen.getByText('Nenhuma movimentação encontrada')).toBeInTheDocument()
+  await user.selectOptions(screen.getByLabelText('Situação da movimentação'), 'all')
+  await user.selectOptions(screen.getByLabelText('Unidade da movimentação'), 'unit-norte')
+  expect(screen.getByText('Transferência entre unidades')).toBeInTheDocument()
 })
 
 test('retries movement loading without leaking unhandled rejections', async () => {
@@ -109,6 +121,7 @@ test('unit user can review and submit a transfer without client authority fields
   const user = userEvent.setup()
   const fetchMock = vi.fn()
     .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiTransfer] }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
     .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiEquipment], total: 1, page: 1, pageSize: 100 }), { status: 200 }))
     .mockResolvedValueOnce(new Response(JSON.stringify({ items: [apiUnit] }), { status: 200 }))
     .mockResolvedValueOnce(new Response(JSON.stringify({ ...apiTransfer, id: 'new-movement', status: 'Pendente' }), { status: 201 }))

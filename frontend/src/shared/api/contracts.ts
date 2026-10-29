@@ -151,6 +151,14 @@ export type AcTransferMaterial = { equipmentId: string; patrimony: string; descr
 export type AcTransfer = { id: string; origin: 'AC'; status: 'confirmed'; destinationUnit: UnitContext; distributedAt: string; deliverer: AcTransferPerson; receiver: AcTransferPerson; bg?: { number: string }; materials: AcTransferMaterial[]; createdAt: string; createdBy: string }
 export type AcTransferCreateInput = { destinationUnit: UnitContext; distributedAt: string; deliverer: AcTransferPerson; receiver: AcTransferPerson; bg?: { number: string }; equipmentIds: string[] }
 export type AcTransfersResponse = { items: AcTransfer[]; total: number; page: number; pageSize: number }
+export type AcReturnStatus = 'Pendente' | 'Aceita' | 'Aguardando recebimento' | 'Recebida' | 'Divergência' | 'Rejeitada' | 'Cancelada'
+export type PatrimonialDivergence = { description: string; reportedBy: string; reportedAt: string; resolutionStatus: 'pending' | 'resolved'; resolvedBy?: string | null; resolvedAt?: string | null; resolution?: string | null }
+export type AcReturn = { id: string; equipmentId: string; origin: UnitContext; requestedBy: string; requestReason?: string; status: AcReturnStatus; decisionReason?: string; decidedBy?: string; decidedAt?: string; cancelledBy?: string; cancelledAt?: string; divergences: PatrimonialDivergence[]; equipment: { patrimony: string; type: string; model: string; brand: string; serialNumber?: string; situation: EquipmentSituation; unit: UnitContext; custody: { scope: 'UNIT'; unit: UnitContext } | { scope: 'AC'; unit: null } | null; equipmentUpdatedAt: string; equipmentVersion: number }; createdAt: string; updatedAt: string }
+export type AcReturnsResponse = { items: AcReturn[]; total: number; page: number; pageSize: number }
+export type AcReturnCreateInput = { equipmentId: string; reason?: string }
+export type AcReturnDecision = { status: 'Aceita' | 'Rejeitada'; updatedAt: string; reason?: string }
+export type AcReturnReceipt = { status: 'Recebida' | 'Divergência'; updatedAt: string; description?: string }
+export type AcReturnDivergenceResolution = { action: 'retomar' | 'rejeitar'; updatedAt: string; resolution: string }
 
 export type AcPatrimonialReportQuery = {
   from?: string; to?: string; unitId?: string; patrimony?: string; type?: string; model?: string; situation?: EquipmentSituation; bg?: string
